@@ -233,7 +233,7 @@ async function searchSchool(q){
   if(!q||q.length<2){dd.style.display='none';return;}
   schoolTimer=setTimeout(async()=>{
     try{
-      const url=`https://open.neis.go.kr/hub/schoolInfo?KEY=demo&Type=json&pIndex=1&pSize=8&SCHUL_NM=${encodeURIComponent(q)}`;
+      const url=`https://open.neis.go.kr/hub/schoolInfo?KEY=6544e426d2dc47f58a653ff11abbe91a&Type=json&pIndex=1&pSize=8&SCHUL_NM=${encodeURIComponent(q)}`;
       const res=await fetch(url);
       const data=await res.json();
       const list=data?.schoolInfo?.[1]?.row||[];
