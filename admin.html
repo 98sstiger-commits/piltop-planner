@@ -3,89 +3,120 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>플래너 관리자</title>
+<title>필탑 플래너 관리</title>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:'Noto Sans KR',sans-serif;background:#F6F5F2;color:#18170F;min-height:100vh}
-:root{--green:#1A4731;--gs:#E5EFE9;--line:#E6E3DC;--surf:#fff;--ink2:#69675E;--ink3:#A8A49C}
+:root{--green:#1A4731;--gs:#E5EFE9;--line:#E6E3DC;--line2:#CCC9C1;--surf:#fff;--ink2:#69675E;--ink3:#A8A49C}
 
-.nav{background:var(--green);padding:16px 24px;display:flex;align-items:center;justify-content:space-between}
-.nav-title{color:#fff;font-size:16px;font-weight:700;letter-spacing:-.3px}
-.nav-sub{color:rgba(255,255,255,.6);font-size:12px}
+/* nav */
+.nav{background:var(--green);padding:0 24px;height:56px;display:flex;align-items:center;justify-content:space-between}
+.nav-title{color:#fff;font-size:15px;font-weight:700;letter-spacing:-.3px}
+.nav-sub{color:rgba(255,255,255,.55);font-size:11px;margin-top:1px}
 
-.wrap{max-width:640px;margin:0 auto;padding:24px 16px}
+.wrap{max-width:560px;margin:0 auto;padding:24px 16px 60px}
 
-/* 링크 생성 카드 */
-.gen-card{background:var(--surf);border:1px solid var(--line);border-radius:14px;padding:24px;margin-bottom:20px}
-.gen-card h2{font-size:16px;font-weight:700;letter-spacing:-.3px;margin-bottom:4px}
-.gen-card p{font-size:12px;color:var(--ink2);margin-bottom:20px}
+/* 생성 카드 */
+.card{background:var(--surf);border:1px solid var(--line);border-radius:14px;overflow:hidden;margin-bottom:16px}
+.card-hd{padding:18px 20px 0}
+.card-title{font-size:15px;font-weight:700;letter-spacing:-.3px;color:#18170F}
+.card-sub{font-size:12px;color:var(--ink2);margin-top:3px;line-height:1.5}
+.card-bd{padding:16px 20px 20px}
 
-.form-row{display:grid;grid-template-columns:1fr 80px 100px;gap:8px;margin-bottom:12px}
-.f-input{padding:11px 13px;border:1px solid #D0CEC9;border-radius:8px;font-size:14px;color:#18170F;background:#F6F5F2;font-family:inherit;width:100%}
-.f-input:focus{outline:none;border-color:var(--green);background:#fff}
+/* 입력 폼 — 세로 스택 */
+.field{margin-bottom:12px}
+.field:last-child{margin-bottom:0}
+.field-label{font-size:10px;font-weight:700;letter-spacing:.7px;text-transform:uppercase;color:var(--ink3);margin-bottom:5px;display:block}
+.f-row{display:grid;gap:8px}
+.f-row.col2{grid-template-columns:1fr 1fr}
+.f-row.col3{grid-template-columns:1fr 80px 120px}
+
+.f-input{width:100%;padding:12px 14px;border:1px solid var(--line2);border-radius:9px;font-size:14px;color:#18170F;background:#F6F5F2;font-family:inherit;transition:all .12s}
+.f-input:focus{outline:none;border-color:var(--green);background:#fff;box-shadow:0 0 0 3px rgba(26,71,49,.08)}
 .f-input::placeholder{color:var(--ink3)}
-.f-select{padding:11px 10px;border:1px solid #D0CEC9;border-radius:8px;font-size:14px;color:#18170F;background:#F6F5F2;font-family:inherit;width:100%;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23888' d='M6 8L1 3h10z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center}
-.f-select:focus{outline:none;border-color:var(--green)}
 
-.gen-btn{width:100%;padding:13px;background:var(--green);color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;transition:opacity .12s}
+.f-select{width:100%;padding:12px 14px;border:1px solid var(--line2);border-radius:9px;font-size:14px;color:#18170F;background:#F6F5F2;font-family:inherit;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23888' d='M6 8L1 3h10z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;cursor:pointer;transition:all .12s}
+.f-select:focus{outline:none;border-color:var(--green);background-color:#fff}
+
+/* 학교 검색 */
+.school-wrap{position:relative}
+.school-dd{position:absolute;top:calc(100% + 4px);left:0;right:0;background:var(--surf);border:1px solid var(--line2);border-radius:9px;max-height:180px;overflow-y:auto;z-index:20;box-shadow:0 8px 24px rgba(0,0,0,.1);display:none}
+.school-dd-item{padding:11px 14px;font-size:13px;cursor:pointer;border-bottom:1px solid var(--line);transition:background .08s}
+.school-dd-item:last-child{border-bottom:none}
+.school-dd-item:hover{background:var(--gs)}
+.sd-name{font-weight:500;color:#18170F}
+.sd-addr{font-size:11px;color:var(--ink3);margin-top:1px}
+
+.school-chip{display:none;align-items:center;gap:10px;padding:11px 14px;background:var(--gs);border:1px solid var(--green);border-radius:9px}
+.school-chip span{flex:1;font-size:14px;font-weight:500;color:var(--green)}
+.school-chip button{font-size:18px;color:var(--ink3);line-height:1;padding:2px 4px}
+.school-chip button:hover{color:#B91C1C}
+
+.school-hint{font-size:11px;color:var(--ink3);margin-top:5px;line-height:1.5}
+
+/* 생성 버튼 */
+.gen-btn{width:100%;padding:14px;background:var(--green);color:#fff;border:none;border-radius:9px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;transition:opacity .12s;letter-spacing:.1px}
 .gen-btn:hover{opacity:.88}
+.gen-btn:active{opacity:.75}
 
-/* 생성된 링크 */
-.link-box{background:var(--gs);border:1px solid var(--green);border-radius:8px;padding:12px 14px;margin-top:12px;display:none}
-.link-box-label{font-size:10px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--green);margin-bottom:6px}
-.link-url{font-size:12px;color:#18170F;word-break:break-all;margin-bottom:10px;line-height:1.5}
+/* 결과 링크 */
+.link-result{display:none;margin-top:14px;padding:14px 16px;background:var(--gs);border:1px solid var(--green);border-radius:9px}
+.link-result-lbl{font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--green);margin-bottom:6px}
+.link-url{font-size:12px;color:#18170F;word-break:break-all;line-height:1.6;margin-bottom:12px;padding:8px 10px;background:rgba(26,71,49,.06);border-radius:6px;font-family:monospace}
 .link-btns{display:flex;gap:8px}
-.link-btn{flex:1;padding:9px;border-radius:7px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;border:none;transition:all .12s}
+.link-btn{flex:1;padding:10px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;border:none;transition:all .12s;letter-spacing:.1px}
 .link-btn.copy{background:var(--green);color:#fff}
+.link-btn.copy:hover{opacity:.88}
 .link-btn.kakao{background:#FEE500;color:#3C1E1E}
+.link-btn.kakao:hover{opacity:.88}
 
 /* 학생 목록 */
-.list-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
-.list-head h2{font-size:15px;font-weight:700;letter-spacing:-.3px}
-.list-count{font-size:12px;color:var(--ink2);background:var(--surf);border:1px solid var(--line);border-radius:10px;padding:3px 10px}
+.list-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.list-hd h2{font-size:14px;font-weight:700;letter-spacing:-.2px}
+.list-badge{font-size:11px;font-weight:600;color:var(--ink2);background:var(--surf);border:1px solid var(--line);border-radius:10px;padding:3px 10px}
 
 .student-list{display:flex;flex-direction:column;gap:8px}
-.student-card{background:var(--surf);border:1px solid var(--line);border-radius:10px;padding:14px 16px;display:flex;align-items:center;gap:12px;cursor:pointer;transition:all .12s}
-.student-card:hover{border-color:#CCC9C1;box-shadow:0 2px 8px rgba(0,0,0,.06)}
-.sc-avatar{width:36px;height:36px;border-radius:50%;background:var(--green);color:#fff;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;flex-shrink:0}
-.sc-info{flex:1}
-.sc-name{font-size:14px;font-weight:600;color:#18170F;letter-spacing:-.2px}
-.sc-sub{font-size:11px;color:var(--ink2);margin-top:2px}
-.sc-badge{font-size:10px;font-weight:600;padding:3px 8px;border-radius:10px}
-.sc-badge.done{background:var(--gs);color:var(--green)}
-.sc-badge.pending{background:#FEF5E8;color:#7A4710}
-.sc-arrow{color:var(--ink3);font-size:16px}
+.stu-card{background:var(--surf);border:1px solid var(--line);border-radius:10px;padding:14px 16px;display:flex;align-items:center;gap:12px;cursor:pointer;transition:all .15s}
+.stu-card:hover{border-color:var(--line2);box-shadow:0 2px 10px rgba(0,0,0,.07);transform:translateY(-1px)}
+.stu-avatar{width:38px;height:38px;border-radius:50%;background:var(--green);color:#fff;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:700;flex-shrink:0;letter-spacing:-.5px}
+.stu-info{flex:1;min-width:0}
+.stu-name{font-size:14px;font-weight:600;color:#18170F;letter-spacing:-.2px}
+.stu-sub{font-size:11px;color:var(--ink2);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.stu-status{font-size:10px;font-weight:600;padding:3px 9px;border-radius:10px;flex-shrink:0}
+.stu-status.done{background:var(--gs);color:var(--green)}
+.stu-status.wait{background:#FEF5E8;color:#7A4710}
+.stu-arrow{color:var(--ink3);font-size:18px;flex-shrink:0;margin-left:4px}
 
-/* 염탐 모달 */
-.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:100;display:flex;align-items:flex-end;justify-content:center;opacity:0;pointer-events:none;transition:opacity .2s}
-.modal-bg.open{opacity:1;pointer-events:all}
-.modal{background:var(--surf);border-radius:20px 20px 0 0;width:100%;max-width:640px;max-height:85vh;overflow-y:auto;transform:translateY(20px);transition:transform .2s}
-.modal-bg.open .modal{transform:translateY(0)}
-.modal-hd{padding:20px 20px 14px;border-bottom:1px solid var(--line);position:sticky;top:0;background:var(--surf);z-index:1}
-.modal-title{font-size:16px;font-weight:700;letter-spacing:-.3px}
-.modal-sub{font-size:12px;color:var(--ink2);margin-top:2px}
-.modal-close{position:absolute;top:18px;right:16px;width:28px;height:28px;border-radius:50%;border:1px solid var(--line);background:none;cursor:pointer;font-size:16px;color:var(--ink2);display:flex;align-items:center;justify-content:center}
-.modal-body{padding:16px 20px 30px}
+.empty{text-align:center;padding:36px 20px;color:var(--ink3);font-size:13px;line-height:1.6}
 
-.spy-section{margin-bottom:20px}
-.spy-label{font-size:10px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3);margin-bottom:8px}
-.spy-months{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
-.spy-month{background:#F6F5F2;border-radius:8px;padding:10px;font-size:11px}
-.spy-month-num{font-size:16px;font-weight:700;color:var(--ink3);letter-spacing:-1px}
-.spy-month-key{font-size:11px;font-weight:500;color:#18170F;margin-top:3px;line-height:1.4}
-.spy-month-note{font-size:10px;color:var(--ink2);margin-top:2px}
+/* 염탐 시트 */
+.sheet-bg{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:100;display:flex;align-items:flex-end;justify-content:center;opacity:0;pointer-events:none;transition:opacity .2s}
+.sheet-bg.open{opacity:1;pointer-events:all}
+.sheet{background:var(--surf);border-radius:20px 20px 0 0;width:100%;max-width:560px;max-height:85vh;overflow-y:auto;transform:translateY(20px);transition:transform .25s;padding-bottom:32px}
+.sheet-bg.open .sheet{transform:translateY(0)}
+.sheet-grip{width:36px;height:4px;border-radius:2px;background:var(--line2);margin:12px auto 0}
+.sheet-hd{padding:18px 20px 14px;border-bottom:1px solid var(--line);position:sticky;top:0;background:var(--surf);z-index:1}
+.sheet-name{font-size:17px;font-weight:700;letter-spacing:-.4px}
+.sheet-sub{font-size:12px;color:var(--ink2);margin-top:2px}
+.sheet-close{position:absolute;top:16px;right:16px;width:28px;height:28px;border-radius:50%;border:1px solid var(--line2);background:none;cursor:pointer;font-size:16px;color:var(--ink2);display:flex;align-items:center;justify-content:center}
+.sheet-body{padding:18px 20px 0}
 
-.spy-stat{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap}
-.spy-stat-chip{padding:6px 12px;border-radius:20px;font-size:11px;font-weight:600}
+.info-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:18px}
+.info-cell{background:#F6F5F2;border-radius:8px;padding:11px 12px}
+.info-cell-lbl{font-size:9px;font-weight:700;letter-spacing:.7px;text-transform:uppercase;color:var(--ink3);margin-bottom:4px}
+.info-cell-val{font-size:13px;font-weight:500;color:#18170F;line-height:1.4}
 
-.empty-state{text-align:center;padding:40px 20px;color:var(--ink3);font-size:13px}
+.sec-lbl{font-size:9px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3);margin-bottom:10px}
+.month-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.month-cell{background:#F6F5F2;border-radius:8px;padding:10px 11px}
+.month-num{font-size:17px;font-weight:700;letter-spacing:-1px;color:var(--ink3);line-height:1}
+.month-kw{font-size:11px;font-weight:500;color:#18170F;margin-top:4px;line-height:1.45}
+.month-note{font-size:10px;color:var(--ink2);margin-top:2px;line-height:1.4}
 
 /* toast */
-.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(6px);background:#18170F;color:#fff;padding:10px 20px;border-radius:20px;font-size:12px;font-weight:500;opacity:0;transition:all .2s;pointer-events:none;z-index:999;white-space:nowrap}
+.toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%) translateY(6px);background:#18170F;color:#fff;padding:10px 22px;border-radius:20px;font-size:12px;font-weight:500;opacity:0;transition:all .2s;pointer-events:none;z-index:999;white-space:nowrap}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
-
-.loading{text-align:center;padding:20px;color:var(--ink3);font-size:13px}
 </style>
 </head>
 <body>
@@ -93,258 +124,257 @@ body{font-family:'Noto Sans KR',sans-serif;background:#F6F5F2;color:#18170F;min-
 <div class="nav">
   <div>
     <div class="nav-title">필탑학원 플래너 관리</div>
-    <div class="nav-sub">학생 링크 생성 및 현황</div>
+    <div class="nav-sub">학생 링크 생성 · 현황 조회</div>
   </div>
 </div>
 
 <div class="wrap">
 
-  <!-- 링크 생성 -->
-  <div class="gen-card">
-    <h2>학생 플래너 링크 생성</h2>
-    <p>이름과 학교, 학년만 입력하면 학생 전용 링크가 만들어져요.</p>
-
-    <div class="form-row">
-      <div>
-        <input class="f-input" id="s-name" placeholder="학생 이름" maxlength="10">
-      </div>
-      <div>
-        <select class="f-select" id="s-grade">
-          <option value="">학년</option>
-          <option value="1">1학년</option>
-          <option value="2">2학년</option>
-          <option value="3">3학년</option>
-        </select>
-      </div>
-      <div style="position:relative">
-        <input class="f-input" id="s-school" placeholder="학교명" autocomplete="off" oninput="searchAdminSchool(this.value)">
-        <div id="admin-school-dd" style="position:absolute;top:100%;left:0;right:0;background:#fff;border:1px solid #D0CEC9;border-radius:8px;max-height:180px;overflow-y:auto;z-index:50;margin-top:3px;box-shadow:0 8px 24px rgba(0,0,0,.1);display:none"></div>
-      </div>
+  <!-- 링크 생성 카드 -->
+  <div class="card">
+    <div class="card-hd">
+      <div class="card-title">학생 플래너 링크 생성</div>
+      <div class="card-sub">이름·학교·학년만 입력하면 학생 전용 링크가 바로 만들어져요.</div>
     </div>
+    <div class="card-bd">
 
-    <div id="school-badge" style="display:none;margin-bottom:12px;padding:8px 12px;background:var(--gs);border:1px solid var(--green);border-radius:7px;font-size:12px;color:var(--green);display:flex;align-items:center;justify-content:space-between">
-      <span id="school-badge-text"></span>
-      <button onclick="clearAdminSchool()" style="background:none;border:none;color:var(--ink3);cursor:pointer;font-size:16px;padding:0">×</button>
-    </div>
-
-    <button class="gen-btn" onclick="generateLink()">링크 생성</button>
-
-    <div class="link-box" id="link-box">
-      <div class="link-box-label">생성된 링크</div>
-      <div class="link-url" id="link-url"></div>
-      <div class="link-btns">
-        <button class="link-btn copy" onclick="copyLink()">링크 복사</button>
-        <button class="link-btn kakao" onclick="shareKakao()">카카오 공유</button>
+      <div class="field">
+        <label class="field-label">학생 이름</label>
+        <input class="f-input" id="s-name" placeholder="예: 홍길동" maxlength="10">
       </div>
+
+      <div class="field">
+        <div class="f-row col2">
+          <div>
+            <label class="field-label">학교</label>
+            <div class="school-wrap">
+              <input class="f-input" id="s-school-input" placeholder="학교명 검색..." autocomplete="off" oninput="searchSchool(this.value)">
+              <div class="school-dd" id="school-dd"></div>
+            </div>
+            <div class="school-chip" id="school-chip">
+              <span id="school-chip-text"></span>
+              <button onclick="clearSchool()">×</button>
+            </div>
+            <div class="school-hint">학교명을 2글자 이상 입력하면 검색돼요.<br>검색 안 되면 직접 입력 후 학년만 선택하세요.</div>
+          </div>
+          <div>
+            <label class="field-label">학년</label>
+            <select class="f-select" id="s-grade">
+              <option value="">선택</option>
+              <option value="1">1학년</option>
+              <option value="2">2학년</option>
+              <option value="3">3학년</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <button class="gen-btn" onclick="generateLink()">링크 생성</button>
+
+      <div class="link-result" id="link-result">
+        <div class="link-result-lbl">생성된 링크</div>
+        <div class="link-url" id="link-url"></div>
+        <div class="link-btns">
+          <button class="link-btn copy" onclick="copyLink()">링크 복사</button>
+          <button class="link-btn kakao" onclick="shareKakao()">카카오 공유</button>
+        </div>
+      </div>
+
     </div>
   </div>
 
   <!-- 학생 목록 -->
-  <div class="list-head">
+  <div class="list-hd">
     <h2>전체 학생</h2>
-    <span class="list-count" id="list-count">0명</span>
+    <span class="list-badge" id="list-badge">0명</span>
   </div>
   <div class="student-list" id="student-list">
-    <div class="loading">불러오는 중...</div>
+    <div class="empty">아직 생성된 학생이 없어요</div>
   </div>
 
 </div>
 
-<!-- 염탐 모달 -->
-<div class="modal-bg" id="spy-modal" onclick="if(event.target===this)closeSpy()">
-  <div class="modal">
-    <div class="modal-hd">
-      <div class="modal-title" id="spy-name"></div>
-      <div class="modal-sub" id="spy-sub"></div>
-      <button class="modal-close" onclick="closeSpy()">×</button>
+<!-- 염탐 시트 -->
+<div class="sheet-bg" id="spy-bg" onclick="if(event.target===this)closeSpy()">
+  <div class="sheet">
+    <div class="sheet-grip"></div>
+    <div class="sheet-hd">
+      <div class="sheet-name" id="spy-name"></div>
+      <div class="sheet-sub" id="spy-sub"></div>
+      <button class="sheet-close" onclick="closeSpy()">×</button>
     </div>
-    <div class="modal-body" id="spy-body"></div>
+    <div class="sheet-body" id="spy-body"></div>
   </div>
 </div>
 
 <div class="toast" id="toast"></div>
 
 <script>
-const SUPABASE_URL = "https://zmtldohklivkzpfdyflc.supabase.co";
-const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InptdGxkb2hrbGl2a3pwZmR5ZmxjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI5NjgxMDQsImV4cCI6MjA4ODU0NDEwNH0.cv1WrvDzNedVZABWyRCS9ARRxf4Si9qgeUqEvhpHWlo";
-const BASE_URL = location.origin;
+const SB_URL="https://zmtldohklivkzpfdyflc.supabase.co";
+const SB_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InptdGxkb2hrbGl2a3pwZmR5ZmxjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI5NjgxMDQsImV4cCI6MjA4ODU0NDEwNH0.cv1WrvDzNedVZABWyRCS9ARRxf4Si9qgeUqEvhpHWlo";
+const BASE=location.origin;
 
-async function sb(path, opts={}) {
-  const res = await fetch(SUPABASE_URL + '/rest/v1/' + path, {
-    headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY, 'Content-Type': 'application/json', 'Prefer': 'return=representation', ...opts.headers },
+async function sb(path,opts={}){
+  const r=await fetch(SB_URL+'/rest/v1/'+path,{
+    headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Content-Type':'application/json','Prefer':'return=representation',...(opts.headers||{})},
     ...opts
   });
-  return res.json();
+  try{return await r.json();}catch{return null;}
 }
 
-let adminSchool = null;
-let generatedLink = '';
+let selSchool=null;
+let genLink='';
+let schoolTimer=null;
 
-// 학교 검색
-let schoolTimer = null;
-async function searchAdminSchool(q) {
+/* 학교 검색 — NEIS API (demo key) + 실패시 직접입력 허용 */
+async function searchSchool(q){
   clearTimeout(schoolTimer);
-  const dd = document.getElementById('admin-school-dd');
-  if (!q || q.length < 2) { dd.style.display = 'none'; return; }
-  schoolTimer = setTimeout(async () => {
-    try {
-      const url = `https://open.neis.go.kr/hub/schoolInfo?KEY=demo&Type=json&pIndex=1&pSize=8&SCHUL_NM=${encodeURIComponent(q)}`;
-      const res = await fetch(url);
-      const data = await res.json();
-      const list = data?.schoolInfo?.[1]?.row || [];
-      dd.innerHTML = '';
-      if (!list.length) { dd.innerHTML = '<div style="padding:10px 14px;font-size:13px;color:#A8A49C">검색 결과 없음</div>'; dd.style.display = 'block'; return; }
-      list.forEach(s => {
-        const item = document.createElement('div');
-        item.style.cssText = 'padding:10px 14px;font-size:13px;cursor:pointer;border-bottom:1px solid #E6E3DC';
-        item.innerHTML = `<div style="font-weight:500">${s.SCHUL_NM}</div><div style="font-size:11px;color:#A8A49C;margin-top:1px">${s.ORG_RDNMA||''}</div>`;
-        item.onclick = () => {
-          adminSchool = { name: s.SCHUL_NM, code: s.SD_SCHUL_CODE, orgCode: s.ATPT_OFCDC_SC_CODE };
-          document.getElementById('s-school').value = '';
-          document.getElementById('s-school').style.display = 'none';
-          document.getElementById('school-badge-text').textContent = s.SCHUL_NM;
-          document.getElementById('school-badge').style.display = 'flex';
-          dd.style.display = 'none';
+  const dd=document.getElementById('school-dd');
+  if(!q||q.length<2){dd.style.display='none';return;}
+  schoolTimer=setTimeout(async()=>{
+    try{
+      const url=`https://open.neis.go.kr/hub/schoolInfo?KEY=demo&Type=json&pIndex=1&pSize=8&SCHUL_NM=${encodeURIComponent(q)}`;
+      const res=await fetch(url);
+      const data=await res.json();
+      const list=data?.schoolInfo?.[1]?.row||[];
+      dd.innerHTML='';
+      if(!list.length){
+        // 직접입력 옵션 제공
+        const item=document.createElement('div');
+        item.className='school-dd-item';
+        item.innerHTML=`<div class="sd-name">"${q}" 직접 입력</div><div class="sd-addr">학교 코드 없이 이름만 사용</div>`;
+        item.onclick=()=>{
+          selSchool={name:q,code:'',orgCode:''};
+          document.getElementById('s-school-input').style.display='none';
+          document.getElementById('school-chip').style.display='flex';
+          document.getElementById('school-chip-text').textContent=q;
+          dd.style.display='none';
+        };
+        dd.appendChild(item);
+        dd.style.display='block';
+        return;
+      }
+      list.forEach(s=>{
+        const item=document.createElement('div');
+        item.className='school-dd-item';
+        item.innerHTML=`<div class="sd-name">${s.SCHUL_NM}</div><div class="sd-addr">${s.ORG_RDNMA||s.LCTN_SC_NM||''}</div>`;
+        item.onclick=()=>{
+          selSchool={name:s.SCHUL_NM,code:s.SD_SCHUL_CODE,orgCode:s.ATPT_OFCDC_SC_CODE};
+          document.getElementById('s-school-input').style.display='none';
+          document.getElementById('school-chip').style.display='flex';
+          document.getElementById('school-chip-text').textContent=s.SCHUL_NM;
+          dd.style.display='none';
         };
         dd.appendChild(item);
       });
-      dd.style.display = 'block';
-    } catch(e) { dd.style.display = 'none'; }
-  }, 300);
+      dd.style.display='block';
+    }catch{
+      // API 오류시 직접입력 옵션
+      dd.innerHTML='';
+      const item=document.createElement('div');
+      item.className='school-dd-item';
+      item.innerHTML=`<div class="sd-name">"${q}" 직접 입력</div><div class="sd-addr">검색 서버 연결 안 됨 · 이름만 사용</div>`;
+      item.onclick=()=>{
+        selSchool={name:q,code:'',orgCode:''};
+        document.getElementById('s-school-input').style.display='none';
+        document.getElementById('school-chip').style.display='flex';
+        document.getElementById('school-chip-text').textContent=q;
+        dd.style.display='none';
+      };
+      dd.appendChild(item);
+      dd.style.display='block';
+    }
+  },320);
 }
 
-function clearAdminSchool() {
-  adminSchool = null;
-  document.getElementById('s-school').style.display = 'block';
-  document.getElementById('s-school').value = '';
-  document.getElementById('school-badge').style.display = 'none';
+function clearSchool(){
+  selSchool=null;
+  document.getElementById('s-school-input').style.display='block';
+  document.getElementById('s-school-input').value='';
+  document.getElementById('school-chip').style.display='none';
 }
 
-async function generateLink() {
-  const name = document.getElementById('s-name').value.trim();
-  const grade = document.getElementById('s-grade').value;
-  const school = adminSchool;
-  if (!name) { showToast('이름을 입력해주세요'); return; }
-  if (!grade) { showToast('학년을 선택해주세요'); return; }
-  if (!school) { showToast('학교를 검색해서 선택해주세요'); return; }
+async function generateLink(){
+  const name=document.getElementById('s-name').value.trim();
+  const grade=document.getElementById('s-grade').value;
+  if(!name){showToast('이름을 입력해주세요');return;}
+  if(!selSchool){showToast('학교를 검색해서 선택해주세요');return;}
+  if(!grade){showToast('학년을 선택해주세요');return;}
 
-  const id = crypto.randomUUID();
-  const data = { id, name, grade, school_name: school.name, school_code: school.code, school_org: school.orgCode, created_at: new Date().toISOString() };
-  await sb('planner_students?on_conflict=id', { method: 'POST', body: JSON.stringify(data) });
+  const id=crypto.randomUUID();
+  await sb('planner_students',{
+    method:'POST',
+    body:JSON.stringify({id,name,grade,school_name:selSchool.name,school_code:selSchool.code,school_org:selSchool.orgCode,created_at:new Date().toISOString()})
+  });
 
-  const link = `${BASE_URL}/index.html?id=${id}&name=${encodeURIComponent(name)}&school=${encodeURIComponent(school.name)}&grade=${grade}&sc=${school.code}&so=${school.orgCode}`;
-  generatedLink = link;
+  const params=new URLSearchParams({id,name,school:selSchool.name,grade});
+  if(selSchool.code)params.set('sc',selSchool.code);
+  if(selSchool.orgCode)params.set('so',selSchool.orgCode);
+  genLink=`${BASE}/index.html?${params}`;
 
-  document.getElementById('link-url').textContent = link;
-  document.getElementById('link-box').style.display = 'block';
-
+  document.getElementById('link-url').textContent=genLink;
+  document.getElementById('link-result').style.display='block';
   loadStudents();
   showToast('링크가 생성됐어요!');
 }
 
-function copyLink() {
-  navigator.clipboard.writeText(generatedLink).then(() => showToast('링크 복사됐어요!'));
-}
+function copyLink(){navigator.clipboard.writeText(genLink).then(()=>showToast('복사됐어요!'));}
+function shareKakao(){window.open(`kakaotalk://msg/send?text=${encodeURIComponent(genLink)}`);}
 
-function shareKakao() {
-  const msg = encodeURIComponent(generatedLink);
-  window.open(`https://open.kakao.com/o/default?url=${msg}`);
-}
-
-// 학생 목록
-async function loadStudents() {
-  const data = await sb('planner_students?select=*&order=created_at.desc');
-  const list = document.getElementById('student-list');
-  document.getElementById('list-count').textContent = (data?.length || 0) + '명';
-
-  if (!data?.length) {
-    list.innerHTML = '<div class="empty-state">아직 생성된 학생이 없어요</div>';
-    return;
-  }
-
-  list.innerHTML = '';
-  data.forEach(s => {
-    const card = document.createElement('div');
-    card.className = 'student-card';
-    const hasPlan = s.yearly_plan && Object.keys(s.yearly_plan || {}).length > 0;
-    card.innerHTML = `
-      <div class="sc-avatar">${s.name[0]}</div>
-      <div class="sc-info">
-        <div class="sc-name">${s.name}</div>
-        <div class="sc-sub">${s.school_name || ''} · ${s.grade}학년</div>
+/* 학생 목록 */
+async function loadStudents(){
+  const data=await sb('planner_students?select=*&order=created_at.desc');
+  const list=document.getElementById('student-list');
+  const cnt=data?.length||0;
+  document.getElementById('list-badge').textContent=cnt+'명';
+  if(!cnt){list.innerHTML='<div class="empty">아직 생성된 학생이 없어요</div>';return;}
+  list.innerHTML='';
+  data.forEach(s=>{
+    const hasPlan=s.yearly_plan&&Object.keys(s.yearly_plan||{}).length>0;
+    const card=document.createElement('div');
+    card.className='stu-card';
+    card.innerHTML=`
+      <div class="stu-avatar">${s.name[0]}</div>
+      <div class="stu-info">
+        <div class="stu-name">${s.name}</div>
+        <div class="stu-sub">${s.school_name||'학교 미정'} · ${s.grade||'?'}학년</div>
       </div>
-      <span class="sc-badge ${hasPlan ? 'done' : 'pending'}">${hasPlan ? '플래너 완성' : '대기중'}</span>
-      <span class="sc-arrow">›</span>
-    `;
-    card.onclick = () => openSpy(s);
+      <span class="stu-status ${hasPlan?'done':'wait'}">${hasPlan?'완성':'대기'}</span>
+      <span class="stu-arrow">›</span>`;
+    card.onclick=()=>openSpy(s);
     list.appendChild(card);
   });
 }
 
-// 염탐
-function openSpy(s) {
-  document.getElementById('spy-name').textContent = s.name + ' 학생';
-  document.getElementById('spy-sub').textContent = `${s.school_name || ''} · ${s.grade}학년`;
-
-  const body = document.getElementById('spy-body');
-  const plan = s.yearly_plan || {};
-  const career = s.career || s.career_field || '미정';
-  const univ = [s.univ1, s.dept1].filter(Boolean).join(' / ') || '미정';
-
-  const MON_EN = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-
-  let html = `
-    <div class="spy-section">
-      <div class="spy-label">학생 정보</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-        <div style="background:#F6F5F2;border-radius:8px;padding:10px 12px">
-          <div style="font-size:10px;color:#A8A49C;margin-bottom:3px">진로</div>
-          <div style="font-size:13px;font-weight:500">${career}</div>
-        </div>
-        <div style="background:#F6F5F2;border-radius:8px;padding:10px 12px">
-          <div style="font-size:10px;color:#A8A49C;margin-bottom:3px">희망대학/학과</div>
-          <div style="font-size:13px;font-weight:500">${univ}</div>
-        </div>
-      </div>
-    </div>`;
-
-  if (Object.keys(plan).length) {
-    html += `<div class="spy-section"><div class="spy-label">AI 연간 플래너</div><div class="spy-months">`;
-    Object.values(plan).forEach(m => {
-      html += `<div class="spy-month">
-        <div class="spy-month-num">${m.month}<span style="font-size:10px;font-weight:400;color:#A8A49C;margin-left:2px">${MON_EN[(m.month||1)-1]}</span></div>
-        <div class="spy-month-key">${m.keyword||''}</div>
-        <div class="spy-month-note">${m.note||''}</div>
+/* 염탐 */
+function openSpy(s){
+  document.getElementById('spy-name').textContent=s.name+' 학생';
+  document.getElementById('spy-sub').textContent=`${s.school_name||''}  ·  ${s.grade||'?'}학년`;
+  const MON_EN=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const plan=s.yearly_plan||{};
+  let html=`<div class="info-grid">
+    <div class="info-cell"><div class="info-cell-lbl">진로</div><div class="info-cell-val">${s.career||s.career_field||'미정'}</div></div>
+    <div class="info-cell"><div class="info-cell-lbl">희망 대학/학과</div><div class="info-cell-val">${[s.univ1,s.dept1].filter(Boolean).join(' / ')||'미정'}</div></div>
+  </div>`;
+  if(Object.keys(plan).length){
+    html+=`<div class="sec-lbl" style="margin-bottom:10px">AI 연간 플래너</div><div class="month-grid">`;
+    Object.values(plan).forEach(m=>{
+      html+=`<div class="month-cell">
+        <div class="month-num">${m.month}<span style="font-size:9px;font-weight:400;color:#A8A49C;margin-left:2px">${MON_EN[(m.month||1)-1]}</span></div>
+        <div class="month-kw">${m.keyword||''}</div>
+        <div class="month-note">${m.note||''}</div>
       </div>`;
     });
-    html += `</div></div>`;
-  } else {
-    html += `<div class="empty-state" style="padding:20px">아직 플래너를 작성하지 않았어요</div>`;
+    html+=`</div>`;
+  }else{
+    html+=`<div class="empty" style="padding:20px 0">아직 플래너를 작성하지 않았어요</div>`;
   }
-
-  // 오늘 학습 통계
-  const slots = s.time_slots || {};
-  const checks = s.day_checks || {};
-  const todayKey = new Date().toISOString().slice(0,10);
-  const todaySlots = Object.entries(slots).filter(([k]) => k.startsWith(todayKey)).length;
-  if (todaySlots > 0) {
-    html += `<div class="spy-section"><div class="spy-label">오늘 학습</div>
-      <div style="background:#F6F5F2;border-radius:8px;padding:12px 14px;font-size:13px">
-        시간표 ${todaySlots * 10}분 기록
-      </div></div>`;
-  }
-
-  body.innerHTML = html;
-  document.getElementById('spy-modal').classList.add('open');
+  document.getElementById('spy-body').innerHTML=html;
+  document.getElementById('spy-bg').classList.add('open');
 }
+function closeSpy(){document.getElementById('spy-bg').classList.remove('open');}
 
-function closeSpy() { document.getElementById('spy-modal').classList.remove('open'); }
-
-function showToast(msg) {
-  const t = document.getElementById('toast');
-  t.textContent = msg; t.classList.add('show');
-  setTimeout(() => t.classList.remove('show'), 2200);
-}
+function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2200);}
 
 loadStudents();
 </script>
