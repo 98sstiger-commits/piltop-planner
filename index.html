@@ -818,7 +818,7 @@ function skipCareer(){
 async function fetchSchoolSchedule(){
   if(!S.schoolCode)return generateFallback();
   try{
-    const url=`https://open.neis.go.kr/hub/SchoolSchedule?KEY=demo&Type=json&pIndex=1&pSize=100&ATPT_OFCDC_SC_CODE=${S.schoolOrg}&SD_SCHUL_CODE=${S.schoolCode}&AA_YMD=${YEAR}`;
+    const url=`https://open.neis.go.kr/hub/SchoolSchedule?KEY=6544e426d2dc47f58a653ff11abbe91a&Type=json&pIndex=1&pSize=100&ATPT_OFCDC_SC_CODE=${S.schoolOrg}&SD_SCHUL_CODE=${S.schoolCode}&AA_YMD=${YEAR}`;
     const res=await fetch(url);
     const data=await res.json();
     const rows=data?.SchoolSchedule?.[1]?.row||[];
