@@ -1266,13 +1266,15 @@ function renderMon(){
     const el=document.createElement('div');
     const dayColor=S.dayColors[ds]||'';
     el.className='cd'+(ds===dk(TODAY)?' today':'')+(dow===0?' sun':dow===6?' sat':'');
-    if(dayColor)el.style.background=dayColor;
     let evh='';evs.slice(0,2).forEach(e=>{evh+=`<div class="cev ${tm[e.type]||'school'}">${e.name}</div>`;});
     if(evs.length>2)evh+=`<div class="cd-more">+${evs.length-2}</div>`;
     const memo=S.dayMemos[ds]||'';
     if(memo&&!evs.length){
       const preview=memo.length>8?memo.slice(0,8)+'…':memo;
-      evh+=`<div class="cev user">${preview}</div>`;
+      const colorStyle=dayColor?`background:${dayColor};color:#333;`:'';
+      evh+=`<div class="cev user" style="${colorStyle}">${preview}</div>`;
+    }else if(dayColor&&!evs.length&&!memo){
+      evh+=`<div class="cev user" style="background:${dayColor};color:#333;">　</div>`;
     }
     const st=S.dayStickers[ds]||'';
     el.innerHTML=`<div class="cdn">${d}</div>${st?`<div class="cd-sticker">${st}</div>`:''}<div class="cd-evs">${evh}</div>`;
