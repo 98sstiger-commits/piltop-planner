@@ -645,6 +645,13 @@ textarea{resize:none}
       <div class="sec-lbl">계획 / 메모</div>
       <textarea class="md-memo" id="day-memo" placeholder="이날의 계획을 적어두세요..." rows="4"></textarea>
       <div style="margin-top:12px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+          <div class="sec-lbl" style="margin:0">추가 메모</div>
+          <button onclick="addDayNote()" style="width:26px;height:26px;border-radius:50%;background:var(--g);color:#fff;border:none;font-size:18px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center">+</button>
+        </div>
+        <div id="day-notes-list"></div>
+      </div>
+      <div style="margin-top:12px">
         <div class="sec-lbl">날짜 색상</div>
         <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px" id="color-picker">
           <button onclick="setDayColor(null)" class="color-chip" data-c="" style="width:28px;height:28px;border-radius:50%;background:var(--line2);border:2px solid transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:12px">✕</button>
@@ -866,7 +873,7 @@ let S={
   academy:P.get('academy')||'piltop',
   career:'',careerField:'',u1:'',d1:'',u2:'',d2:'',
   yearlyPlan:{},schoolSched:[],monthGoals:{},monthMemos:{},
-  dayMemos:{},dayChecks:{},dayTl:{},dayStickers:{},dayColors:{},
+  dayMemos:{},dayChecks:{},dayTl:{},dayStickers:{},dayColors:{},dayNotes:{},
   weekGoals:{},weekMemos:{},
   calYear:YEAR,calMonth:TODAY.getMonth(),
   weekStart:getMonday(TODAY),curDay:new Date(TODAY),
@@ -907,6 +914,7 @@ async function loadDB(){
   if(r.day_tl)S.dayTl=r.day_tl;
   if(r.day_stickers)S.dayStickers=r.day_stickers;
   if(r.day_colors)S.dayColors=r.day_colors;
+  if(r.time_slots)S.dayNotes=r.time_slots;
   if(r.week_goals)S.weekGoals=r.week_goals;
   if(r.week_memos)S.weekMemos=r.week_memos;
   // career 입력했거나 yearly_plan 있으면 온보딩 완료로 간주
@@ -932,6 +940,7 @@ async function saveDB(){
         month_goals:S.monthGoals,month_memos:S.monthMemos,
         day_memos:S.dayMemos,day_checks:S.dayChecks,
         day_tl:S.dayTl,day_stickers:S.dayStickers,day_colors:S.dayColors,
+        time_slots:S.dayNotes,
         week_goals:S.weekGoals,week_memos:S.weekMemos,
       })
     });
@@ -1433,6 +1442,7 @@ function openDaySheet(date){
   if(evs.length){evHtml='<div style="margin-bottom:12px">';evs.forEach(e=>{evHtml+=`<div class="md-ev ${tm[e.type]||'school'}"><div class="md-ev-dot"></div><span class="md-ev-name">${e.name}</span><span class="md-ev-type">${e.type==='school-exam'?'내신시험':e.type==='suneung'?'수능':e.type==='holiday'?'방학':e.type==='inter'?'면접':'학교행사'}</span></div>`;});evHtml+='</div>';}
   document.getElementById('day-evs').innerHTML=evHtml;
   document.getElementById('day-memo').value=S.dayMemos[ds]||'';
+  renderDayNotes(ds);
   buildStickerGrid(ds);
   // 현재 색상 표시
   const curColor=S.dayColors[ds]||'';
@@ -1458,6 +1468,39 @@ function setDayColor(color){
 }
 
 function removeSticker(){if(!modalDate)return;delete S.dayStickers[dk(modalDate)];buildStickerGrid(dk(modalDate));}
+
+/* ── 날짜 추가 메모 ── */
+function renderDayNotes(ds){
+  const list=document.getElementById('day-notes-list');
+  if(!list)return;
+  const notes=S.dayNotes[ds]||[];
+  list.innerHTML='';
+  notes.forEach((n,i)=>{
+    const row=document.createElement('div');
+    row.style.cssText='display:flex;align-items:flex-start;gap:6px;margin-bottom:6px;';
+    const ta=document.createElement('textarea');
+    ta.value=n;
+    ta.rows=2;
+    ta.style.cssText='flex:1;border:1px solid var(--line2);border-radius:8px;padding:7px 9px;font-size:13px;color:var(--ink);background:var(--surface);resize:none;line-height:1.6;';
+    ta.oninput=()=>{if(!S.dayNotes[ds])S.dayNotes[ds]=[];S.dayNotes[ds][i]=ta.value;saveDB();};
+    const del=document.createElement('button');
+    del.textContent='×';
+    del.style.cssText='width:24px;height:24px;border:none;background:var(--line2);border-radius:50%;font-size:14px;cursor:pointer;color:var(--ink2);flex-shrink:0;margin-top:4px;';
+    del.onclick=()=>{S.dayNotes[ds].splice(i,1);renderDayNotes(ds);saveDB();};
+    row.appendChild(ta);row.appendChild(del);
+    list.appendChild(row);
+  });
+}
+function addDayNote(){
+  if(!modalDate)return;
+  const ds=dk(modalDate);
+  if(!S.dayNotes[ds])S.dayNotes[ds]=[];
+  S.dayNotes[ds].push('');
+  renderDayNotes(ds);
+  // 마지막 textarea 포커스
+  const tas=document.getElementById('day-notes-list').querySelectorAll('textarea');
+  if(tas.length)tas[tas.length-1].focus();
+}
 function closeDaySheet(){document.getElementById('day-bg').classList.remove('open');}
 async function saveDaySheet(){
   if(!modalDate)return;
