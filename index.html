@@ -13,7 +13,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&family=Playfair+Display:ital,wght@0,700;1,400&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-html,body{height:100%;overflow:hidden}
+html,body{height:100%;overflow:hidden;-webkit-overflow-scrolling:touch}
 body{font-family:'Noto Sans KR',sans-serif;background:#F5F4F1;color:#1A1917;-webkit-font-smoothing:antialiased}
 button{cursor:pointer;border:none;background:none;font-family:inherit}
 input,textarea,select{font-family:inherit;outline:none}
@@ -134,7 +134,7 @@ textarea{resize:none}
 /* 뷰 컨테이너 */
 .views-wrap{flex:1;overflow:hidden;position:relative}
 .views-track{display:flex;width:400%;height:100%;transition:transform .35s cubic-bezier(.4,0,.2,1)}
-.view{width:25%;height:100%;overflow-y:auto;-webkit-overflow-scrolling:touch}
+.view{width:25%;height:100%;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
 .vpad{padding:20px 20px 80px;max-width:860px;margin:0 auto}
 
 @media(min-width:768px){.vpad{padding:28px 32px 60px}}
@@ -174,7 +174,7 @@ textarea{resize:none}
 .mon-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
 .mon-title{font-size:22px;font-weight:700;letter-spacing:-.5px}
 .nav-btns{display:flex;gap:6px}
-.nav-btn{width:30px;height:30px;border-radius:50%;border:1px solid var(--line2);font-size:14px;color:var(--ink2);display:flex;align-items:center;justify-content:center;transition:all .12s}
+.nav-btn{width:30px;height:30px;border-radius:50%;border:1px solid var(--line2);font-size:14px;color:var(--ink2);background:var(--surf);display:flex;align-items:center;justify-content:center;transition:all .12s;-webkit-tap-highlight-color:transparent}
 .nav-btn:active{background:var(--ink);color:#fff;border-color:var(--ink)}
 
 .ai-strip{background:var(--g);border-radius:9px;padding:12px 15px;margin-bottom:14px}
@@ -1163,7 +1163,16 @@ async function saveMcGoal(){
 }
 
 /* ── MONTHLY ── */
-function changeMonth(d){S.calMonth+=d;if(S.calMonth>11){S.calMonth=0;S.calYear++;}if(S.calMonth<0){S.calMonth=11;S.calYear--;}renderMon();}
+function changeMonth(d){
+  S.calMonth+=d;
+  if(S.calMonth>11){
+    if(S.calYear>=YEAR){{S.calMonth=11;return;}} // 현재년도 12월 이후 막기
+    S.calMonth=0;S.calYear++;
+  }
+  if(S.calMonth<0){S.calMonth=11;S.calYear--;}
+  if(S.calYear>YEAR){S.calYear=YEAR;S.calMonth=11;}
+  renderMon();
+}
 
 function renderMon(){
   const mn=['1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월'];
@@ -1198,7 +1207,11 @@ function renderMon(){
     el.className='cd'+(ds===dk(TODAY)?' today':'')+(dow===0?' sun':dow===6?' sat':'');
     let evh='';evs.slice(0,2).forEach(e=>{evh+=`<div class="cev ${tm[e.type]||'school'}">${e.name}</div>`;});
     if(evs.length>2)evh+=`<div class="cd-more">+${evs.length-2}</div>`;
-    if(S.dayMemos[ds]&&!evs.length)evh+=`<div class="cev user">메모</div>`;
+    const memo=S.dayMemos[ds]||'';
+    if(memo&&!evs.length){
+      const preview=memo.length>8?memo.slice(0,8)+'…':memo;
+      evh+=`<div class="cev user">${preview}</div>`;
+    }
     const st=S.dayStickers[ds]||'';
     el.innerHTML=`<div class="cdn">${d}</div>${st?`<div class="cd-sticker">${st}</div>`:''}<div class="cd-evs">${evh}</div>`;
     el.onclick=()=>openDaySheet(date);con.appendChild(el);
