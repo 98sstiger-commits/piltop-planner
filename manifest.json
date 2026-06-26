@@ -1,7 +1,7 @@
 {
-  "name": "나의 학습 플래너",
-  "short_name": "학습 플래너",
-  "description": "AI와 함께 만드는 나만의 학습 다이어리",
+  "name": "플래니 - 나만의 학습 다이어리",
+  "short_name": "플래니",
+  "description": "AI와 함께 만드는 나만의 학습 다이어리, 플래니",
   "start_url": "/index.html",
   "display": "standalone",
   "background_color": "#F5F4F1",
