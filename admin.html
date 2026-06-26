@@ -61,11 +61,7 @@ body{font-family:'Noto Sans KR',sans-serif;background:#F6F5F2;color:#18170F;min-
 .gen-btn:active{opacity:.75}
 
 /* 결과 링크 */
-.link-result{display:none;margin-top:14px;padding:14px 16px;background:var(--gs);border:1px solid var(--green);border-radius:9px}
-.link-result-lbl{font-size:11px;font-weight:500;color:var(--green);margin-bottom:10px}
-.link-btn{display:inline-block;padding:10px 20px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;border:none;transition:all .12s;letter-spacing:.1px}
-.link-btn.copy{background:var(--green);color:#fff}
-.link-btn.copy:hover{opacity:.88}
+.link-result{display:none}
 
 /* 학생 목록 */
 .list-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
@@ -172,10 +168,7 @@ body{font-family:'Noto Sans KR',sans-serif;background:#F6F5F2;color:#18170F;min-
 
       <button class="gen-btn" onclick="generateLink()">링크 생성</button>
 
-      <div class="link-result" id="link-result">
-        <div class="link-result-lbl">링크가 생성됐어요</div>
-        <button class="link-btn copy" onclick="copyLink()">링크 복사</button>
-      </div>
+      <div class="link-result" id="link-result" style="display:none"></div>
 
     </div>
   </div>
