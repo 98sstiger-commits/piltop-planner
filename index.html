@@ -860,7 +860,10 @@ async function loadDB(){
   if(r.day_stickers)S.dayStickers=r.day_stickers;
   if(r.week_goals)S.weekGoals=r.week_goals;
   if(r.week_memos)S.weekMemos=r.week_memos;
-  return Object.keys(S.yearlyPlan).length>0;
+  // yearly_plan 있어야 플래너 진입
+  if(Object.keys(S.yearlyPlan).length>0) return true;
+  // yearly_plan 없으면 false (온보딩으로)
+  return false;
 }
 
 async function saveDB(){
@@ -1056,7 +1059,9 @@ async function startGen(){
   act(2);
   try{S.yearlyPlan=await genPlan();}catch(e){console.error(e);S.yearlyPlan=fallbackPlan();}
   act(3);await tick(500);
+  console.log('플랜 생성완료, 저장 시작. 플랜개수:', Object.keys(S.yearlyPlan).length);
   await saveDB();
+  console.log('저장 완료, 플래너 시작');
   startPlanner();
 }
 
@@ -1225,7 +1230,12 @@ function renderMon(){
 }
 
 /* ── WEEKLY ── */
-function changeWeek(d){S.weekStart.setDate(S.weekStart.getDate()+d*7);renderWk();}
+function changeWeek(d){
+  const next=new Date(S.weekStart);
+  next.setDate(next.getDate()+d*7);
+  if(next.getFullYear()>YEAR)return; // 현재 연도 초과 막기
+  S.weekStart=next;renderWk();
+}
 function renderWk(){
   const ws=S.weekStart,we=new Date(ws);we.setDate(we.getDate()+6);
   const fmt=d=>`${d.getMonth()+1}/${d.getDate()}`;
@@ -1256,7 +1266,12 @@ function renderWk(){
 }
 
 /* ── DAILY ── */
-function changeDay(d){S.curDay.setDate(S.curDay.getDate()+d);renderDy();}
+function changeDay(d){
+  const next=new Date(S.curDay);
+  next.setDate(next.getDate()+d);
+  if(next.getFullYear()>YEAR)return; // 현재 연도 초과 막기
+  S.curDay=next;renderDy();
+}
 function renderDy(){
   const d=S.curDay;
   document.getElementById('dy-en').textContent=DOWE[d.getDay()];
@@ -1396,7 +1411,13 @@ buildProg();
     }));
 
     const loaded=await loadDB();
-    if(loaded){startPlanner();return;}
+    if(loaded){
+      // yearly_plan 있으면 바로 플래너
+      startPlanner();return;
+    } else {
+      // yearly_plan 없어도 row가 있으면 (온보딩 미완료 상태)
+      // 이름은 표시하고 온보딩 진행
+    }
   }
 
   // 이름 반영 (온보딩)
