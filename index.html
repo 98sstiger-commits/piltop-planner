@@ -4,6 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>학습 플래너</title>
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#1A4731">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="플래너">
+<meta name="mobile-web-app-capable" content="yes">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&family=Playfair+Display:ital,wght@0,700;1,400&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
@@ -267,11 +273,11 @@ textarea{resize:none}
 .tl-card.done-card .tl-card-ttl{text-decoration:line-through}
 .tl-bar{width:3px;flex-shrink:0}
 .tl-card-body{flex:1;padding:10px 12px}
-.tl-card-top{display:flex;align-items:center;gap:7px;margin-bottom:3px}
+.tl-card-top{display:flex;align-items:center;gap:7px;margin-bottom:5px}
 .tl-cat-badge{font-size:10px;font-weight:700;padding:2px 7px;border-radius:6px}
-.tl-card-time{font-size:10px;color:var(--ink2);margin-left:auto;flex-shrink:0}
-.tl-card-ttl{font-size:13px;font-weight:500;color:var(--ink);line-height:1.4}
-.tl-card-detail{font-size:11px;color:var(--ink2);margin-top:2px;line-height:1.5}
+.tl-card-time{font-size:13px;font-weight:700;color:var(--ink);margin-left:auto;flex-shrink:0;letter-spacing:-.3px}
+.tl-card-ttl{font-size:14px;font-weight:600;color:var(--ink);line-height:1.4}
+.tl-card-detail{font-size:12px;color:var(--ink2);margin-top:3px;line-height:1.5}
 
 /* 체크리스트 */
 .cl-list{display:flex;flex-direction:column}
@@ -366,6 +372,16 @@ textarea{resize:none}
 .mc-goal-input:focus{border-color:var(--g);background:#fff}
 .mc-goal-input::placeholder{color:var(--ink3)}
 
+
+/* PWA 설치 배너 */
+.install-banner{position:fixed;bottom:0;left:0;right:0;background:var(--g);padding:14px 20px;display:flex;align-items:center;gap:12px;z-index:500;transform:translateY(100%);transition:transform .3s cubic-bezier(.4,0,.2,1);box-shadow:0 -4px 20px rgba(0,0,0,.2)}
+.install-banner.show{transform:translateY(0)}
+.install-banner-icon{font-size:28px;flex-shrink:0}
+.install-banner-txt{flex:1}
+.install-banner-title{font-size:13px;font-weight:700;color:#fff;margin-bottom:2px}
+.install-banner-sub{font-size:11px;color:rgba(255,255,255,.65);line-height:1.4}
+.install-banner-btn{padding:8px 16px;background:#fff;color:var(--g);border-radius:8px;font-size:12px;font-weight:700;border:none;cursor:pointer;flex-shrink:0;white-space:nowrap}
+.install-banner-close{color:rgba(255,255,255,.5);font-size:20px;padding:4px;cursor:pointer;flex-shrink:0}
 /* toast */
 .toast{position:fixed;bottom:calc(20px + env(safe-area-inset-bottom,0px));left:50%;transform:translateX(-50%) translateY(5px);background:var(--ink);color:#fff;padding:9px 20px;border-radius:20px;font-size:12px;font-weight:500;opacity:0;transition:all .2s;pointer-events:none;z-index:999;white-space:nowrap}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
@@ -726,6 +742,17 @@ textarea{resize:none}
   </div>
 </div>
 
+
+<!-- PWA 설치 배너 -->
+<div class="install-banner" id="install-banner">
+  <div class="install-banner-icon">📖</div>
+  <div class="install-banner-txt">
+    <div class="install-banner-title">홈 화면에 추가하기</div>
+    <div class="install-banner-sub">앱처럼 바로 열 수 있어요</div>
+  </div>
+  <button class="install-banner-btn" id="install-btn">설치</button>
+  <button class="install-banner-close" onclick="dismissInstall()">×</button>
+</div>
 <div class="toast" id="toast"></div>
 
 <script src="univ-data.js"></script>
@@ -735,7 +762,8 @@ const SB="https://zmtldohklivkzpfdyflc.supabase.co";
 const SK="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InptdGxkb2hrbGl2a3pwZmR5ZmxjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI5NjgxMDQsImV4cCI6MjA4ODU0NDEwNH0.cv1WrvDzNedVZABWyRCS9ARRxf4Si9qgeUqEvhpHWlo";
 const NEIS="6544e426d2dc47f58a653ff11abbe91a";
 const TODAY=new Date();
-const YEAR=TODAY.getFullYear();
+const URL_YEAR = parseInt(new URLSearchParams(location.search).get('year')||'0');
+const YEAR = URL_YEAR || TODAY.getFullYear();
 const MON=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 const DOW=['일','월','화','수','목','금','토'];
 const DOWE=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
@@ -822,7 +850,8 @@ async function loadDB(){
   if(r.u1)S.u1=r.u1;if(r.d1)S.d1=r.d1;
   if(r.u2)S.u2=r.u2;if(r.d2)S.d2=r.d2;
   if(r.yearly_plan&&Object.keys(r.yearly_plan).length)S.yearlyPlan=r.yearly_plan;
-  if(r.school_schedule)S.schoolSched=r.school_schedule;
+  // 학사일정은 항상 최신으로 갱신 (링크 열 때마다)
+  // DB에 저장된 것은 백업으로만 사용
   if(r.month_goals)S.monthGoals=r.month_goals;
   if(r.month_memos)S.monthMemos=r.month_memos;
   if(r.day_memos)S.dayMemos=r.day_memos;
@@ -971,15 +1000,34 @@ function clearDept(k){
 ['d1','d2'].forEach(k=>{document.getElementById(`${k}-inp`).addEventListener('focus',()=>searchDept(k,''));});
 
 /* ── NEIS ── */
-async function fetchNeis(){
-  if(!S.sc)return fallback();
+async function fetchHolidays(){
   try{
-    const url=`https://open.neis.go.kr/hub/SchoolSchedule?KEY=${NEIS}&Type=json&pIndex=1&pSize=100&ATPT_OFCDC_SC_CODE=${S.so}&SD_SCHUL_CODE=${S.sc}&AA_YMD=${YEAR}`;
+    const url=`https://apis.data.go.kr/B090041/openapi/service/SpcdeInfoService/getRestDeInfo?solYear=${YEAR}&numOfRows=50&_type=json&ServiceKey=Ew%2BHhz9bMxCm7oHMFqNd%2BHzNz%2BT2xGqPf8n4qGxqR7H6H%2BzMpFLFKsQ%2BQvs6%2FKBJhzXd3QpKYlBLX0eNtDhA%3D%3D`;
     const res=await fetch(url);const data=await res.json();
-    const rows=data?.SchoolSchedule?.[1]?.row||[];
-    if(!rows.length)return fallback();
-    return rows.map(r=>({date:`${r.AA_YMD.slice(0,4)}-${r.AA_YMD.slice(4,6)}-${r.AA_YMD.slice(6,8)}`,name:r.EVENT_NM,type:r.EVENT_NM.includes('시험')||r.EVENT_NM.includes('고사')?'school-exam':r.EVENT_NM.includes('방학')?'holiday':'school'}));
-  }catch{return fallback();}
+    const items=data?.response?.body?.items?.item||[];
+    const arr=Array.isArray(items)?items:[items];
+    return arr.filter(i=>i.isHoliday==='Y').map(i=>{
+      const d=String(i.locdate);
+      return{date:`${d.slice(0,4)}-${d.slice(4,6)}-${d.slice(6,8)}`,name:i.dateName,type:'holiday'};
+    });
+  }catch{return[];}
+}
+
+async function fetchNeis(){
+  const [schoolRows, holidays] = await Promise.all([
+    (async()=>{
+      if(!S.sc)return[];
+      try{
+        const url=`https://open.neis.go.kr/hub/SchoolSchedule?KEY=${NEIS}&Type=json&pIndex=1&pSize=200&ATPT_OFCDC_SC_CODE=${S.so}&SD_SCHUL_CODE=${S.sc}&AA_YMD=${YEAR}`;
+        const res=await fetch(url);const data=await res.json();
+        const rows=data?.SchoolSchedule?.[1]?.row||[];
+        return rows.map(r=>({date:`${r.AA_YMD.slice(0,4)}-${r.AA_YMD.slice(4,6)}-${r.AA_YMD.slice(6,8)}`,name:r.EVENT_NM,type:r.EVENT_NM.includes('시험')||r.EVENT_NM.includes('고사')?'school-exam':r.EVENT_NM.includes('방학')?'holiday':'school'}));
+      }catch{return[];}
+    })(),
+    fetchHolidays()
+  ]);
+  const combined=[...holidays,...schoolRows];
+  return combined.length>holidays.length?combined:([...fallback(),...holidays]);
 }
 function fallback(){
   const y=YEAR,h=S.school.includes('고');
@@ -1004,7 +1052,7 @@ async function genPlan(){
 async function startGen(){
   const act=i=>{['gs1','gs2','gs3','gs4'].forEach((id,j)=>{const el=document.getElementById(id);el.classList.remove('active','done');if(j<i)el.classList.add('done');if(j===i)el.classList.add('active');});};
   act(0);await tick(400);
-  S.schoolSched=await fetchNeis();
+  S.schoolSched=await fetchNeis(); // 항상 최신 학사일정 가져오기
   act(1);await tick(300);
   act(2);
   try{S.yearlyPlan=await genPlan();}catch(e){console.error(e);S.yearlyPlan=fallbackPlan();}
@@ -1303,6 +1351,47 @@ buildProg();
 (async()=>{
   if(S.id){const loaded=await loadDB();if(loaded){startPlanner();return;}}
 })();
+
+
+// ── PWA ──
+if('serviceWorker' in navigator){
+  window.addEventListener('load', ()=>{
+    navigator.serviceWorker.register('/sw.js').catch(()=>{});
+  });
+}
+
+let deferredPrompt = null;
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  deferredPrompt = e;
+  // 설치 안 했고 배너 닫은 적 없으면 표시
+  if(!localStorage.getItem('pwa-dismissed')){
+    setTimeout(()=>document.getElementById('install-banner')?.classList.add('show'), 2000);
+  }
+});
+
+window.addEventListener('appinstalled', ()=>{
+  document.getElementById('install-banner')?.classList.remove('show');
+  deferredPrompt = null;
+});
+
+document.getElementById('install-btn')?.addEventListener('click', async ()=>{
+  if(deferredPrompt){
+    deferredPrompt.prompt();
+    const {outcome} = await deferredPrompt.userChoice;
+    if(outcome==='accepted') document.getElementById('install-banner')?.classList.remove('show');
+    deferredPrompt = null;
+  } else {
+    // iOS 안내
+    toast('Safari 하단 공유 버튼 → "홈 화면에 추가" 탭하세요');
+    dismissInstall();
+  }
+});
+
+function dismissInstall(){
+  document.getElementById('install-banner')?.classList.remove('show');
+  localStorage.setItem('pwa-dismissed','1');
+}
 </script>
 </body>
 </html>
