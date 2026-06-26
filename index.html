@@ -331,9 +331,9 @@ textarea{resize:none}
 .s-btn.del{background:#FEE8E8;color:#8A1A1A;border:none}
 
 /* 카테고리 그리드 */
-.cat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:12px}
-.cat-btn{padding:9px 4px;border-radius:8px;font-size:11px;font-weight:600;text-align:center;border:1.5px solid transparent;transition:all .1s;cursor:pointer;line-height:1.3}
-.cat-btn.sel{border-color:rgba(0,0,0,.2);filter:brightness(.88)}
+.cat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:5px;margin-bottom:12px}
+.cat-btn{padding:8px 4px;border-radius:8px;font-size:11px;font-weight:600;text-align:center;border:2px solid transparent;transition:all .12s;cursor:pointer;line-height:1.3}
+.cat-btn.sel{border-color:rgba(0,0,0,.25);transform:scale(.97);filter:brightness(.9)}
 
 .sec-lbl{font-size:10px;font-weight:700;letter-spacing:.7px;text-transform:uppercase;color:var(--ink3);margin-bottom:7px;margin-top:4px}
 
@@ -645,6 +645,18 @@ textarea{resize:none}
       <div class="sec-lbl">계획 / 메모</div>
       <textarea class="md-memo" id="day-memo" placeholder="이날의 계획을 적어두세요..." rows="4"></textarea>
       <div style="margin-top:12px">
+        <div class="sec-lbl">날짜 색상</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px" id="color-picker">
+          <button onclick="setDayColor(null)" class="color-chip" data-c="" style="width:28px;height:28px;border-radius:50%;background:var(--line2);border:2px solid transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:12px">✕</button>
+          <button onclick="setDayColor('#FFE4E4')" class="color-chip" data-c="#FFE4E4" style="width:28px;height:28px;border-radius:50%;background:#FFE4E4;border:2px solid transparent;cursor:pointer"></button>
+          <button onclick="setDayColor('#FFD6A5')" class="color-chip" data-c="#FFD6A5" style="width:28px;height:28px;border-radius:50%;background:#FFD6A5;border:2px solid transparent;cursor:pointer"></button>
+          <button onclick="setDayColor('#FFFACD')" class="color-chip" data-c="#FFFACD" style="width:28px;height:28px;border-radius:50%;background:#FFFACD;border:2px solid transparent;cursor:pointer"></button>
+          <button onclick="setDayColor('#CCFFCC')" class="color-chip" data-c="#CCFFCC" style="width:28px;height:28px;border-radius:50%;background:#CCFFCC;border:2px solid transparent;cursor:pointer"></button>
+          <button onclick="setDayColor('#CCE5FF')" class="color-chip" data-c="#CCE5FF" style="width:28px;height:28px;border-radius:50%;background:#CCE5FF;border:2px solid transparent;cursor:pointer"></button>
+          <button onclick="setDayColor('#E8CCFF')" class="color-chip" data-c="#E8CCFF" style="width:28px;height:28px;border-radius:50%;background:#E8CCFF;border:2px solid transparent;cursor:pointer"></button>
+          <button onclick="setDayColor('#FFCCF0')" class="color-chip" data-c="#FFCCF0" style="width:28px;height:28px;border-radius:50%;background:#FFCCF0;border:2px solid transparent;cursor:pointer"></button>
+          <button onclick="setDayColor('#E0E0E0')" class="color-chip" data-c="#E0E0E0" style="width:28px;height:28px;border-radius:50%;background:#E0E0E0;border:2px solid transparent;cursor:pointer"></button>
+        </div>
         <div class="sec-lbl">스티커</div>
         <div class="sticker-grid" id="sticker-grid"></div>
         <button class="sticker-rm" id="sticker-rm" onclick="removeSticker()" style="display:none">스티커 제거</button>
@@ -854,7 +866,7 @@ let S={
   academy:P.get('academy')||'piltop',
   career:'',careerField:'',u1:'',d1:'',u2:'',d2:'',
   yearlyPlan:{},schoolSched:[],monthGoals:{},monthMemos:{},
-  dayMemos:{},dayChecks:{},dayTl:{},dayStickers:{},
+  dayMemos:{},dayChecks:{},dayTl:{},dayStickers:{},dayColors:{},
   weekGoals:{},weekMemos:{},
   calYear:YEAR,calMonth:TODAY.getMonth(),
   weekStart:getMonday(TODAY),curDay:new Date(TODAY),
@@ -894,6 +906,7 @@ async function loadDB(){
   if(r.day_checks)S.dayChecks=r.day_checks;
   if(r.day_tl)S.dayTl=r.day_tl;
   if(r.day_stickers)S.dayStickers=r.day_stickers;
+  if(r.day_colors)S.dayColors=r.day_colors;
   if(r.week_goals)S.weekGoals=r.week_goals;
   if(r.week_memos)S.weekMemos=r.week_memos;
   // career 입력했거나 yearly_plan 있으면 온보딩 완료로 간주
@@ -918,7 +931,7 @@ async function saveDB(){
         yearly_plan:S.yearlyPlan,school_schedule:S.schoolSched,
         month_goals:S.monthGoals,month_memos:S.monthMemos,
         day_memos:S.dayMemos,day_checks:S.dayChecks,
-        day_tl:S.dayTl,day_stickers:S.dayStickers,
+        day_tl:S.dayTl,day_stickers:S.dayStickers,day_colors:S.dayColors,
         week_goals:S.weekGoals,week_memos:S.weekMemos,
       })
     });
@@ -1251,7 +1264,9 @@ function renderMon(){
     const evs=getEvs(ds);
     const tm={'school-exam':'exam',suneung:'suneung',inter:'inter',school:'school',holiday:'school',exam:'exam'};
     const el=document.createElement('div');
+    const dayColor=S.dayColors[ds]||'';
     el.className='cd'+(ds===dk(TODAY)?' today':'')+(dow===0?' sun':dow===6?' sat':'');
+    if(dayColor)el.style.background=dayColor;
     let evh='';evs.slice(0,2).forEach(e=>{evh+=`<div class="cev ${tm[e.type]||'school'}">${e.name}</div>`;});
     if(evs.length>2)evh+=`<div class="cd-more">+${evs.length-2}</div>`;
     const memo=S.dayMemos[ds]||'';
@@ -1416,14 +1431,30 @@ function openDaySheet(date){
   if(evs.length){evHtml='<div style="margin-bottom:12px">';evs.forEach(e=>{evHtml+=`<div class="md-ev ${tm[e.type]||'school'}"><div class="md-ev-dot"></div><span class="md-ev-name">${e.name}</span><span class="md-ev-type">${e.type==='school-exam'?'내신시험':e.type==='suneung'?'수능':e.type==='holiday'?'방학':e.type==='inter'?'면접':'학교행사'}</span></div>`;});evHtml+='</div>';}
   document.getElementById('day-evs').innerHTML=evHtml;
   document.getElementById('day-memo').value=S.dayMemos[ds]||'';
-  buildStickerGrid(ds);document.getElementById('day-bg').classList.add('open');
+  buildStickerGrid(ds);
+  // 현재 색상 표시
+  const curColor=S.dayColors[ds]||'';
+  document.querySelectorAll('.color-chip').forEach(b=>{
+    b.style.border=b.dataset.c===curColor?'2.5px solid #333':'2px solid transparent';
+  });
+  document.getElementById('day-bg').classList.add('open');
 }
 function buildStickerGrid(ds){
   const grid=document.getElementById('sticker-grid'),cur=S.dayStickers[ds]||'';
   document.getElementById('sticker-rm').style.display=cur?'block':'none';
   grid.innerHTML='';
-  STICKERS.forEach(s=>{const b=document.createElement('button');b.className='sticker-btn'+(cur===s?' sel':'');b.textContent=s;b.onclick=()=>{S.dayStickers[ds]=cur===s?'':s;buildStickerGrid(ds);};grid.appendChild(b);});
+  STICKERS.forEach(s=>{const b=document.createElement('button');b.className='sticker-btn'+(cur===s?' sel':'');b.textContent=s;b.onclick=()=>{S.dayStickers[ds]=cur===s?'':s;buildStickerGrid(ds);saveDB();};grid.appendChild(b);});
 }
+function setDayColor(color){
+  if(!modalDate)return;
+  const ds=dk(modalDate);
+  if(color){S.dayColors[ds]=color;}else{delete S.dayColors[ds];}
+  // 색상칩 선택 표시
+  document.querySelectorAll('.color-chip').forEach(b=>{
+    b.style.border=b.dataset.c===( color||'') ? '2.5px solid #333' : '2px solid transparent';
+  });
+}
+
 function removeSticker(){if(!modalDate)return;delete S.dayStickers[dk(modalDate)];buildStickerGrid(dk(modalDate));}
 function closeDaySheet(){document.getElementById('day-bg').classList.remove('open');}
 async function saveDaySheet(){
