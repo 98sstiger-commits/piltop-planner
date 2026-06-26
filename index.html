@@ -366,7 +366,7 @@ textarea{resize:none}
 .md-memo::placeholder{color:var(--ink3)}
 
 /* 스티커 */
-.sticker-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:5px;margin-bottom:8px}
+.sticker-grid{display:grid;grid-template-columns:repeat(8,1fr);gap:4px;margin-bottom:8px}
 .sticker-btn{font-size:22px;text-align:center;padding:7px;border-radius:7px;border:1.5px solid transparent;cursor:pointer;transition:all .1s}
 .sticker-btn:active,.sticker-btn.sel{background:var(--gs);border-color:var(--g)}
 .sticker-rm{width:100%;padding:9px;font-size:12px;font-weight:600;color:#8A1A1A;background:#FEE8E8;border-radius:7px;margin-bottom:6px;cursor:pointer}
@@ -820,7 +820,22 @@ const CATS=[
   {k:'etc',l:'기타',c:'#A8A49E',bg:'#F4F3F0',t:'#4A4840'},
 ];
 
-const STICKERS=['⭐','💯','🔥','✅','💪','📖','✏️','🎯','🌟','💝','🌈','🎉','😊','🤔','😴','🍎','☕','🌸','🦋','🐰','🍀','🎵','🎨','🏆'];
+const STICKERS=[
+  // 감정/표정
+  '😊','😍','🥰','😎','🤩','😴','😭','🥹','😤','🤔','😅','🤗','😇','🥳','😬',
+  // 응원/성취
+  '⭐','🌟','💯','🔥','✅','💪','🎯','🏆','🥇','🎖️','👑','✨','💫','🚀','⚡',
+  // 공부/학습
+  '📖','✏️','📝','📚','🖊️','📐','🔬','💡','🧠','📊','🎓','🏫','📓','📒','🖋️',
+  // 자연/식물
+  '🌸','🌺','🌻','🌹','🍀','🌈','☀️','🌙','⭐','🌊','🍃','🌿','🌱','🪷','🌷',
+  // 음식/음료
+  '🍎','🍊','🍋','🍇','🍓','🍕','🍜','☕','🧋','🍰','🍫','🍬','🍭','🥤','🧃',
+  // 동물
+  '🐰','🐱','🐶','🐻','🦊','🐼','🐨','🦁','🐯','🦋','🐝','🦄','🐸','🦉','🐧',
+  // 기타
+  '💝','💖','💗','💓','🎵','🎶','🎨','🎭','🎪','🎠','🌠','🎇','🎆','🪄','🎊',
+];
 
 const EXAM_SCHED=[
   {date:`${YEAR}-09-01`,name:'수시 원서접수 시작',type:'suneung',grades:['3']},
