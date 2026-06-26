@@ -1299,7 +1299,8 @@ function renderDy(){
   // 오늘의 명언 — 날짜 기반으로 매일 바뀜
   if(typeof QUOTES !== 'undefined' && QUOTES.length){
     const dayOfYear=Math.floor((d-new Date(d.getFullYear(),0,0))/(1000*60*60*24));
-    const q=QUOTES[dayOfYear % QUOTES.length];
+    const seed=(dayOfYear*31+d.getFullYear()*7)%QUOTES.length;
+    const q=QUOTES[seed];
     document.getElementById('dy-quote-txt').textContent=`"${q.q}"`;
     document.getElementById('dy-quote-en').textContent=q.lang==='en'&&q.k?`"${q.k}"`:'' ;
     document.getElementById('dy-quote-author').textContent=`— ${q.a}`;
