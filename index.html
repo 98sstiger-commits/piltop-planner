@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>학습 플래너</title>
-<link rel="manifest" href="/manifest.json" id="manifest-link">
+<link rel="manifest" href="/manifest.json">
 <meta name="theme-color" content="#1A4731">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -864,15 +864,16 @@ async function loadDB(){
 }
 
 async function saveDB(){
-  if(!S.id)return;
+  if(!S.id){console.warn('saveDB: id없음');return;}
   // PWA 재접속용 로컬 저장
   localStorage.setItem('planner-student-id', S.id);
   localStorage.setItem('planner-student-params', JSON.stringify({
     name:S.name, school:S.school, grade:S.grade,
     sc:S.sc, so:S.so, academy:S.academy
   }));
+  console.log('saveDB 시작:', S.id);
   try{
-    await sb(`planner_students?id=eq.${S.id}`,{
+    const result = await sb(`planner_students?id=eq.${S.id}`,{
       method:'PATCH',
       body:JSON.stringify({
         career:S.career,career_field:S.careerField,
@@ -1380,21 +1381,6 @@ buildProg();
       name:S.name, school:S.school, grade:S.grade,
       sc:S.sc, so:S.so, academy:S.academy
     }));
-
-    // manifest start_url을 현재 URL로 동적 설정
-    const fullUrl=location.href;
-    const manifestData={
-      name:'나의 학습 플래너',
-      short_name:S.name?S.name+'의 플래너':'학습 플래너',
-      start_url:fullUrl,
-      display:'standalone',
-      background_color:'#F5F4F1',
-      theme_color:'#1A4731',
-      icons:[{src:'/icon.svg',sizes:'any',type:'image/svg+xml',purpose:'any maskable'}]
-    };
-    const blob=new Blob([JSON.stringify(manifestData)],{type:'application/json'});
-    const manifestUrl=URL.createObjectURL(blob);
-    document.getElementById('manifest-link').href=manifestUrl;
 
     const loaded=await loadDB();
     if(loaded){startPlanner();return;}
