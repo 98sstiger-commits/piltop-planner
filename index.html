@@ -1281,8 +1281,8 @@ function renderMon(){
     const memo=S.dayMemos[ds]||'';
     if(memo){const preview=memo.length>8?memo.slice(0,8)+'…':memo;evh+=`<div class="cev user" style="${colorStyle}">${preview}</div>`;}
     else if(dayColor)evh+=`<div class="cev user" style="${colorStyle}">　</div>`;
-    const notes=S.dayNotes[ds]||[];
-    notes.forEach(n=>{if(!n)return;const p=n.length>8?n.slice(0,8)+'…':n;evh+=`<div class="cev user" style="${colorStyle}">${p}</div>`;});
+    const notes=(S.dayNotes[ds]||[]).map(n=>(typeof n==='object'&&n)?n:{text:String(n||''),color:''});
+    notes.forEach(n=>{if(!n.text)return;const p=n.text.length>8?n.text.slice(0,8)+'…':n.text;const cs=n.color?`background:${n.color};color:#555;`:'';evh+=`<div class="cev user" style="${cs}">${p}</div>`;});
     const st=S.dayStickers[ds]||'';
     el.innerHTML=`<div class="cdn">${d}</div>${st?`<div class="cd-sticker">${st}</div>`:''}<div class="cd-evs">${evh}</div>`;
     el.onclick=()=>openDaySheet(date);con.appendChild(el);
@@ -1468,34 +1468,67 @@ function setDayColor(color){
 function removeSticker(){if(!modalDate)return;delete S.dayStickers[dk(modalDate)];buildStickerGrid(dk(modalDate));}
 
 /* ── 날짜 추가 메모 ── */
+const NOTE_COLORS=['#FFE4E4','#FFD6A5','#FFFACD','#CCFFCC','#CCE5FF','#E8CCFF','#FFCCF0','#E0E0E0'];
+function getNoteObj(n){return(typeof n==='object'&&n!==null)?n:{text:String(n||''),color:''};}
 function renderDayNotes(ds){
   const list=document.getElementById('day-notes-list');
   if(!list)return;
-  const notes=S.dayNotes[ds]||[];
+  const notes=(S.dayNotes[ds]||[]).map(getNoteObj);
   list.innerHTML='';
   notes.forEach((n,i)=>{
     const row=document.createElement('div');
-    row.style.cssText='display:flex;align-items:flex-start;gap:6px;margin-bottom:6px;';
+    row.style.cssText='display:flex;align-items:flex-start;gap:6px;margin-bottom:6px;position:relative;';
+    // 색상 점
+    const dot=document.createElement('button');
+    dot.style.cssText=`width:18px;height:18px;border-radius:50%;background:${n.color||'var(--line2)'};border:2px solid rgba(0,0,0,.1);cursor:pointer;flex-shrink:0;margin-top:8px;padding:0;`;
+    dot.onclick=(e)=>{e.stopPropagation();showNoteColorPicker(ds,i,dot);};
     const ta=document.createElement('textarea');
-    ta.value=n;
+    ta.value=n.text;
     ta.rows=2;
-    ta.style.cssText='flex:1;border:1px solid var(--line2);border-radius:8px;padding:7px 9px;font-size:13px;color:var(--ink);background:var(--surface);resize:none;line-height:1.6;';
-    ta.oninput=()=>{if(!S.dayNotes[ds])S.dayNotes[ds]=[];S.dayNotes[ds][i]=ta.value;saveDB();};
+    const bg=n.color?n.color+'33':'var(--surface)';
+    ta.style.cssText=`flex:1;border:1px solid ${n.color||'var(--line2)'};border-radius:8px;padding:7px 9px;font-size:13px;color:var(--ink);background:${bg};resize:none;line-height:1.6;`;
+    ta.oninput=()=>{const arr=S.dayNotes[ds]||[];arr[i]={...getNoteObj(arr[i]),text:ta.value};S.dayNotes[ds]=arr;saveDB();};
     const del=document.createElement('button');
     del.textContent='×';
-    del.style.cssText='width:24px;height:24px;border:none;background:var(--line2);border-radius:50%;font-size:14px;cursor:pointer;color:var(--ink2);flex-shrink:0;margin-top:4px;';
-    del.onclick=()=>{S.dayNotes[ds].splice(i,1);renderDayNotes(ds);saveDB();};
-    row.appendChild(ta);row.appendChild(del);
+    del.style.cssText='width:22px;height:22px;border:none;background:var(--line2);border-radius:50%;font-size:13px;cursor:pointer;color:var(--ink2);flex-shrink:0;margin-top:6px;';
+    del.onclick=()=>{S.dayNotes[ds].splice(i,1);renderDayNotes(ds);renderMon();saveDB();};
+    row.appendChild(dot);row.appendChild(ta);row.appendChild(del);
     list.appendChild(row);
   });
+}
+function showNoteColorPicker(ds,i,anchor){
+  document.querySelectorAll('.note-cp').forEach(el=>el.remove());
+  const picker=document.createElement('div');
+  picker.className='note-cp';
+  picker.style.cssText='position:absolute;display:flex;gap:5px;flex-wrap:wrap;background:#fff;border:1px solid var(--line2);border-radius:10px;padding:7px;box-shadow:0 4px 16px rgba(0,0,0,.12);z-index:200;width:180px;';
+  const none=document.createElement('button');
+  none.style.cssText='width:22px;height:22px;border-radius:50%;background:var(--line2);border:1px solid rgba(0,0,0,.1);cursor:pointer;font-size:11px;';
+  none.textContent='✕';
+  none.onclick=(e)=>{e.stopPropagation();setNoteColor(ds,i,'');picker.remove();};
+  picker.appendChild(none);
+  NOTE_COLORS.forEach(c=>{
+    const b=document.createElement('button');
+    b.style.cssText=`width:22px;height:22px;border-radius:50%;background:${c};border:1px solid rgba(0,0,0,.1);cursor:pointer;`;
+    b.onclick=(e)=>{e.stopPropagation();setNoteColor(ds,i,c);picker.remove();};
+    picker.appendChild(b);
+  });
+  anchor.parentNode.insertBefore(picker,anchor.nextSibling);
+  picker.style.left=anchor.offsetLeft+'px';
+  picker.style.top=(anchor.offsetTop+24)+'px';
+  setTimeout(()=>document.addEventListener('click',()=>picker.remove(),{once:true}),0);
+}
+function setNoteColor(ds,i,color){
+  const arr=S.dayNotes[ds]||[];
+  arr[i]={...getNoteObj(arr[i]),color};
+  S.dayNotes[ds]=arr;
+  renderDayNotes(ds);renderMon();saveDB();
 }
 function addDayNote(){
   if(!modalDate)return;
   const ds=dk(modalDate);
   if(!S.dayNotes[ds])S.dayNotes[ds]=[];
-  S.dayNotes[ds].push('');
+  S.dayNotes[ds].push({text:'',color:''});
   renderDayNotes(ds);
-  // 마지막 textarea 포커스
   const tas=document.getElementById('day-notes-list').querySelectorAll('textarea');
   if(tas.length)tas[tas.length-1].focus();
 }
