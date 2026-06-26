@@ -62,14 +62,10 @@ body{font-family:'Noto Sans KR',sans-serif;background:#F6F5F2;color:#18170F;min-
 
 /* 결과 링크 */
 .link-result{display:none;margin-top:14px;padding:14px 16px;background:var(--gs);border:1px solid var(--green);border-radius:9px}
-.link-result-lbl{font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--green);margin-bottom:6px}
-.link-url{font-size:12px;color:#18170F;word-break:break-all;line-height:1.6;margin-bottom:12px;padding:8px 10px;background:rgba(26,71,49,.06);border-radius:6px;font-family:monospace}
-.link-btns{display:flex;gap:8px}
-.link-btn{flex:1;padding:10px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;border:none;transition:all .12s;letter-spacing:.1px}
+.link-result-lbl{font-size:11px;font-weight:500;color:var(--green);margin-bottom:10px}
+.link-btn{display:inline-block;padding:10px 20px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;border:none;transition:all .12s;letter-spacing:.1px}
 .link-btn.copy{background:var(--green);color:#fff}
 .link-btn.copy:hover{opacity:.88}
-.link-btn.kakao{background:#FEE500;color:#3C1E1E}
-.link-btn.kakao:hover{opacity:.88}
 
 /* 학생 목록 */
 .list-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
@@ -144,40 +140,33 @@ body{font-family:'Noto Sans KR',sans-serif;background:#F6F5F2;color:#18170F;min-
       </div>
 
       <div class="field">
-        <div class="f-row col2">
-          <div>
-            <label class="field-label">학교</label>
-            <div class="school-wrap">
-              <input class="f-input" id="s-school-input" placeholder="학교명 검색..." autocomplete="off" oninput="searchSchool(this.value)">
-              <div class="school-dd" id="school-dd"></div>
-            </div>
-            <div class="school-chip" id="school-chip">
-              <span id="school-chip-text"></span>
-              <button onclick="clearSchool()">×</button>
-            </div>
-            <div class="school-hint">학교명을 2글자 이상 입력하면 검색돼요.<br>검색 안 되면 직접 입력 후 학년만 선택하세요.</div>
-          </div>
-          <div>
-            <label class="field-label">학년</label>
-            <select class="f-select" id="s-grade">
-              <option value="">선택</option>
-              <option value="1">1학년</option>
-              <option value="2">2학년</option>
-              <option value="3">3학년</option>
-            </select>
-          </div>
+        <label class="field-label">학교</label>
+        <div class="school-wrap">
+          <input class="f-input" id="s-school-input" placeholder="학교명 검색..." autocomplete="off" oninput="searchSchool(this.value)">
+          <div class="school-dd" id="school-dd"></div>
         </div>
+        <div class="school-chip" id="school-chip">
+          <span id="school-chip-text"></span>
+          <button onclick="clearSchool()">×</button>
+        </div>
+        <div class="school-hint">학교명 2글자 이상 입력하면 검색돼요.</div>
+      </div>
+
+      <div class="field">
+        <label class="field-label">학년</label>
+        <select class="f-select" id="s-grade">
+          <option value="">선택</option>
+          <option value="1">1학년</option>
+          <option value="2">2학년</option>
+          <option value="3">3학년</option>
+        </select>
       </div>
 
       <button class="gen-btn" onclick="generateLink()">링크 생성</button>
 
       <div class="link-result" id="link-result">
-        <div class="link-result-lbl">생성된 링크</div>
-        <div class="link-url" id="link-url"></div>
-        <div class="link-btns">
-          <button class="link-btn copy" onclick="copyLink()">링크 복사</button>
-          <button class="link-btn kakao" onclick="shareKakao()">카카오 공유</button>
-        </div>
+        <div class="link-result-lbl">링크가 생성됐어요</div>
+        <button class="link-btn copy" onclick="copyLink()">링크 복사</button>
       </div>
 
     </div>
