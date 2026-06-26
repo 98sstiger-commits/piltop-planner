@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>학습 플래너</title>
-<link rel="manifest" href="/manifest.json">
+<link rel="manifest" href="/manifest.json" id="manifest-link">
 <meta name="theme-color" content="#1A4731">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -865,6 +865,12 @@ async function loadDB(){
 
 async function saveDB(){
   if(!S.id)return;
+  // PWA 재접속용 로컬 저장
+  localStorage.setItem('planner-student-id', S.id);
+  localStorage.setItem('planner-student-params', JSON.stringify({
+    name:S.name, school:S.school, grade:S.grade,
+    sc:S.sc, so:S.so, academy:S.academy
+  }));
   try{
     await sb(`planner_students?id=eq.${S.id}`,{
       method:'PATCH',
@@ -918,14 +924,6 @@ function buildCareerChips(){
   });
 }
 buildCareerChips();
-
-// 이름 반영
-(function(){
-  if(S.name){
-    const q = document.getElementById('ob-career-q');
-    if(q) q.innerHTML = `${S.name} 학생은<br>꿈꾸는 직업이나 분야가 있나요?`;
-  }
-})();
 
 function searchCareer(q){
   const dd=document.getElementById('career-dd');
@@ -1177,10 +1175,12 @@ function renderMon(){
     let extra='';
     if(plan.extracurricular)extra+=`비교과: ${plan.extracurricular}  `;
     if(plan.careerTip)extra+=`진로: ${plan.careerTip}`;
+    const sespecHtml=plan.sespecTip?`<div class="ai-strip-extra" style="margin-top:5px;opacity:.8">✏️ 세특: ${plan.sespecTip}</div>`:'';
     sw.innerHTML=`<div class="ai-strip">
       <div class="ai-strip-lbl">AI · ${mn[S.calMonth]} 핵심</div>
       <div class="ai-strip-kw">${plan.keyword}${plan.note?'  <span style="opacity:.65;font-size:11px">'+plan.note+'</span>':''}</div>
       ${guideHtml}
+      ${sespecHtml}
       ${extra?`<div class="ai-strip-extra">${extra}</div>`:''}
     </div>`;
   }else sw.innerHTML='';
@@ -1348,8 +1348,63 @@ async function saveProfSheet(){S.career=document.getElementById('pe-career').val
 /* ── Supabase month_goals/month_memos 컬럼 추가 확인 ── */
 /* ── INIT ── */
 buildProg();
+
+// PWA: URL 파라미터 없으면 로컬에 저장된 ID로 복원
 (async()=>{
-  if(S.id){const loaded=await loadDB();if(loaded){startPlanner();return;}}
+  // 저장된 학생 ID 복원
+  if(!S.id){
+    const savedId=localStorage.getItem('planner-student-id');
+    if(savedId){
+      S.id=savedId;
+      // URL 파라미터도 복원
+      const savedParams=localStorage.getItem('planner-student-params');
+      if(savedParams){
+        const p=JSON.parse(savedParams);
+        S.name=p.name||'';
+        S.school=p.school||'';
+        S.grade=p.grade||'';
+        S.sc=p.sc||'';
+        S.so=p.so||'';
+        S.academy=p.academy||'piltop';
+        const acName2={'piltop':'필탑학원'}[S.academy]||S.academy;
+        document.getElementById('ob-ac').textContent=acName2;
+        document.getElementById('pl-brand').textContent=acName2;
+      }
+    }
+  }
+
+  // ID 있으면 저장 (PWA 재접속용)
+  if(S.id){
+    localStorage.setItem('planner-student-id', S.id);
+    localStorage.setItem('planner-student-params', JSON.stringify({
+      name:S.name, school:S.school, grade:S.grade,
+      sc:S.sc, so:S.so, academy:S.academy
+    }));
+
+    // manifest start_url을 현재 URL로 동적 설정
+    const fullUrl=location.href;
+    const manifestData={
+      name:'나의 학습 플래너',
+      short_name:S.name?S.name+'의 플래너':'학습 플래너',
+      start_url:fullUrl,
+      display:'standalone',
+      background_color:'#F5F4F1',
+      theme_color:'#1A4731',
+      icons:[{src:'/icon.svg',sizes:'any',type:'image/svg+xml',purpose:'any maskable'}]
+    };
+    const blob=new Blob([JSON.stringify(manifestData)],{type:'application/json'});
+    const manifestUrl=URL.createObjectURL(blob);
+    document.getElementById('manifest-link').href=manifestUrl;
+
+    const loaded=await loadDB();
+    if(loaded){startPlanner();return;}
+  }
+
+  // 이름 반영 (온보딩)
+  if(S.name){
+    const q=document.getElementById('ob-career-q');
+    if(q)q.innerHTML=`${S.name} 학생은<br>꿈꾸는 직업이나 분야가 있나요?`;
+  }
 })();
 
 
