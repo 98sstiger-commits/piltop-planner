@@ -860,10 +860,8 @@ async function loadDB(){
   if(r.day_stickers)S.dayStickers=r.day_stickers;
   if(r.week_goals)S.weekGoals=r.week_goals;
   if(r.week_memos)S.weekMemos=r.week_memos;
-  // yearly_plan 있어야 플래너 진입
-  if(Object.keys(S.yearlyPlan).length>0) return true;
-  // yearly_plan 없으면 false (온보딩으로)
-  return false;
+  // row가 DB에 있으면 플래너 진입 (yearly_plan 없어도)
+  return true;
 }
 
 async function saveDB(){
