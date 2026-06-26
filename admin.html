@@ -343,13 +343,20 @@ async function loadStudents(){
     const hasPlan=s.yearly_plan&&Object.keys(s.yearly_plan||{}).length>0;
     const card=document.createElement('div');
     card.className='stu-card';
+    const sparams=new URLSearchParams({id:s.id,name:s.name||'',school:s.school_name||'',grade:s.grade||''});
+    if(s.school_code)sparams.set('sc',s.school_code);
+    if(s.school_org)sparams.set('so',s.school_org);
+    const slink=`${BASE}/index.html?${sparams}`;
     card.innerHTML=`
       <div class="stu-avatar">${s.name[0]}</div>
       <div class="stu-info">
         <div class="stu-name">${s.name}</div>
         <div class="stu-sub">${s.school_name||'학교 미정'} · ${s.grade||'?'}학년</div>
       </div>
-      <span class="stu-status ${hasPlan?'done':'wait'}">${hasPlan?'완성':'대기'}</span>
+      ${hasPlan
+        ? '<span class="stu-using">사용중 👀</span>'
+        : `<button class="stu-link-btn" onclick="event.stopPropagation();copyStudentLink('${slink}','${s.name}')">링크 복사</button>`
+      }
       <button class="stu-del" onclick="event.stopPropagation();deleteStudent('${s.id}','${s.name}')">×</button>`;
     card.onclick=()=>openSpy(s);
     list.appendChild(card);
