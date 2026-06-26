@@ -200,7 +200,7 @@ textarea{resize:none}
 .cdn{font-size:12px;font-weight:500;color:var(--ink);line-height:1;margin-bottom:3px}
 .cd.sun .cdn{color:#B91C1C}.cd.sat .cdn{color:#1D4ED8}
 .cd-sticker{position:absolute;top:2px;right:3px;font-size:14px;line-height:1}
-.cd-evs{display:flex;flex-direction:column;gap:2px}
+.cd-evs{display:flex;flex-direction:column;gap:2px;overflow-y:auto;max-height:calc(100% - 18px)}
 .cev{font-size:9px;font-weight:600;padding:1px 4px;border-radius:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .cev.exam{background:#FEE8E8;color:#8A1A1A}
 .cev.suneung{background:#FFF8DC;color:#7A5A00}
@@ -1278,13 +1278,15 @@ function renderMon(){
     let evh='';evs.slice(0,2).forEach(e=>{evh+=`<div class="cev ${tm[e.type]||'school'}">${e.name}</div>`;});
     if(evs.length>2)evh+=`<div class="cd-more">+${evs.length-2}</div>`;
     const memo=S.dayMemos[ds]||'';
-    if(memo&&!evs.length){
+    const colorStyle=dayColor?`background:${dayColor};color:#333;`:'';
+    if(memo){
       const preview=memo.length>8?memo.slice(0,8)+'…':memo;
-      const colorStyle=dayColor?`background:${dayColor};color:#333;`:'';
       evh+=`<div class="cev user" style="${colorStyle}">${preview}</div>`;
-    }else if(dayColor&&!evs.length&&!memo){
-      evh+=`<div class="cev user" style="background:${dayColor};color:#333;">　</div>`;
+    }else if(dayColor&&!evs.length){
+      evh+=`<div class="cev user" style="${colorStyle}">　</div>`;
     }
+    const notes=S.dayNotes[ds]||[];
+    notes.forEach(n=>{if(!n)return;const p=n.length>8?n.slice(0,8)+'…':n;evh+=`<div class="cev user" style="${colorStyle}">${p}</div>`;});
     const st=S.dayStickers[ds]||'';
     el.innerHTML=`<div class="cdn">${d}</div>${st?`<div class="cd-sticker">${st}</div>`:''}<div class="cd-evs">${evh}</div>`;
     el.onclick=()=>openDaySheet(date);con.appendChild(el);
@@ -1455,7 +1457,7 @@ function buildStickerGrid(ds){
   const grid=document.getElementById('sticker-grid'),cur=S.dayStickers[ds]||'';
   document.getElementById('sticker-rm').style.display=cur?'block':'none';
   grid.innerHTML='';
-  STICKERS.forEach(s=>{const b=document.createElement('button');b.className='sticker-btn'+(cur===s?' sel':'');b.textContent=s;b.onclick=()=>{S.dayStickers[ds]=cur===s?'':s;buildStickerGrid(ds);saveDB();};grid.appendChild(b);});
+  STICKERS.forEach(s=>{const b=document.createElement('button');b.className='sticker-btn'+(cur===s?' sel':'');b.textContent=s;b.onclick=()=>{S.dayStickers[ds]=cur===s?'':s;buildStickerGrid(ds);saveDB();renderMon();};grid.appendChild(b);});
 }
 function setDayColor(color){
   if(!modalDate)return;
