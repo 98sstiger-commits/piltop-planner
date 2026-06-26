@@ -1106,13 +1106,21 @@ function fallbackPlan(){
 }
 
 /* ── 플래너 시작 ── */
-function startPlanner(){
+async function startPlanner(){
   document.getElementById('ob').classList.add('hide');
   setTimeout(()=>{document.getElementById('ob').style.display='none';},400);
   document.getElementById('pl').classList.add('on');
   // 모바일 편집 버튼
   const mobEdit=document.getElementById('mob-edit');
   if(window.innerWidth<768){mobEdit.style.display='flex';}
+  // yearly_plan 없으면 자동 생성
+  if(!Object.keys(S.yearlyPlan).length){
+    try{
+      if(!S.schoolSched.length)S.schoolSched=await fetchNeis();
+      S.yearlyPlan=await genPlan();
+      await saveDB();
+    }catch(e){console.error('플랜 자동생성 오류',e);}
+  }
   document.getElementById('pl-student').textContent=`${S.name} · ${S.school} · ${S.grade}학년`;
   document.getElementById('yr-year').textContent=YEAR;
   document.getElementById('yr-info').textContent=`${S.name} · ${S.career||S.careerField||'진로 탐색 중'}`;
@@ -1418,7 +1426,16 @@ function buildStickerGrid(ds){
 }
 function removeSticker(){if(!modalDate)return;delete S.dayStickers[dk(modalDate)];buildStickerGrid(dk(modalDate));}
 function closeDaySheet(){document.getElementById('day-bg').classList.remove('open');}
-async function saveDaySheet(){if(!modalDate)return;const ds=dk(modalDate);S.dayMemos[ds]=document.getElementById('day-memo').value;closeDaySheet();await saveDB();renderMon();toast('저장됐어요');}
+async function saveDaySheet(){
+  if(!modalDate)return;
+  const ds=dk(modalDate);
+  S.dayMemos[ds]=document.getElementById('day-memo').value;
+  // 스티커는 buildStickerGrid에서 이미 S.dayStickers에 저장됨
+  closeDaySheet();
+  await saveDB();
+  renderMon();
+  toast('저장됐어요');
+}
 function goToDaySheet(){if(!modalDate)return;S.curDay=new Date(modalDate);closeDaySheet();goView(3);}
 
 /* ── 프로필 ── */
