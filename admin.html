@@ -301,7 +301,6 @@ async function generateLink(){
   if(selSchool.orgCode)params.set('so',selSchool.orgCode);
   genLink=`${BASE}/index.html?${params}`;
 
-  document.getElementById('link-url').textContent=genLink;
   document.getElementById('link-result').style.display='block';
   loadStudents();
   showToast('링크가 생성됐어요!');
