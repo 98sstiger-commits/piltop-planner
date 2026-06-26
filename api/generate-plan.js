@@ -45,11 +45,12 @@ ${examSummary || '(학사일정 없음)'}
 6. subjectGuide: 이달 집중 교과 과목별 가이드 (각 15자 이내, 2~3개)
    예: ["수학: 수열·극한 집중", "영어: 구문독해 완성", "국어: 문학 작품 분석"]
 7. extracurricular: 이달 비교과 활동 제안 (20자 이내) — 교내 활동만, 수상경력 절대 언급 금지
-8. 시험 전달은 집중 준비 강조
-9. 학년과 진로에 완전히 맞는 현실적 내용
+8. sespecTip: 희망학과 연계 세특 키워드 1개 (15자 이내) — "수학: 확률통계 실생활 탐구" 형식, 희망학과 없으면 빈 문자열
+9. 시험 전달은 집중 준비 강조
+10. 학년과 진로에 완전히 맞는 현실적 내용
 
 JSON 배열만 반환 (설명, 백틱, 주석 없이):
-[{"month":${startMonth},"keyword":"","note":"","tags":[{"type":"study","label":""}],"weeklyHint":"","careerTip":"","subjectGuide":[],"extracurricular":""},...]
+[{"month":${startMonth},"keyword":"","note":"","tags":[{"type":"study","label":""}],"weeklyHint":"","careerTip":"","subjectGuide":[],"extracurricular":"","sespecTip":""},...]
 month는 ${startMonth}에서 12까지.`;
 
     const response = await fetch('https://api.anthropic.com/v1/messages', {
