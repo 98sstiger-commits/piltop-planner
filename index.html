@@ -895,8 +895,8 @@ async function loadDB(){
   const r=d[0];
   if(r.career)S.career=r.career;
   if(r.career_field)S.careerField=r.career_field;
-  if(r.u1)S.u1=r.u1;if(r.d1)S.d1=r.d1;
-  if(r.u2)S.u2=r.u2;if(r.d2)S.d2=r.d2;
+  if(r.univ1)S.u1=r.univ1;if(r.dept1)S.d1=r.dept1;
+  if(r.univ2)S.u2=r.univ2;if(r.dept2)S.d2=r.dept2;
   if(r.yearly_plan&&Object.keys(r.yearly_plan).length)S.yearlyPlan=r.yearly_plan;
   // 학사일정은 항상 최신으로 갱신 (링크 열 때마다)
   // DB에 저장된 것은 백업으로만 사용
@@ -927,7 +927,7 @@ async function saveDB(){
       method:'PATCH',
       body:JSON.stringify({
         career:S.career,career_field:S.careerField,
-        u1:S.u1,d1:S.d1,u2:S.u2,d2:S.d2,
+        univ1:S.u1,dept1:S.d1,univ2:S.u2,dept2:S.d2,
         yearly_plan:S.yearlyPlan,school_schedule:S.schoolSched,
         month_goals:S.monthGoals,month_memos:S.monthMemos,
         day_memos:S.dayMemos,day_checks:S.dayChecks,
