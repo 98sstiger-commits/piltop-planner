@@ -1,6 +1,6 @@
 {
   "functions": {
-    "api/generate-plan.js": {
+    "api/*.js": {
       "memory": 512,
       "maxDuration": 30
     }
