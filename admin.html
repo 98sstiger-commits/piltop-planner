@@ -140,6 +140,11 @@ body{font-family:'Noto Sans KR',sans-serif;background:#F6F5F2;color:#18170F;min-
       </div>
 
       <div class="field">
+        <label class="field-label">플래너 연도</label>
+        <select class="f-select" id="s-year"></select>
+      </div>
+
+      <div class="field">
         <label class="field-label">학교</label>
         <div class="school-wrap">
           <input class="f-input" id="s-school-input" placeholder="학교명 검색..." autocomplete="off" oninput="searchSchool(this.value)">
@@ -296,13 +301,27 @@ async function generateLink(){
     body:JSON.stringify({id,name,grade,school_name:selSchool.name,school_code:selSchool.code,school_org:selSchool.orgCode,created_at:new Date().toISOString()})
   });
 
-  const params=new URLSearchParams({id,name,school:selSchool.name,grade});
+  const year=document.getElementById('s-year').value;
+  const params=new URLSearchParams({id,name,school:selSchool.name,grade,year});
   if(selSchool.code)params.set('sc',selSchool.code);
   if(selSchool.orgCode)params.set('so',selSchool.orgCode);
   genLink=`${BASE}/index.html?${params}`;
 
   document.getElementById('link-result').style.display='block';
   loadStudents();
+
+// 연도 선택 초기화 (현재~2035)
+(function(){
+  const sel = document.getElementById('s-year');
+  const cur = new Date().getFullYear();
+  for(let y = cur; y <= 2035; y++){
+    const opt = document.createElement('option');
+    opt.value = y;
+    opt.textContent = y + '년';
+    if(y === cur) opt.selected = true;
+    sel.appendChild(opt);
+  }
+})();
   showToast('링크가 생성됐어요!');
 }
 
@@ -366,12 +385,38 @@ async function deleteStudent(id, name){
   if(!confirm(name+' 학생을 삭제할까요?'))return;
   await sb('planner_students?id=eq.'+id,{method:'DELETE'});
   loadStudents();
+
+// 연도 선택 초기화 (현재~2035)
+(function(){
+  const sel = document.getElementById('s-year');
+  const cur = new Date().getFullYear();
+  for(let y = cur; y <= 2035; y++){
+    const opt = document.createElement('option');
+    opt.value = y;
+    opt.textContent = y + '년';
+    if(y === cur) opt.selected = true;
+    sel.appendChild(opt);
+  }
+})();
   showToast(name+' 학생이 삭제됐어요');
 }
 
 function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2200);}
 
 loadStudents();
+
+// 연도 선택 초기화 (현재~2035)
+(function(){
+  const sel = document.getElementById('s-year');
+  const cur = new Date().getFullYear();
+  for(let y = cur; y <= 2035; y++){
+    const opt = document.createElement('option');
+    opt.value = y;
+    opt.textContent = y + '년';
+    if(y === cur) opt.selected = true;
+    sel.appendChild(opt);
+  }
+})();
 </script>
 </body>
 </html>
