@@ -82,7 +82,7 @@ body{font-family:'Noto Sans KR',sans-serif;background:#F6F5F2;color:#18170F;min-
 .stu-status{font-size:10px;font-weight:600;padding:3px 9px;border-radius:10px;flex-shrink:0}
 .stu-status.done{background:var(--gs);color:var(--green)}
 .stu-status.wait{background:#FEF5E8;color:#7A4710}
-.stu-arrow{color:var(--ink3);font-size:18px;flex-shrink:0;margin-left:4px}
+.stu-del{width:26px;height:26px;border-radius:50%;background:#FEE8E8;color:#B91C1C;font-size:16px;border:none;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;margin-left:4px;transition:all .12s}.stu-del:hover{background:#B91C1C;color:#fff}
 
 .empty{text-align:center;padding:36px 20px;color:var(--ink3);font-size:13px;line-height:1.6}
 
@@ -329,7 +329,7 @@ async function loadStudents(){
         <div class="stu-sub">${s.school_name||'학교 미정'} · ${s.grade||'?'}학년</div>
       </div>
       <span class="stu-status ${hasPlan?'done':'wait'}">${hasPlan?'완성':'대기'}</span>
-      <span class="stu-arrow">›</span>`;
+      <button class="stu-del" onclick="event.stopPropagation();deleteStudent('${s.id}','${s.name}')">×</button>`;
     card.onclick=()=>openSpy(s);
     list.appendChild(card);
   });
@@ -362,6 +362,13 @@ function openSpy(s){
   document.getElementById('spy-bg').classList.add('open');
 }
 function closeSpy(){document.getElementById('spy-bg').classList.remove('open');}
+
+async function deleteStudent(id, name){
+  if(!confirm(name+' 학생을 삭제할까요?'))return;
+  await sb('planner_students?id=eq.'+id,{method:'DELETE'});
+  loadStudents();
+  showToast(name+' 학생이 삭제됐어요');
+}
 
 function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2200);}
 
