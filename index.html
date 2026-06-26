@@ -255,6 +255,15 @@ textarea{resize:none}
 .dy-ai-lbl{font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:rgba(255,255,255,.4);margin-bottom:3px}
 .dy-ai-txt{font-size:12px;color:rgba(255,255,255,.88);line-height:1.6}
 
+/* 오늘의 명언 */
+.dy-quote{background:var(--g);border-radius:10px;padding:14px 16px;margin-bottom:10px}
+.dy-quote-top{display:flex;align-items:center;gap:6px;margin-bottom:8px}
+.dy-quote-ico{color:var(--gold);font-size:13px}
+.dy-quote-lbl{font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:rgba(255,255,255,.4)}
+.dy-quote-txt{font-size:13px;color:#fff;line-height:1.65;font-weight:500;margin-bottom:5px}
+.dy-quote-en{font-size:11px;color:rgba(255,255,255,.55);line-height:1.6;font-style:italic;margin-bottom:6px}
+.dy-quote-author{font-size:10px;color:rgba(255,255,255,.4);text-align:right}
+
 /* 타임라인 */
 .tl-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
 .tl-title-wrap{}
@@ -576,11 +585,22 @@ textarea{resize:none}
               <button class="nav-btn" onclick="changeDay(1)">→</button>
             </div>
           </div>
-          <div class="dy-ai" id="dy-ai">
+          <!-- 오늘의 명언 -->
+          <div class="dy-quote" id="dy-quote">
+            <div class="dy-quote-top">
+              <span class="dy-quote-ico">✦</span>
+              <span class="dy-quote-lbl">오늘의 한마디</span>
+            </div>
+            <div class="dy-quote-txt" id="dy-quote-txt"></div>
+            <div class="dy-quote-en" id="dy-quote-en"></div>
+            <div class="dy-quote-author" id="dy-quote-author"></div>
+          </div>
+          <!-- AI 플래너 한마디 -->
+          <div class="dy-ai" id="dy-ai" style="display:none">
             <div class="dy-ai-ico">✦</div>
             <div>
-              <div class="dy-ai-lbl">AI 오늘의 한마디</div>
-              <div class="dy-ai-txt" id="dy-ai-txt">연간 플래너를 생성하면 이달의 핵심을 알려드려요.</div>
+              <div class="dy-ai-lbl">이달 플래너</div>
+              <div class="dy-ai-txt" id="dy-ai-txt"></div>
             </div>
           </div>
           <div class="tl-hd">
@@ -756,6 +776,7 @@ textarea{resize:none}
 <div class="toast" id="toast"></div>
 
 <script src="univ-data.js"></script>
+<script src="quotes.js"></script>
 <script>
 /* ── 상수 ── */
 const SB="https://zmtldohklivkzpfdyflc.supabase.co";
@@ -1274,8 +1295,25 @@ function renderDy(){
   const d=S.curDay;
   document.getElementById('dy-en').textContent=DOWE[d.getDay()];
   document.getElementById('dy-ko').textContent=`${d.getFullYear()}. ${String(d.getMonth()+1).padStart(2,'0')}. ${String(d.getDate()).padStart(2,'0')} — ${DOW[d.getDay()]}요일`;
+
+  // 오늘의 명언 — 날짜 기반으로 매일 바뀜
+  if(typeof QUOTES !== 'undefined' && QUOTES.length){
+    const dayOfYear=Math.floor((d-new Date(d.getFullYear(),0,0))/(1000*60*60*24));
+    const q=QUOTES[dayOfYear % QUOTES.length];
+    document.getElementById('dy-quote-txt').textContent=`"${q.q}"`;
+    document.getElementById('dy-quote-en').textContent=q.lang==='en'&&q.k?`"${q.k}"`:'' ;
+    document.getElementById('dy-quote-author').textContent=`— ${q.a}`;
+  }
+
+  // AI 플래너 한마디
   const plan=S.yearlyPlan[d.getMonth()+1];
-  if(plan)document.getElementById('dy-ai-txt').textContent=plan.careerTip?`${plan.keyword}  ·  ${plan.careerTip}`:plan.keyword;
+  const aiEl=document.getElementById('dy-ai');
+  if(plan&&plan.keyword){
+    document.getElementById('dy-ai-txt').textContent=plan.careerTip?`${plan.keyword}  ·  ${plan.careerTip}`:plan.keyword;
+    aiEl.style.display='flex';
+  }else{
+    aiEl.style.display='none';
+  }
   renderTl();renderCl();
   const ta=document.getElementById('dy-memo');
   ta.value=S.dayMemos[dk(d)]||'';
