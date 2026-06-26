@@ -1277,11 +1277,12 @@ function renderMon(){
     el.className='cd'+(ds===dk(TODAY)?' today':'')+(dow===0?' sun':dow===6?' sat':'');
     let evh='';evs.slice(0,2).forEach(e=>{evh+=`<div class="cev ${tm[e.type]||'school'}">${e.name}</div>`;});
     if(evs.length>2)evh+=`<div class="cd-more">+${evs.length-2}</div>`;
-    if(dayColor)el.style.background=dayColor;
+    const colorStyle=dayColor?`background:${dayColor};color:#555;`:'';
     const memo=S.dayMemos[ds]||'';
-    if(memo){const preview=memo.length>8?memo.slice(0,8)+'…':memo;evh+=`<div class="cev user">${preview}</div>`;}
+    if(memo){const preview=memo.length>8?memo.slice(0,8)+'…':memo;evh+=`<div class="cev user" style="${colorStyle}">${preview}</div>`;}
+    else if(dayColor)evh+=`<div class="cev user" style="${colorStyle}">　</div>`;
     const notes=S.dayNotes[ds]||[];
-    notes.forEach(n=>{if(!n)return;const p=n.length>8?n.slice(0,8)+'…':n;evh+=`<div class="cev user">${p}</div>`;});
+    notes.forEach(n=>{if(!n)return;const p=n.length>8?n.slice(0,8)+'…':n;evh+=`<div class="cev user" style="${colorStyle}">${p}</div>`;});
     const st=S.dayStickers[ds]||'';
     el.innerHTML=`<div class="cdn">${d}</div>${st?`<div class="cd-sticker">${st}</div>`:''}<div class="cd-evs">${evh}</div>`;
     el.onclick=()=>openDaySheet(date);con.appendChild(el);
