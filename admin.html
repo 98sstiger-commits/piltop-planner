@@ -333,7 +333,7 @@ async function loadStudents(){
   if(!cnt){list.innerHTML='<div class="empty">아직 생성된 학생이 없어요</div>';return;}
   list.innerHTML='';
   data.forEach(s=>{
-    const hasPlan=s.yearly_plan&&Object.keys(s.yearly_plan||{}).length>0;
+    const hasPlan=(s.yearly_plan&&Object.keys(s.yearly_plan||{}).length>0)||s.career||s.career_field;
     const card=document.createElement('div');
     card.className='stu-card';
     const sparams=new URLSearchParams({id:s.id,name:s.name||'',school:s.school_name||'',grade:s.grade||''});
