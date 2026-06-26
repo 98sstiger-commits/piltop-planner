@@ -62,7 +62,7 @@ month는 ${startMonth}에서 12까지.`;
       },
       body: JSON.stringify({
         model: 'claude-sonnet-4-6',
-        max_tokens: 2500,
+        max_tokens: 1500,
         messages: [{ role: 'user', content: prompt }],
       }),
     });
