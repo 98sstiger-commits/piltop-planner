@@ -190,8 +190,8 @@ textarea{resize:none}
 .cal-dow-c{padding:8px 0;text-align:center;font-size:9px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--ink3)}
 .cal-dow-c:first-child{color:#B91C1C}.cal-dow-c:last-child{color:#1D4ED8}
 .cal-days{display:grid;grid-template-columns:repeat(7,1fr)}
-.cd{min-height:80px;border-right:1px solid var(--line);border-bottom:1px solid var(--line);padding:7px 6px 5px;cursor:pointer;transition:background .08s;position:relative;overflow:hidden}
-@media(max-width:767px){.cd{min-height:60px}}
+.cd{height:80px;border-right:1px solid var(--line);border-bottom:1px solid var(--line);padding:7px 6px 5px;cursor:pointer;transition:background .08s;position:relative;overflow:hidden;box-sizing:border-box}
+@media(max-width:767px){.cd{height:60px}}
 .cd:nth-child(7n){border-right:none}
 .cd:active{background:var(--gs)}
 .cd.empty{background:#FAFAF8;cursor:default}
@@ -200,7 +200,7 @@ textarea{resize:none}
 .cdn{font-size:12px;font-weight:500;color:var(--ink);line-height:1;margin-bottom:3px}
 .cd.sun .cdn{color:#B91C1C}.cd.sat .cdn{color:#1D4ED8}
 .cd-sticker{position:absolute;top:2px;right:3px;font-size:14px;line-height:1}
-.cd-evs{display:flex;flex-direction:column;gap:2px;overflow-y:auto;max-height:calc(100% - 18px)}
+.cd-evs{display:flex;flex-direction:column;gap:2px;overflow-y:auto;height:calc(100% - 18px);scrollbar-width:none}.cd-evs::-webkit-scrollbar{display:none}
 .cev{font-size:9px;font-weight:600;padding:1px 4px;border-radius:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .cev.exam{background:#FEE8E8;color:#8A1A1A}
 .cev.suneung{background:#FFF8DC;color:#7A5A00}
@@ -1277,16 +1277,11 @@ function renderMon(){
     el.className='cd'+(ds===dk(TODAY)?' today':'')+(dow===0?' sun':dow===6?' sat':'');
     let evh='';evs.slice(0,2).forEach(e=>{evh+=`<div class="cev ${tm[e.type]||'school'}">${e.name}</div>`;});
     if(evs.length>2)evh+=`<div class="cd-more">+${evs.length-2}</div>`;
+    if(dayColor)el.style.background=dayColor;
     const memo=S.dayMemos[ds]||'';
-    const colorStyle=dayColor?`background:${dayColor};color:#333;`:'';
-    if(memo){
-      const preview=memo.length>8?memo.slice(0,8)+'…':memo;
-      evh+=`<div class="cev user" style="${colorStyle}">${preview}</div>`;
-    }else if(dayColor&&!evs.length){
-      evh+=`<div class="cev user" style="${colorStyle}">　</div>`;
-    }
+    if(memo){const preview=memo.length>8?memo.slice(0,8)+'…':memo;evh+=`<div class="cev user">${preview}</div>`;}
     const notes=S.dayNotes[ds]||[];
-    notes.forEach(n=>{if(!n)return;const p=n.length>8?n.slice(0,8)+'…':n;evh+=`<div class="cev user" style="${colorStyle}">${p}</div>`;});
+    notes.forEach(n=>{if(!n)return;const p=n.length>8?n.slice(0,8)+'…':n;evh+=`<div class="cev user">${p}</div>`;});
     const st=S.dayStickers[ds]||'';
     el.innerHTML=`<div class="cdn">${d}</div>${st?`<div class="cd-sticker">${st}</div>`:''}<div class="cd-evs">${evh}</div>`;
     el.onclick=()=>openDaySheet(date);con.appendChild(el);
