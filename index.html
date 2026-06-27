@@ -594,7 +594,7 @@ textarea{resize:none}
           <div id="wk-ai-wrap"></div>
           <div id="wk-ev-wrap"></div>
           <div class="wk-card">
-            <div class="wk-card-h">이번 주 목표 <span class="wk-cl-stat" id="wk-cl-stat"></span><button class="wk-card-add" onclick="addWkGoal()">+</button></div>
+            <div class="wk-card-h"><span>이번 주 목표 <span class="wk-cl-stat" id="wk-cl-stat"></span></span><button class="wk-card-add" onclick="addWkGoal()">+</button></div>
             <div class="wk-card-b" id="wk-cl-wrap"></div>
           </div>
           <div class="wk-card">
@@ -1734,6 +1734,17 @@ buildProg();
   }
 })();
 
+
+// ── 확대 완전 차단 ──
+document.addEventListener('touchmove', e => { if(e.touches.length > 1) e.preventDefault(); }, { passive: false });
+document.addEventListener('gesturestart', e => e.preventDefault(), { passive: false });
+document.addEventListener('gesturechange', e => e.preventDefault(), { passive: false });
+let lastTap = 0;
+document.addEventListener('touchend', e => {
+  const now = Date.now();
+  if(now - lastTap < 300) e.preventDefault();
+  lastTap = now;
+}, { passive: false });
 
 // ── PWA ──
 if('serviceWorker' in navigator){
