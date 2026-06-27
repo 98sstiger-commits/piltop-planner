@@ -229,8 +229,8 @@ textarea{resize:none}
 .cd:nth-child(7n){border-right:none}
 .cd:active{background:var(--gs)}
 .cd.empty{background:#FAFAF8;cursor:default}
-.cd.today{background:var(--gs)}
-.cd.today .cdn{color:var(--g);font-weight:700}
+.cd.today .cdn{font-weight:700}
+.cd-today-lbl{font-size:8px;font-weight:700;color:#B91C1C;letter-spacing:.3px;line-height:1;margin-left:3px}
 .cdn{font-size:12px;font-weight:500;color:var(--ink);line-height:1;margin-bottom:3px}
 .cd.sun .cdn{color:#B91C1C}.cd.sat .cdn{color:#1D4ED8}
 .cd-sticker{position:absolute;top:2px;right:3px;font-size:14px;line-height:1}
@@ -1355,7 +1355,8 @@ function renderMon(){
     const extra=allItems.length-2;
     if(extra>0)evh+=`<div class="cd-more">+${extra}</div>`;
     const st=S.dayStickers[ds]||'';
-    el.innerHTML=`<div class="cdn">${d}</div>${st?`<div class="cd-sticker">${st}</div>`:''}<div class="cd-evs">${evh}</div>`;
+    const isToday=ds===dk(TODAY);
+    el.innerHTML=`<div style="display:flex;align-items:baseline;gap:2px"><div class="cdn">${d}</div>${isToday?'<span class="cd-today-lbl">Today</span>':''}</div>${st?`<div class="cd-sticker">${st}</div>`:''}<div class="cd-evs">${evh}</div>`;
     el.onclick=()=>openDaySheet(date);con.appendChild(el);
   }
 
