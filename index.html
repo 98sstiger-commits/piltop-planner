@@ -198,10 +198,19 @@ textarea{resize:none}
 @media(max-width:767px){.cd{height:72px}}
 @media(max-height:500px) and (orientation:landscape){.cd{height:56px}}
 @media(max-height:500px) and (orientation:landscape){
-  .pl-nav{padding:4px 14px 0}
-  .pl-nav-top{padding-bottom:4px}
-  .pl-nav-student{font-size:10px}
-  .pl-tab{padding:4px 8px;font-size:11px}
+  /* 데스크탑 레이아웃 → 모바일 세로 레이아웃으로 강제 복원 */
+  #pl{flex-direction:column}
+  .pl-nav{width:auto;height:auto;flex-direction:row;padding:4px 14px 0;align-items:center;justify-content:space-between;gap:8px}
+  .pl-nav-top{flex:1;min-width:0;padding:0 0 4px;border-bottom:none}
+  .pl-nav-brand{display:none}
+  .pl-nav-student{font-size:10px;font-weight:500;color:rgba(255,255,255,.85);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .pl-nav-tabs{flex-direction:row;gap:1px;padding:0;flex-shrink:0}
+  .pl-tab{padding:4px 8px;font-size:11px;border-radius:6px;font-weight:600;color:rgba(255,255,255,.55);display:block}
+  .pl-tab.on{background:rgba(255,255,255,.2);color:#fff}
+  .pl-tab-icon{display:none}
+  .pl-nav-bottom{display:none}
+  .pl-content{flex:1;overflow:hidden;display:flex;flex-direction:column}
+  /* 콘텐츠 */
   .vpad{padding:8px 12px 50px}
   .cdn{font-size:11px}
   .cev{font-size:0 !important;color:transparent !important;padding:3px 0;height:5px;border-radius:3px;margin-bottom:1px;overflow:hidden}
@@ -210,11 +219,11 @@ textarea{resize:none}
   .mon-title{font-size:16px}
   .cal-dow-c{padding:4px 0;font-size:8px}
   .ai-strip{padding:8px 12px;margin-top:8px}
-  .mc{padding:10px 10px;min-height:80px;gap:4px}
-  .mc-n{font-size:16px}
-  .mc-kw{font-size:11px;-webkit-line-clamp:1}
-  .mc-note{display:none}
-  .mc-tags{display:none}
+  .mc{padding:10px 10px;min-height:60px;gap:3px}
+  .mc-n{font-size:15px}
+  .mc-kw{font-size:11px;-webkit-line-clamp:2}
+  .mc-note{font-size:9px;-webkit-line-clamp:1}
+  .mc-tags{display:flex}
   .yr-grid{grid-template-columns:repeat(4,1fr)}
 }
 .cd:nth-child(7n){border-right:none}
