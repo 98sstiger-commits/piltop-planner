@@ -62,15 +62,19 @@ month는 ${startMonth}에서 12까지.`;
       },
       body: JSON.stringify({
         model: 'claude-sonnet-4-6',
-        max_tokens: 1500,
+        max_tokens: 3000,
         messages: [{ role: 'user', content: prompt }],
       }),
     });
 
     const data = await response.json();
+    if (data.error) throw new Error(data.error.message || JSON.stringify(data.error));
     const text = data.content?.map(c => c.text || '').join('') || '';
-    const clean = text.replace(/```json|```/g, '').trim();
-    const plan = JSON.parse(clean);
+    // JSON 배열 부분만 추출 (앞뒤 텍스트/백틱 무시)
+    const start = text.indexOf('[');
+    const end = text.lastIndexOf(']');
+    if (start === -1 || end === -1) throw new Error('JSON 배열 없음: ' + text.slice(0, 200));
+    const plan = JSON.parse(text.slice(start, end + 1));
     const result = {};
     plan.forEach(m => { result[m.month] = m; });
 
