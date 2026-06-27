@@ -1425,8 +1425,8 @@ function addWkGoal(){
   if(document.getElementById('wk-cl-input-row')) return;
   const row=document.createElement('div');
   row.id='wk-cl-input-row';
-  row.style.cssText='display:flex;gap:6px;padding:6px 0 2px';
-  row.innerHTML=`<input id="wk-cl-inp" type="text" placeholder="목표를 입력하세요..." style="flex:1;padding:8px 10px;border:1px solid var(--g);border-radius:7px;font-size:14px;background:var(--bg);color:var(--ink);outline:none"><button onclick="confirmWkGoal()" style="padding:8px 12px;background:var(--g);color:#fff;border-radius:7px;font-size:13px;font-weight:600;border:none;cursor:pointer">추가</button>`;
+  row.style.cssText='display:flex;gap:6px;padding:6px 0 2px;width:100%;box-sizing:border-box;overflow:hidden';
+  row.innerHTML=`<input id="wk-cl-inp" type="text" placeholder="목표를 입력하세요..." style="flex:1;min-width:0;padding:8px 10px;border:1px solid var(--g);border-radius:7px;font-size:16px;background:var(--bg);color:var(--ink);outline:none;box-sizing:border-box"><button onclick="confirmWkGoal()" style="flex-shrink:0;padding:8px 14px;background:var(--g);color:#fff;border-radius:7px;font-size:13px;font-weight:600;border:none;cursor:pointer;white-space:nowrap">추가</button>`;
   wrap.appendChild(row);
   const inp=document.getElementById('wk-cl-inp');
   inp.focus();
