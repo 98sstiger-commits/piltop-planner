@@ -128,7 +128,7 @@ textarea{resize:none}
   .pl-tab-icon{display:none}
   .pl-nav-bottom{display:none}
   .pl-edit-btn{width:28px;height:28px;border-radius:7px;background:rgba(255,255,255,.12);color:rgba(255,255,255,.8);font-size:14px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
-  .pl-content{flex:1;overflow:hidden}
+  .pl-content{flex:1;overflow:hidden;display:flex;flex-direction:column}
 }
 
 /* 뷰 컨테이너 */
@@ -1146,8 +1146,10 @@ async function startPlanner(){
   // 모바일 편집 버튼
   const mobEdit=document.getElementById('mob-edit');
   if(window.innerWidth<768){mobEdit.style.display='flex';}
-  // yearly_plan 없으면 자동 생성
-  if(!Object.keys(S.yearlyPlan).length){
+  // yearly_plan 없거나, fallback 플랜인데 career 정보가 있으면 재생성
+  const isFallback=Object.values(S.yearlyPlan).some(p=>p.keyword==='학습 계획을 세워보세요');
+  const hasCareer=!!(S.career||S.careerField||S.u1||S.d1);
+  if(!Object.keys(S.yearlyPlan).length||(isFallback&&hasCareer)){
     try{
       if(!S.schoolSched.length)S.schoolSched=await fetchNeis();
       S.yearlyPlan=await genPlan();
@@ -1285,14 +1287,19 @@ function renderMon(){
     const el=document.createElement('div');
     const dayColor=S.dayColors[ds]||'';
     el.className='cd'+(ds===dk(TODAY)?' today':'')+(dow===0?' sun':dow===6?' sat':'');
-    let evh='';evs.slice(0,2).forEach(e=>{evh+=`<div class="cev ${tm[e.type]||'school'}">${e.name}</div>`;});
-    if(evs.length>2)evh+=`<div class="cd-more">+${evs.length-2}</div>`;
     const colorStyle=dayColor?`background:${dayColor};color:#555;`:'';
     const memo=S.dayMemos[ds]||'';
-    if(memo){const preview=memo.length>8?memo.slice(0,8)+'…':memo;evh+=`<div class="cev user" style="${colorStyle}">${preview}</div>`;}
-    else if(dayColor)evh+=`<div class="cev user" style="${colorStyle}">　</div>`;
-    const notes=(S.dayNotes[ds]||[]).map(n=>(typeof n==='object'&&n)?n:{text:String(n||''),color:''});
-    notes.forEach(n=>{if(!n.text)return;const p=n.text.length>8?n.text.slice(0,8)+'…':n.text;const cs=n.color?`background:${n.color};color:#555;`:'';evh+=`<div class="cev user" style="${cs}">${p}</div>`;});
+    const notes=(S.dayNotes[ds]||[]).map(n=>(typeof n==='object'&&n)?n:{text:String(n||''),color:''}).filter(n=>n.text);
+    // 모든 항목 수집 후 최대 2개만 표시
+    const allItems=[];
+    evs.forEach(e=>allItems.push({cls:tm[e.type]||'school',text:e.name,style:''}));
+    if(memo)allItems.push({cls:'user',text:memo.length>6?memo.slice(0,6)+'…':memo,style:colorStyle});
+    else if(dayColor)allItems.push({cls:'user',text:'',style:colorStyle});
+    notes.forEach(n=>{const cs=n.color?`background:${n.color};color:#555;`:'';allItems.push({cls:'user',text:n.text.length>6?n.text.slice(0,6)+'…':n.text,style:cs});});
+    let evh='';
+    allItems.slice(0,2).forEach(it=>{evh+=`<div class="cev ${it.cls}" style="${it.style}">${it.text}</div>`;});
+    const extra=allItems.length-2;
+    if(extra>0)evh+=`<div class="cd-more">+${extra}</div>`;
     const st=S.dayStickers[ds]||'';
     el.innerHTML=`<div class="cdn">${d}</div>${st?`<div class="cd-sticker">${st}</div>`:''}<div class="cd-evs">${evh}</div>`;
     el.onclick=()=>openDaySheet(date);con.appendChild(el);
