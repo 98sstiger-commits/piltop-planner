@@ -1578,8 +1578,9 @@ async function saveProfSheet(){
   closeProfSheet();
   toast('AI가 진로 맞춤 계획 생성 중...');
   let ok=false;
+  const prevPlan=S.yearlyPlan;
   try{S.yearlyPlan=await genPlan();ok=true;}
-  catch{S.yearlyPlan=fallbackPlan();}
+  catch(e){console.error('genPlan 실패:',e);S.yearlyPlan=prevPlan;}
   await saveDB();
   document.getElementById('yr-info').textContent=`${S.name} · ${S.career||S.careerField||'진로 탐색 중'}`;
   renderYr();renderMon();renderWk();renderDy();
