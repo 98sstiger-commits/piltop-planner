@@ -961,7 +961,7 @@ async function saveDB(){
 /* ── 유틸 ── */
 function dk(d){return`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;}
 function getMonday(d){const dt=new Date(d);const day=dt.getDay();dt.setDate(dt.getDate()-(day===0?6:day-1));return dt;}
-function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2400);}
+function toast(m,dur=2400){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),dur);}
 function tick(ms){return new Promise(r=>setTimeout(r,ms));}
 
 /* ── 온보딩 ── */
@@ -1569,7 +1569,22 @@ function goToDaySheet(){if(!modalDate)return;S.curDay=new Date(modalDate);closeD
 /* ── 프로필 ── */
 function openProf(){document.getElementById('pe-career').value=S.career||S.careerField||'';document.getElementById('pe-u1').value=S.u1||'';document.getElementById('pe-d1').value=S.d1||'';document.getElementById('pe-u2').value=S.u2||'';document.getElementById('pe-d2').value=S.d2||'';document.getElementById('prof-bg').classList.add('open');}
 function closeProfSheet(){document.getElementById('prof-bg').classList.remove('open');}
-async function saveProfSheet(){S.career=document.getElementById('pe-career').value.trim();S.u1=document.getElementById('pe-u1').value.trim();S.d1=document.getElementById('pe-d1').value.trim();S.u2=document.getElementById('pe-u2').value.trim();S.d2=document.getElementById('pe-d2').value.trim();closeProfSheet();toast('저장하고 AI 재생성 중...');try{S.yearlyPlan=await genPlan();}catch{S.yearlyPlan=fallbackPlan();}await saveDB();renderYr();document.getElementById('yr-info').textContent=`${S.name} · ${S.career||S.careerField||'진로 탐색 중'}`;toast('업데이트 완료!');}
+async function saveProfSheet(){
+  S.career=document.getElementById('pe-career').value.trim();
+  S.u1=document.getElementById('pe-u1').value.trim();
+  S.d1=document.getElementById('pe-d1').value.trim();
+  S.u2=document.getElementById('pe-u2').value.trim();
+  S.d2=document.getElementById('pe-d2').value.trim();
+  closeProfSheet();
+  toast('AI가 진로 맞춤 계획 생성 중...');
+  let ok=false;
+  try{S.yearlyPlan=await genPlan();ok=true;}
+  catch{S.yearlyPlan=fallbackPlan();}
+  await saveDB();
+  document.getElementById('yr-info').textContent=`${S.name} · ${S.career||S.careerField||'진로 탐색 중'}`;
+  renderYr();renderMon();renderWk();renderDy();
+  toast(ok?`진로 맞춤 플랜 완성! (${S.career||S.careerField||''})`:'저장 완료 (AI 생성 실패 — 나중에 ↺ 재생성 버튼을 눌러보세요)',ok?2400:4000);
+}
 
 /* ── Supabase month_goals/month_memos 컬럼 추가 확인 ── */
 /* ── INIT ── */
