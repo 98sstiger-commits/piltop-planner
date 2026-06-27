@@ -202,10 +202,14 @@ textarea{resize:none}
   .pl-nav-top{padding-bottom:4px}
   .pl-nav-student{font-size:10px}
   .pl-tab{padding:4px 8px;font-size:11px}
-  .vpad{padding:12px 16px 60px}
+  .vpad{padding:8px 12px 50px}
   .cdn{font-size:11px}
   .cev{font-size:0 !important;color:transparent !important;padding:3px 0;height:5px;border-radius:3px;margin-bottom:1px;overflow:hidden}
   .cd-more{display:none}
+  .mon-hd{margin-bottom:8px}
+  .mon-title{font-size:16px}
+  .cal-dow-c{padding:4px 0;font-size:8px}
+  .ai-strip{padding:8px 12px;margin-top:8px}
 }
 .cd:nth-child(7n){border-right:none}
 .cd:active{background:var(--gs)}
@@ -249,8 +253,19 @@ textarea{resize:none}
 .wk-ai-txt{font-size:12px;color:rgba(255,255,255,.88);line-height:1.6}
 
 .wk-card{background:var(--surf);border:1px solid var(--line);border-radius:9px;overflow:hidden;margin-bottom:9px}
-.wk-card-h{padding:9px 13px;border-bottom:1px solid var(--line);font-size:9px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--ink2)}
+.wk-card-h{padding:9px 13px;border-bottom:1px solid var(--line);font-size:9px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--ink2);display:flex;align-items:center;justify-content:space-between}
+.wk-card-add{width:24px;height:24px;border-radius:50%;background:var(--g);color:#fff;font-size:16px;display:flex;align-items:center;justify-content:center;cursor:pointer;border:none;flex-shrink:0}
 .wk-card-b{padding:10px 13px}
+.wk-cl-list{display:flex;flex-direction:column;gap:6px;margin-bottom:6px}
+.wk-cl-item{display:flex;align-items:center;gap:9px;padding:8px 10px;background:var(--bg);border-radius:7px;border:1px solid var(--line)}
+.wk-cl-item.done{opacity:.5}
+.wk-cl-cb{width:18px;height:18px;border-radius:50%;border:2px solid var(--line2);flex-shrink:0;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:11px;transition:all .15s}
+.wk-cl-item.done .wk-cl-cb{background:var(--g);border-color:var(--g);color:#fff}
+.wk-cl-txt{flex:1;font-size:13px;color:var(--ink);line-height:1.4}
+.wk-cl-item.done .wk-cl-txt{text-decoration:line-through;color:var(--ink3)}
+.wk-cl-del{color:var(--ink3);font-size:16px;padding:2px 4px;cursor:pointer;flex-shrink:0}
+.wk-cl-empty{text-align:center;padding:16px;color:var(--ink3);font-size:12px}
+.wk-cl-stat{font-size:10px;color:var(--ink3);font-weight:400;letter-spacing:0;text-transform:none}
 .wk-ta{width:100%;border:none;background:transparent;font-size:13px;color:var(--ink);line-height:1.7;min-height:56px}
 .wk-ta::placeholder{color:var(--ink3)}
 .wk-ev-list{display:flex;flex-direction:column;gap:4px}
@@ -579,8 +594,8 @@ textarea{resize:none}
           <div id="wk-ai-wrap"></div>
           <div id="wk-ev-wrap"></div>
           <div class="wk-card">
-            <div class="wk-card-h">이번 주 목표</div>
-            <div class="wk-card-b"><textarea class="wk-ta" id="wk-goal" placeholder="이번 주 꼭 해야 할 것..."></textarea></div>
+            <div class="wk-card-h">이번 주 목표 <span class="wk-cl-stat" id="wk-cl-stat"></span><button class="wk-card-add" onclick="addWkGoal()">+</button></div>
+            <div class="wk-card-b" id="wk-cl-wrap"></div>
           </div>
           <div class="wk-card">
             <div class="wk-card-h">이번 주 메모</div>
@@ -1362,10 +1377,73 @@ function renderWk(){
   const evW=document.getElementById('wk-ev-wrap');
   evW.innerHTML=evHtml?`<div class="wk-card"><div class="wk-card-h">이번 주 일정</div><div class="wk-card-b"><div class="wk-ev-list">${evHtml}</div></div></div>`:'';
   const wk=dk(ws);
-  document.getElementById('wk-goal').value=S.weekGoals[wk]||'';
+  renderWkGoal();
   document.getElementById('wk-memo').value=S.weekMemos[wk]||'';
-  document.getElementById('wk-goal').oninput=()=>{S.weekGoals[dk(S.weekStart)]=document.getElementById('wk-goal').value;saveDB();};
   document.getElementById('wk-memo').oninput=()=>{S.weekMemos[dk(S.weekStart)]=document.getElementById('wk-memo').value;saveDB();};
+}
+function getWkGoals(){
+  const wk=dk(S.weekStart);
+  const g=S.weekGoals[wk];
+  if(!g) return [];
+  if(typeof g==='string') return g.trim()?[{text:g,done:false}]:[];
+  return Array.isArray(g)?g:[];
+}
+function saveWkGoals(items){
+  S.weekGoals[dk(S.weekStart)]=items;
+  saveDB();
+}
+function renderWkGoal(){
+  const items=getWkGoals();
+  const done=items.filter(i=>i.done).length;
+  const stat=document.getElementById('wk-cl-stat');
+  if(stat) stat.textContent=items.length?`${done}/${items.length}완료`:'';
+  const wrap=document.getElementById('wk-cl-wrap');
+  if(!wrap) return;
+  if(!items.length){
+    wrap.innerHTML='<div class="wk-cl-empty">+ 버튼으로 이번 주 목표를 추가해보세요</div>';
+    return;
+  }
+  wrap.innerHTML=`<div class="wk-cl-list">${items.map((it,i)=>`
+    <div class="wk-cl-item${it.done?' done':''}">
+      <div class="wk-cl-cb" onclick="toggleWkGoal(${i})">${it.done?'✓':''}</div>
+      <div class="wk-cl-txt">${it.text}</div>
+      <div class="wk-cl-del" onclick="deleteWkGoal(${i})">×</div>
+    </div>`).join('')}</div>`;
+}
+function addWkGoal(){
+  const wrap=document.getElementById('wk-cl-wrap');
+  if(document.getElementById('wk-cl-input-row')) return;
+  const row=document.createElement('div');
+  row.id='wk-cl-input-row';
+  row.style.cssText='display:flex;gap:6px;padding:6px 0 2px';
+  row.innerHTML=`<input id="wk-cl-inp" type="text" placeholder="목표를 입력하세요..." style="flex:1;padding:8px 10px;border:1px solid var(--g);border-radius:7px;font-size:14px;background:var(--bg);color:var(--ink);outline:none"><button onclick="confirmWkGoal()" style="padding:8px 12px;background:var(--g);color:#fff;border-radius:7px;font-size:13px;font-weight:600;border:none;cursor:pointer">추가</button>`;
+  wrap.appendChild(row);
+  const inp=document.getElementById('wk-cl-inp');
+  inp.focus();
+  inp.addEventListener('keydown',e=>{if(e.key==='Enter')confirmWkGoal();if(e.key==='Escape')row.remove();});
+}
+function confirmWkGoal(){
+  const inp=document.getElementById('wk-cl-inp');
+  if(!inp) return;
+  const text=inp.value.trim();
+  document.getElementById('wk-cl-input-row')?.remove();
+  if(!text) return;
+  const items=getWkGoals();
+  items.push({text,done:false});
+  saveWkGoals(items);
+  renderWkGoal();
+}
+function toggleWkGoal(i){
+  const items=getWkGoals();
+  items[i].done=!items[i].done;
+  saveWkGoals(items);
+  renderWkGoal();
+}
+function deleteWkGoal(i){
+  const items=getWkGoals();
+  items.splice(i,1);
+  saveWkGoals(items);
+  renderWkGoal();
 }
 
 /* ── DAILY ── */
