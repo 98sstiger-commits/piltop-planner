@@ -516,6 +516,7 @@ textarea{resize:none}
     </div>
     <div class="pl-nav-bottom">
       <button class="pl-edit-btn" onclick="openProf()"><span>✎</span>정보 수정</button>
+      <button class="pl-edit-btn" id="pwa-nav-btn" onclick="triggerInstall()" style="display:none"><span>⬇</span>앱 설치</button>
     </div>
     <button class="pl-edit-btn" onclick="openProf()" style="display:none" id="mob-edit">✎</button>
   </div>
@@ -1664,10 +1665,18 @@ if('serviceWorker' in navigator){
 }
 
 let deferredPrompt = null;
+const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent) && !window.MSStream;
+const isInStandaloneMode = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+
+function showPwaBtn(){
+  if(isInStandaloneMode) return; // 이미 설치됨
+  document.getElementById('pwa-nav-btn').style.display='flex';
+}
+
 window.addEventListener('beforeinstallprompt', e => {
   e.preventDefault();
   deferredPrompt = e;
-  // 설치 안 했고 배너 닫은 적 없으면 표시
+  showPwaBtn();
   if(!localStorage.getItem('pwa-dismissed')){
     setTimeout(()=>document.getElementById('install-banner')?.classList.add('show'), 2000);
   }
@@ -1675,21 +1684,43 @@ window.addEventListener('beforeinstallprompt', e => {
 
 window.addEventListener('appinstalled', ()=>{
   document.getElementById('install-banner')?.classList.remove('show');
+  document.getElementById('pwa-nav-btn').style.display='none';
   deferredPrompt = null;
 });
 
-document.getElementById('install-btn')?.addEventListener('click', async ()=>{
+// iOS는 beforeinstallprompt 없으므로 별도 처리
+if(isIOS && !isInStandaloneMode){
+  showPwaBtn();
+}
+
+async function triggerInstall(){
   if(deferredPrompt){
     deferredPrompt.prompt();
     const {outcome} = await deferredPrompt.userChoice;
-    if(outcome==='accepted') document.getElementById('install-banner')?.classList.remove('show');
+    if(outcome==='accepted'){
+      document.getElementById('install-banner')?.classList.remove('show');
+      document.getElementById('pwa-nav-btn').style.display='none';
+    }
     deferredPrompt = null;
+  } else if(isIOS){
+    showIOSInstallGuide();
   } else {
-    // iOS 안내
-    toast('Safari 하단 공유 버튼 → "홈 화면에 추가" 탭하세요');
-    dismissInstall();
+    toast('브라우저 메뉴 → "홈 화면에 추가"를 탭하세요');
   }
-});
+}
+
+function showIOSInstallGuide(){
+  const existing = document.getElementById('ios-guide');
+  if(existing){existing.remove();return;}
+  const box = document.createElement('div');
+  box.id='ios-guide';
+  box.style.cssText='position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#1A1917;color:#fff;padding:16px 20px;border-radius:14px;font-size:13px;line-height:1.7;z-index:600;width:280px;box-shadow:0 8px 32px rgba(0,0,0,.4);text-align:center';
+  box.innerHTML=`<div style="font-weight:700;margin-bottom:8px">📲 홈 화면에 추가하기</div><div style="color:rgba(255,255,255,.75);font-size:12px">Safari 하단 <b style="color:#fff">공유 버튼 (□↑)</b> 탭 →<br><b style="color:#fff">"홈 화면에 추가"</b> 선택</div><button onclick="document.getElementById('ios-guide').remove()" style="margin-top:12px;padding:7px 20px;background:#fff;color:#1A1917;border-radius:8px;font-size:12px;font-weight:700;border:none;cursor:pointer">확인</button>`;
+  document.body.appendChild(box);
+  setTimeout(()=>box.remove(), 8000);
+}
+
+document.getElementById('install-btn')?.addEventListener('click', ()=>triggerInstall());
 
 function dismissInstall(){
   document.getElementById('install-banner')?.classList.remove('show');
