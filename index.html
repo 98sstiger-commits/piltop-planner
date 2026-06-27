@@ -333,10 +333,10 @@ textarea{resize:none}
 .cl-txt{flex:1;font-size:13px;color:var(--ink);line-height:1.4}
 .cl-item.done .cl-txt{text-decoration:line-through;color:var(--ink3)}
 .cl-del{font-size:17px;color:var(--ink3);line-height:1;padding:2px}
-.add-cl{display:flex;gap:7px;margin-top:9px}
-.add-cl input{flex:1;padding:9px 11px;border:1px solid var(--line2);border-radius:7px;font-size:13px;background:var(--bg);color:var(--ink)}
+.add-cl{display:flex;gap:7px;margin-top:9px;overflow:hidden}
+.add-cl input{flex:1;min-width:0;padding:9px 11px;border:1px solid var(--line2);border-radius:7px;font-size:16px;background:var(--bg);color:var(--ink);box-sizing:border-box}
 .add-cl input:focus{border-color:var(--g);background:#fff}
-.add-cl button{padding:9px 13px;background:var(--g);color:#fff;border-radius:7px;font-size:15px;font-weight:700}
+.add-cl button{flex-shrink:0;padding:9px 13px;background:var(--g);color:#fff;border-radius:7px;font-size:15px;font-weight:700;white-space:nowrap}
 
 .dy-card{background:var(--surf);border:1px solid var(--line);border-radius:9px;overflow:hidden;margin-bottom:9px}
 .dy-card-h{padding:9px 13px;border-bottom:1px solid var(--line);font-size:9px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--ink2)}
