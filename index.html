@@ -2,6 +2,7 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>플래니</title>
 <link rel="manifest" href="/manifest.json">
@@ -396,8 +397,9 @@ textarea{resize:none}
 .t-ta:focus{border-color:var(--g);background:#fff}
 .t-ta::placeholder{color:var(--ink3)}
 
-.time-row{display:grid;grid-template-columns:1fr 24px 1fr;gap:6px;align-items:center;margin-bottom:10px}
-.time-sep{text-align:center;color:var(--ink3);font-size:14px}
+.time-row{display:flex;align-items:center;gap:6px;margin-bottom:10px}
+.time-row .t-input{flex:1;min-width:0;width:0;margin-bottom:0}
+.time-sep{flex-shrink:0;text-align:center;color:var(--ink3);font-size:14px}
 
 /* 날짜 모달 이벤트 */
 .md-evs{display:flex;flex-direction:column;gap:5px;margin-bottom:14px}
