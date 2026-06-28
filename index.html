@@ -1555,7 +1555,24 @@ function toggleTlDone(){const ds=dk(S.curDay),idx=S.dayTl[ds]?.findIndex(i=>i.id
 function deleteTlCard(){const ds=dk(S.curDay);S.dayTl[ds]=S.dayTl[ds]?.filter(i=>i.id!==tlViewId)||[];closeTldSheet();saveDB();renderTl();toast('삭제됐어요');}
 
 /* ── 체크리스트 ── */
-function renderCl(){const list=document.getElementById('cl-list'),checks=S.dayChecks[dk(S.curDay)]||[];list.innerHTML='';checks.forEach((c,i)=>{const el=document.createElement('div');el.className='cl-item'+(c.done?' done':'');el.innerHTML=`<input class="cl-cb" type="checkbox" ${c.done?'checked':''} onchange="toggleCl(${i})"><span class="cl-txt">${c.text}</span><button class="cl-del" onclick="delCl(${i})">×</button>`;list.appendChild(el);});}
+function renderCl(){
+  const list=document.getElementById('cl-list'),dk2=dk(S.curDay),checks=S.dayChecks[dk2]||[];list.innerHTML='';
+  checks.forEach((c,i)=>{
+    const el=document.createElement('div');el.className='cl-item'+(c.done?' done':'');
+    const txt=document.createElement('span');txt.className='cl-txt';txt.textContent=c.text;
+    txt.onclick=()=>{
+      const inp=document.createElement('input');inp.type='text';inp.value=c.text;
+      inp.style.cssText='flex:1;border:none;background:transparent;font-size:inherit;color:inherit;outline:none;min-width:0;';
+      txt.replaceWith(inp);inp.focus();
+      const save=()=>{const v=inp.value.trim();if(v&&v!==c.text){S.dayChecks[dk2][i].text=v;renderMon();saveDB();}renderCl();};
+      inp.onblur=save;inp.onkeydown=e=>{if(e.key==='Enter')inp.blur();if(e.key==='Escape')renderCl();};
+    };
+    el.innerHTML=`<input class="cl-cb" type="checkbox" ${c.done?'checked':''} onchange="toggleCl(${i})">`;
+    el.appendChild(txt);
+    const del=document.createElement('button');del.className='cl-del';del.textContent='×';del.onclick=()=>delCl(i);
+    el.appendChild(del);list.appendChild(el);
+  });
+}
 function addCl(){const inp=document.getElementById('cl-inp'),val=inp.value.trim();if(!val)return;const dk2=dk(S.curDay);if(!S.dayChecks[dk2])S.dayChecks[dk2]=[];S.dayChecks[dk2].push({text:val,done:false});inp.value='';renderCl();renderMon();saveDB();}
 function toggleCl(i){const dk2=dk(S.curDay);if(S.dayChecks[dk2]){S.dayChecks[dk2][i].done=!S.dayChecks[dk2][i].done;renderCl();renderMon();saveDB();}}
 function delCl(i){const dk2=dk(S.curDay);if(S.dayChecks[dk2]){S.dayChecks[dk2].splice(i,1);renderCl();renderMon();saveDB();}}
@@ -1674,7 +1691,18 @@ function renderModalCl(ds){
     const col=c.color||(CL_COLORS[i%CL_COLORS.length]);
     const wrap=document.createElement('div');
     const el=document.createElement('div');el.className='cl-item'+(c.done?' done':'');
-    el.innerHTML=`<input class="cl-cb" type="checkbox" ${c.done?'checked':''} onchange="toggleModalCl('${ds}',${i})"><button onclick="toggleClColorPicker('${ds}',${i})" style="width:14px;height:14px;border-radius:50%;background:${col};border:1.5px solid rgba(0,0,0,.12);cursor:pointer;flex-shrink:0;padding:0"></button><span class="cl-txt">${c.text}</span><button class="cl-del" onclick="delModalCl('${ds}',${i})">×</button>`;
+    const txt=document.createElement('span');txt.className='cl-txt';txt.textContent=c.text;
+    txt.onclick=()=>{
+      const inp=document.createElement('input');inp.type='text';inp.value=c.text;
+      inp.style.cssText='flex:1;border:none;background:transparent;font-size:inherit;color:inherit;outline:none;min-width:0;';
+      txt.replaceWith(inp);inp.focus();
+      const save=()=>{const v=inp.value.trim();if(v&&v!==c.text){S.dayChecks[ds][i].text=v;renderMon();if(dk(S.curDay)===ds)renderCl();saveDB();}renderModalCl(ds);};
+      inp.onblur=save;inp.onkeydown=e=>{if(e.key==='Enter')inp.blur();if(e.key==='Escape')renderModalCl(ds);};
+    };
+    const cb=`<input class="cl-cb" type="checkbox" ${c.done?'checked':''} onchange="toggleModalCl('${ds}',${i})">`;
+    const colBtn=`<button onclick="toggleClColorPicker('${ds}',${i})" style="width:14px;height:14px;border-radius:50%;background:${col};border:1.5px solid rgba(0,0,0,.12);cursor:pointer;flex-shrink:0;padding:0"></button>`;
+    const delBtn=`<button class="cl-del" onclick="delModalCl('${ds}',${i})">×</button>`;
+    el.innerHTML=cb+colBtn;el.appendChild(txt);el.insertAdjacentHTML('beforeend',delBtn);
     const picker=document.createElement('div');
     picker.id=`cl-cp-${i}`;
     picker.style.cssText='display:none;padding:6px 0 6px 30px;gap:6px;flex-wrap:wrap;';
