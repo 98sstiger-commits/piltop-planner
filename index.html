@@ -703,6 +703,16 @@ textarea{resize:none}
     </div>
     <div class="sheet-bd">
       <div id="day-evs"></div>
+      <div style="margin-bottom:12px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+          <div class="sec-lbl" style="margin:0">할 일</div>
+        </div>
+        <div class="cl-list" id="modal-cl-list"></div>
+        <div class="add-cl" style="margin-top:6px">
+          <input type="text" id="modal-cl-inp" placeholder="할 일 추가..." onkeydown="if(event.key==='Enter')addModalCl()">
+          <button onclick="addModalCl()">추가</button>
+        </div>
+      </div>
       <div class="sec-lbl">계획 / 메모</div>
       <textarea class="md-memo" id="day-memo" placeholder="이날의 계획을 적어두세요..." rows="4"></textarea>
       <div style="margin-top:12px">
@@ -1363,9 +1373,9 @@ function renderMon(){
     // 모든 항목 수집 후 최대 2개만 표시
     const allItems=[];
     evs.forEach(e=>allItems.push({cls:tm[e.type]||'school',text:e.name,style:''}));
-    if(memo)allItems.push({cls:'user',text:memo.length>6?memo.slice(0,6)+'…':memo,style:colorStyle});
-    else if(dayColor)allItems.push({cls:'user',text:'',style:colorStyle});
+    if(dayColor)allItems.push({cls:'user',text:'',style:colorStyle});
     notes.forEach(n=>{const cs=n.color?`background:${n.color};color:#555;`:'';allItems.push({cls:'user',text:n.text.length>6?n.text.slice(0,6)+'…':n.text,style:cs});});
+    (S.dayChecks[ds]||[]).forEach(c=>{allItems.push({cls:'user',text:c.text.length>6?c.text.slice(0,6)+'…':c.text,style:c.done?'opacity:.45;text-decoration:line-through;':''});});
     let evh='';
     allItems.slice(0,2).forEach(it=>{evh+=`<div class="cev ${it.cls}" style="${it.style}">${it.text}</div>`;});
     const extra=allItems.length-2;
@@ -1576,9 +1586,9 @@ function deleteTlCard(){const ds=dk(S.curDay);S.dayTl[ds]=S.dayTl[ds]?.filter(i=
 
 /* ── 체크리스트 ── */
 function renderCl(){const list=document.getElementById('cl-list'),checks=S.dayChecks[dk(S.curDay)]||[];list.innerHTML='';checks.forEach((c,i)=>{const el=document.createElement('div');el.className='cl-item'+(c.done?' done':'');el.innerHTML=`<input class="cl-cb" type="checkbox" ${c.done?'checked':''} onchange="toggleCl(${i})"><span class="cl-txt">${c.text}</span><button class="cl-del" onclick="delCl(${i})">×</button>`;list.appendChild(el);});}
-function addCl(){const inp=document.getElementById('cl-inp'),val=inp.value.trim();if(!val)return;const dk2=dk(S.curDay);if(!S.dayChecks[dk2])S.dayChecks[dk2]=[];S.dayChecks[dk2].push({text:val,done:false});inp.value='';renderCl();saveDB();}
-function toggleCl(i){const dk2=dk(S.curDay);if(S.dayChecks[dk2]){S.dayChecks[dk2][i].done=!S.dayChecks[dk2][i].done;renderCl();saveDB();}}
-function delCl(i){const dk2=dk(S.curDay);if(S.dayChecks[dk2]){S.dayChecks[dk2].splice(i,1);renderCl();saveDB();}}
+function addCl(){const inp=document.getElementById('cl-inp'),val=inp.value.trim();if(!val)return;const dk2=dk(S.curDay);if(!S.dayChecks[dk2])S.dayChecks[dk2]=[];S.dayChecks[dk2].push({text:val,done:false});inp.value='';renderCl();renderMon();saveDB();}
+function toggleCl(i){const dk2=dk(S.curDay);if(S.dayChecks[dk2]){S.dayChecks[dk2][i].done=!S.dayChecks[dk2][i].done;renderCl();renderMon();saveDB();}}
+function delCl(i){const dk2=dk(S.curDay);if(S.dayChecks[dk2]){S.dayChecks[dk2].splice(i,1);renderCl();renderMon();saveDB();}}
 
 /* ── 날짜 시트 ── */
 let modalDate=null;
@@ -1591,6 +1601,7 @@ function openDaySheet(date){
   if(evs.length){evHtml='<div style="margin-bottom:12px">';evs.forEach(e=>{evHtml+=`<div class="md-ev ${tm[e.type]||'school'}"><div class="md-ev-dot"></div><span class="md-ev-name">${e.name}</span><span class="md-ev-type">${e.type==='school-exam'?'내신시험':e.type==='suneung'?'수능':e.type==='holiday'?'방학':e.type==='inter'?'면접':'학교행사'}</span></div>`;});evHtml+='</div>';}
   document.getElementById('day-evs').innerHTML=evHtml;
   document.getElementById('day-memo').value=S.dayMemos[ds]||'';
+  renderModalCl(ds);
   renderDayNotes(ds);
   buildStickerGrid(ds);
   // 현재 색상 표시
@@ -1684,6 +1695,28 @@ function addDayNote(){
   if(tas.length)tas[tas.length-1].focus();
 }
 function closeDaySheet(){document.getElementById('day-bg').classList.remove('open');}
+
+function renderModalCl(ds){
+  const list=document.getElementById('modal-cl-list');if(!list)return;
+  const checks=S.dayChecks[ds]||[];list.innerHTML='';
+  checks.forEach((c,i)=>{
+    const el=document.createElement('div');el.className='cl-item'+(c.done?' done':'');
+    el.innerHTML=`<input class="cl-cb" type="checkbox" ${c.done?'checked':''} onchange="toggleModalCl('${ds}',${i})"><span class="cl-txt">${c.text}</span><button class="cl-del" onclick="delModalCl('${ds}',${i})">×</button>`;
+    list.appendChild(el);
+  });
+}
+function addModalCl(){
+  if(!modalDate)return;const ds=dk(modalDate);
+  const inp=document.getElementById('modal-cl-inp'),val=inp.value.trim();if(!val)return;
+  if(!S.dayChecks[ds])S.dayChecks[ds]=[];S.dayChecks[ds].push({text:val,done:false});
+  inp.value='';renderModalCl(ds);renderMon();if(dk(S.curDay)===ds)renderCl();saveDB();
+}
+function toggleModalCl(ds,i){
+  if(S.dayChecks[ds]){S.dayChecks[ds][i].done=!S.dayChecks[ds][i].done;renderModalCl(ds);renderMon();if(dk(S.curDay)===ds)renderCl();saveDB();}
+}
+function delModalCl(ds,i){
+  if(S.dayChecks[ds]){S.dayChecks[ds].splice(i,1);renderModalCl(ds);renderMon();if(dk(S.curDay)===ds)renderCl();saveDB();}
+}
 async function saveDaySheet(){
   if(!modalDate)return;
   const ds=dk(modalDate);
