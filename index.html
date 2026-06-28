@@ -466,7 +466,7 @@ textarea{resize:none}
   <div class="ob-hero">
     <div class="ob-hero-ac" id="ob-ac">필탑학원</div>
     <div class="ob-hero-title">플래니<br>Plannie ✦</div>
-    <div class="ob-hero-sub">AI와 함께 만드는<br>나만의 학습 다이어리</div>
+    <div class="ob-hero-sub">나만의 맞춤형<br>학습 다이어리</div>
   </div>
   <div class="ob-body">
     <div class="ob-prog" id="ob-prog"></div>
@@ -529,11 +529,11 @@ textarea{resize:none}
       <div class="gen-box">
         <div class="gen-spin"></div>
         <div class="gen-t">플래너 만드는 중</div>
-        <div class="gen-s">학교 일정을 가져오고<br>AI가 맞춤 로드맵을 짜고 있어요.</div>
+        <div class="gen-s">학교 일정을 가져오고<br>맞춤 로드맵을 만들고 있어요.</div>
         <div class="gen-steps">
           <div class="gen-step" id="gs1"><div class="gs"></div>학교 학사일정 불러오는 중...</div>
           <div class="gen-step" id="gs2"><div class="gs"></div>입시 일정 확인 중...</div>
-          <div class="gen-step" id="gs3"><div class="gs"></div>AI 연간 로드맵 생성 중...</div>
+          <div class="gen-step" id="gs3"><div class="gs"></div>연간 로드맵 생성 중...</div>
           <div class="gen-step" id="gs4"><div class="gs"></div>플래너 완성 중...</div>
         </div>
       </div>
@@ -842,7 +842,7 @@ textarea{resize:none}
     </div>
     <div class="sheet-ft">
       <button class="s-btn sec" onclick="closeProfSheet()">취소</button>
-      <button class="s-btn pri" onclick="saveProfSheet()">저장 후 AI 재생성</button>
+      <button class="s-btn pri" onclick="saveProfSheet()">저장 후 다시 생성</button>
     </div>
   </div>
 </div>
@@ -1332,7 +1332,7 @@ function renderMon(){
     if(plan.careerTip)careerRows+=`<div class="ai-strip-career-row"><span class="ai-strip-career-label">진로</span><span>${plan.careerTip}</span></div>`;
     if(plan.extracurricular)careerRows+=`<div class="ai-strip-career-row"><span class="ai-strip-career-label">비교과</span><span>${plan.extracurricular}</span></div>`;
     sw.innerHTML=`<div class="ai-strip">
-      <div class="ai-strip-lbl">AI · ${mn[S.calMonth]} 핵심</div>
+      <div class="ai-strip-lbl">${mn[S.calMonth]} 핵심 가이드</div>
       <div class="ai-strip-kw">${plan.keyword}${plan.note?'  <span style="opacity:.65;font-size:11px">'+plan.note+'</span>':''}</div>
       ${guideHtml}
       ${careerRows?`<div class="ai-strip-career">${careerRows}</div>`:''}
