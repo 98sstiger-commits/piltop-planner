@@ -364,7 +364,7 @@ textarea{resize:none}
 ══════════════════════════════ */
 .sheet-bg{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:100;display:flex;align-items:flex-end;justify-content:center;opacity:0;pointer-events:none;transition:opacity .2s}
 .sheet-bg.open{opacity:1;pointer-events:all}
-.sheet{background:var(--surf);border-radius:18px 18px 0 0;width:100%;max-width:600px;max-height:88dvh;overflow-y:auto;transform:translateY(20px);transition:transform .25s cubic-bezier(.4,0,.2,1);padding-bottom:env(safe-area-inset-bottom,16px)}
+.sheet{background:var(--surf);border-radius:18px 18px 0 0;width:100%;max-width:600px;max-height:88dvh;overflow-x:hidden;overflow-y:auto;transform:translateY(20px);transition:transform .25s cubic-bezier(.4,0,.2,1);padding-bottom:env(safe-area-inset-bottom,16px)}
 @media(min-width:768px){.sheet{border-radius:14px;margin:auto;max-height:80vh;transform:scale(.97)}}
 .sheet-bg.open .sheet{transform:translateY(0) scale(1)}
 .sheet-grip{width:36px;height:4px;border-radius:2px;background:var(--line2);margin:10px auto 0}
