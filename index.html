@@ -1370,16 +1370,17 @@ function renderMon(){
     const colorStyle=dayColor?`background:${dayColor};color:#555;`:'';
     const memo=S.dayMemos[ds]||'';
     const notes=(S.dayNotes[ds]||[]).map(n=>(typeof n==='object'&&n)?n:{text:String(n||''),color:''}).filter(n=>n.text);
-    // 모든 항목 수집 후 최대 2개만 표시
     const allItems=[];
     evs.forEach(e=>allItems.push({cls:tm[e.type]||'school',text:e.name,style:''}));
     if(dayColor)allItems.push({cls:'user',text:'',style:colorStyle});
     notes.forEach(n=>{const cs=n.color?`background:${n.color};color:#555;`:'';allItems.push({cls:'user',text:n.text.length>6?n.text.slice(0,6)+'…':n.text,style:cs});});
     const CL_COLORS=['#FF9AA2','#FFB7B2','#FFDAC1','#CAFFBF','#9BF6FF','#A0C4FF','#BDB2FF','#FFCCF0','#FDFFB6','#FFD6A5'];
     (S.dayChecks[ds]||[]).forEach((c,ci)=>{const cc=CL_COLORS[ci%CL_COLORS.length];const bs=`background:${cc};color:#555;`;allItems.push({cls:'user',text:c.text.length>6?c.text.slice(0,6)+'…':c.text,style:c.done?bs+'opacity:.45;text-decoration:line-through;':bs});});
+    const isPortraitMobile=window.innerWidth<=767&&window.innerHeight>window.innerWidth;
+    const maxShow=isPortraitMobile?4:3;
     let evh='';
-    allItems.slice(0,2).forEach(it=>{evh+=`<div class="cev ${it.cls}" style="${it.style}">${it.text}</div>`;});
-    const extra=allItems.length-2;
+    allItems.slice(0,maxShow).forEach(it=>{evh+=`<div class="cev ${it.cls}" style="${it.style}">${it.text}</div>`;});
+    const extra=allItems.length-maxShow;
     if(extra>0)evh+=`<div class="cd-more">+${extra}</div>`;
     const st=S.dayStickers[ds]||'';
     const isToday=ds===dk(TODAY);
