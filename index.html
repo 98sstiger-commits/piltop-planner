@@ -1375,7 +1375,8 @@ function renderMon(){
     evs.forEach(e=>allItems.push({cls:tm[e.type]||'school',text:e.name,style:''}));
     if(dayColor)allItems.push({cls:'user',text:'',style:colorStyle});
     notes.forEach(n=>{const cs=n.color?`background:${n.color};color:#555;`:'';allItems.push({cls:'user',text:n.text.length>6?n.text.slice(0,6)+'…':n.text,style:cs});});
-    (S.dayChecks[ds]||[]).forEach(c=>{allItems.push({cls:'user',text:c.text.length>6?c.text.slice(0,6)+'…':c.text,style:c.done?'opacity:.45;text-decoration:line-through;':''});});
+    const CL_COLORS=['#FF9AA2','#FFB7B2','#FFDAC1','#CAFFBF','#9BF6FF','#A0C4FF','#BDB2FF','#FFCCF0','#FDFFB6','#FFD6A5'];
+    (S.dayChecks[ds]||[]).forEach((c,ci)=>{const cc=CL_COLORS[ci%CL_COLORS.length];const bs=`background:${cc};color:#555;`;allItems.push({cls:'user',text:c.text.length>6?c.text.slice(0,6)+'…':c.text,style:c.done?bs+'opacity:.45;text-decoration:line-through;':bs});});
     let evh='';
     allItems.slice(0,2).forEach(it=>{evh+=`<div class="cev ${it.cls}" style="${it.style}">${it.text}</div>`;});
     const extra=allItems.length-2;
