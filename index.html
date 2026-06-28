@@ -714,38 +714,8 @@ textarea{resize:none}
         </div>
       </div>
       <textarea class="md-memo" id="day-memo" style="display:none"></textarea>
+      <div id="day-notes-list" style="display:none"></div>
       <div style="margin-top:12px">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
-          <div class="sec-lbl" style="margin:0">추가 메모</div>
-          <button onclick="addDayNote()" style="width:26px;height:26px;border-radius:50%;background:var(--g);color:#fff;border:none;font-size:18px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center">+</button>
-        </div>
-        <div id="day-notes-list"></div>
-      </div>
-      <div style="margin-top:12px">
-        <div class="sec-lbl">날짜 색상</div>
-        <div style="display:grid;grid-template-columns:repeat(7,32px);gap:7px;margin-bottom:12px" id="color-picker">
-          <button onclick="setDayColor(null)" class="color-chip" data-c="" style="width:32px;height:32px;border-radius:50%;background:var(--line2);border:2px solid transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:13px">✕</button>
-          <button onclick="setDayColor('#FF9AA2')" class="color-chip" data-c="#FF9AA2" style="width:32px;height:32px;border-radius:50%;background:#FF9AA2;border:2px solid transparent;cursor:pointer"></button>
-          <button onclick="setDayColor('#FFB7B2')" class="color-chip" data-c="#FFB7B2" style="width:32px;height:32px;border-radius:50%;background:#FFB7B2;border:2px solid transparent;cursor:pointer"></button>
-          <button onclick="setDayColor('#FFDAC1')" class="color-chip" data-c="#FFDAC1" style="width:32px;height:32px;border-radius:50%;background:#FFDAC1;border:2px solid transparent;cursor:pointer"></button>
-          <button onclick="setDayColor('#FFD6A5')" class="color-chip" data-c="#FFD6A5" style="width:32px;height:32px;border-radius:50%;background:#FFD6A5;border:2px solid transparent;cursor:pointer"></button>
-          <button onclick="setDayColor('#FFFACD')" class="color-chip" data-c="#FFFACD" style="width:32px;height:32px;border-radius:50%;background:#FFFACD;border:2px solid transparent;cursor:pointer"></button>
-          <button onclick="setDayColor('#FDFFB6')" class="color-chip" data-c="#FDFFB6" style="width:32px;height:32px;border-radius:50%;background:#FDFFB6;border:2px solid transparent;cursor:pointer"></button>
-          <button onclick="setDayColor('#CAFFBF')" class="color-chip" data-c="#CAFFBF" style="width:32px;height:32px;border-radius:50%;background:#CAFFBF;border:2px solid transparent;cursor:pointer"></button>
-          <button onclick="setDayColor('#CCFFCC')" class="color-chip" data-c="#CCFFCC" style="width:32px;height:32px;border-radius:50%;background:#CCFFCC;border:2px solid transparent;cursor:pointer"></button>
-          <button onclick="setDayColor('#9BF6FF')" class="color-chip" data-c="#9BF6FF" style="width:32px;height:32px;border-radius:50%;background:#9BF6FF;border:2px solid transparent;cursor:pointer"></button>
-          <button onclick="setDayColor('#A0C4FF')" class="color-chip" data-c="#A0C4FF" style="width:32px;height:32px;border-radius:50%;background:#A0C4FF;border:2px solid transparent;cursor:pointer"></button>
-          <button onclick="setDayColor('#CCE5FF')" class="color-chip" data-c="#CCE5FF" style="width:32px;height:32px;border-radius:50%;background:#CCE5FF;border:2px solid transparent;cursor:pointer"></button>
-          <button onclick="setDayColor('#BDB2FF')" class="color-chip" data-c="#BDB2FF" style="width:32px;height:32px;border-radius:50%;background:#BDB2FF;border:2px solid transparent;cursor:pointer"></button>
-          <button onclick="setDayColor('#E8CCFF')" class="color-chip" data-c="#E8CCFF" style="width:32px;height:32px;border-radius:50%;background:#E8CCFF;border:2px solid transparent;cursor:pointer"></button>
-          <button onclick="setDayColor('#FFCCF0')" class="color-chip" data-c="#FFCCF0" style="width:32px;height:32px;border-radius:50%;background:#FFCCF0;border:2px solid transparent;cursor:pointer"></button>
-          <button onclick="setDayColor('#FFC8DD')" class="color-chip" data-c="#FFC8DD" style="width:32px;height:32px;border-radius:50%;background:#FFC8DD;border:2px solid transparent;cursor:pointer"></button>
-          <button onclick="setDayColor('#F5D0C5')" class="color-chip" data-c="#F5D0C5" style="width:32px;height:32px;border-radius:50%;background:#F5D0C5;border:2px solid transparent;cursor:pointer"></button>
-          <button onclick="setDayColor('#D4C5A9')" class="color-chip" data-c="#D4C5A9" style="width:32px;height:32px;border-radius:50%;background:#D4C5A9;border:2px solid transparent;cursor:pointer"></button>
-          <button onclick="setDayColor('#C9CBA3')" class="color-chip" data-c="#C9CBA3" style="width:32px;height:32px;border-radius:50%;background:#C9CBA3;border:2px solid transparent;cursor:pointer"></button>
-          <button onclick="setDayColor('#D0D0D0')" class="color-chip" data-c="#D0D0D0" style="width:32px;height:32px;border-radius:50%;background:#D0D0D0;border:2px solid transparent;cursor:pointer"></button>
-          <button onclick="setDayColor('#B5B5B5')" class="color-chip" data-c="#B5B5B5" style="width:32px;height:32px;border-radius:50%;background:#B5B5B5;border:2px solid transparent;cursor:pointer"></button>
-        </div>
         <div class="sec-lbl">스티커</div>
         <div class="sticker-grid" id="sticker-grid"></div>
         <button class="sticker-rm" id="sticker-rm" onclick="removeSticker()" style="display:none">스티커 제거</button>
