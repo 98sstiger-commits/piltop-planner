@@ -716,14 +716,15 @@ textarea{resize:none}
       <textarea class="md-memo" id="day-memo" style="display:none"></textarea>
       <div id="day-notes-list" style="display:none"></div>
       <div style="margin-top:12px">
-        <div class="sec-lbl">스티커</div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+          <div class="sec-lbl" style="margin:0">스티커</div>
+          <button id="sticker-rm" onclick="removeSticker()" style="display:none;font-size:11px;color:#b91c1c;background:none;border:none;cursor:pointer;padding:2px 6px">제거</button>
+        </div>
         <div class="sticker-grid" id="sticker-grid"></div>
-        <button class="sticker-rm" id="sticker-rm" onclick="removeSticker()" style="display:none">스티커 제거</button>
       </div>
     </div>
     <div class="sheet-ft">
-      <button class="s-btn sec" onclick="goToDaySheet()">일간으로</button>
-      <button class="s-btn pri" onclick="saveDaySheet()">저장</button>
+      <button class="s-btn pri" onclick="goToDaySheet()" style="width:100%">일간으로 →</button>
     </div>
   </div>
 </div>
@@ -1342,7 +1343,7 @@ function renderMon(){
     const allItems=[];
     evs.forEach(e=>allItems.push({cls:tm[e.type]||'school',text:e.name,style:''}));
     const CL_COLORS=['#FF9AA2','#FFB7B2','#FFDAC1','#CAFFBF','#9BF6FF','#A0C4FF','#BDB2FF','#FFCCF0','#FDFFB6','#FFD6A5'];
-    (S.dayChecks[ds]||[]).forEach((c,ci)=>{const cc=CL_COLORS[ci%CL_COLORS.length];const bs=`background:${cc};color:#555;`;allItems.push({cls:'user',text:c.text.length>6?c.text.slice(0,6)+'…':c.text,style:c.done?bs+'opacity:.45;text-decoration:line-through;':bs});});
+    (S.dayChecks[ds]||[]).forEach((c,ci)=>{const cc=c.color||(CL_COLORS[ci%CL_COLORS.length]);const bs=`background:${cc};color:#555;`;allItems.push({cls:'user',text:c.text.length>6?c.text.slice(0,6)+'…':c.text,style:c.done?bs+'opacity:.45;text-decoration:line-through;':bs});});
     const isPortraitMobile=window.innerWidth<=767&&window.innerHeight>window.innerWidth;
     const maxShow=isPortraitMobile?4:3;
     let evh='';
@@ -1668,11 +1669,27 @@ function closeDaySheet(){document.getElementById('day-bg').classList.remove('ope
 function renderModalCl(ds){
   const list=document.getElementById('modal-cl-list');if(!list)return;
   const checks=S.dayChecks[ds]||[];list.innerHTML='';
+  const CL_COLORS=['#FF9AA2','#FFB7B2','#FFDAC1','#CAFFBF','#9BF6FF','#A0C4FF','#BDB2FF','#FFCCF0','#FDFFB6','#FFD6A5'];
   checks.forEach((c,i)=>{
+    const col=c.color||(CL_COLORS[i%CL_COLORS.length]);
+    const wrap=document.createElement('div');
     const el=document.createElement('div');el.className='cl-item'+(c.done?' done':'');
-    el.innerHTML=`<input class="cl-cb" type="checkbox" ${c.done?'checked':''} onchange="toggleModalCl('${ds}',${i})"><span class="cl-txt">${c.text}</span><button class="cl-del" onclick="delModalCl('${ds}',${i})">×</button>`;
-    list.appendChild(el);
+    el.innerHTML=`<input class="cl-cb" type="checkbox" ${c.done?'checked':''} onchange="toggleModalCl('${ds}',${i})"><button onclick="toggleClColorPicker('${ds}',${i})" style="width:14px;height:14px;border-radius:50%;background:${col};border:1.5px solid rgba(0,0,0,.12);cursor:pointer;flex-shrink:0;padding:0"></button><span class="cl-txt">${c.text}</span><button class="cl-del" onclick="delModalCl('${ds}',${i})">×</button>`;
+    const picker=document.createElement('div');
+    picker.id=`cl-cp-${i}`;
+    picker.style.cssText='display:none;padding:6px 0 6px 30px;gap:6px;flex-wrap:wrap;';
+    CL_COLORS.forEach(cc=>{
+      const b=document.createElement('button');
+      b.style.cssText=`width:22px;height:22px;border-radius:50%;background:${cc};border:${cc===col?'2px solid #444':'2px solid transparent'};cursor:pointer;padding:0`;
+      b.onclick=()=>{S.dayChecks[ds][i].color=cc;renderModalCl(ds);renderMon();if(dk(S.curDay)===ds)renderCl();saveDB();};
+      picker.appendChild(b);
+    });
+    wrap.appendChild(el);wrap.appendChild(picker);list.appendChild(wrap);
   });
+}
+function toggleClColorPicker(ds,i){
+  const p=document.getElementById(`cl-cp-${i}`);if(!p)return;
+  p.style.display=p.style.display==='flex'?'none':'flex';
 }
 function addModalCl(){
   if(!modalDate)return;const ds=dk(modalDate);
