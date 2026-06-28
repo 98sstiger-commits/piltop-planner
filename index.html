@@ -549,10 +549,10 @@ textarea{resize:none}
       <div class="pl-nav-student" id="pl-student"></div>
     </div>
     <div class="pl-nav-tabs">
-      <button class="pl-tab on" onclick="goView(0)"><span class="pl-tab-icon">📅</span>연간</button>
+      <button class="pl-tab" onclick="goView(0)"><span class="pl-tab-icon">📅</span>연간</button>
       <button class="pl-tab" onclick="goView(1)"><span class="pl-tab-icon">🗓</span>월간</button>
       <button class="pl-tab" onclick="goView(2)"><span class="pl-tab-icon">📋</span>주간</button>
-      <button class="pl-tab" onclick="goView(3)"><span class="pl-tab-icon">✏️</span>일간</button>
+      <button class="pl-tab on" onclick="goView(3)"><span class="pl-tab-icon">✏️</span>일간</button>
     </div>
     <div class="pl-nav-bottom">
       <button class="pl-edit-btn" onclick="openProf()"><span>✎</span>정보 수정</button>
@@ -1212,6 +1212,7 @@ async function startPlanner(){
   if(!S.schoolSched.length)S.schoolSched=await fetchNeis();
   renderYr();renderMon();renderWk();renderDy();
   initSwipe();
+  goView(3);
 
   // yearly_plan 없거나, fallback 플랜인데 career 정보가 있으면 백그라운드 재생성
   const isFallback=!Object.keys(S.yearlyPlan).length||Object.values(S.yearlyPlan).some(p=>p.keyword==='학습 계획을 세워보세요');
