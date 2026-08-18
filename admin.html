@@ -302,6 +302,11 @@ body{font-family:'Noto Sans KR',sans-serif;background:#F6F5F2;color:#18170F;min-
       </div>
 
       <div class="field">
+        <label class="field-label">학생 휴대폰번호 (선택 · 뒷자리 4개로 출석 PIN 자동생성)</label>
+        <input class="f-input" id="s-stu-phone" placeholder="010-1234-5678" maxlength="13">
+      </div>
+
+      <div class="field">
         <label class="field-label">학부모 연락처 (독서실 알림용, 선택)</label>
         <input class="f-input" id="s-phone" placeholder="010-1234-5678" maxlength="13">
       </div>
@@ -602,6 +607,7 @@ async function generateLink(){
   const name=document.getElementById('s-name').value.trim();
   const grade=document.getElementById('s-grade').value;
   const phone=document.getElementById('s-phone').value.trim();
+  const stuPhone=document.getElementById('s-stu-phone').value.trim();
   const roomId=document.getElementById('s-room').value;
   const subjects=[...document.querySelectorAll('#s-subjects .subj-chk.on')].map(b=>b.dataset.k);
   if(!name){showToast('이름을 입력해주세요');return;}
@@ -609,10 +615,10 @@ async function generateLink(){
   if(!grade){showToast('학년을 선택해주세요');return;}
 
   const id=crypto.randomUUID();
-  const pin=await genUniquePin();
+  const pin=await getPinForPhone(stuPhone);
   await sb('planner_students',{
     method:'POST',
-    body:JSON.stringify({id,name,grade,school_name:selSchool.name,school_code:selSchool.code,school_org:selSchool.orgCode,created_at:new Date().toISOString(),student_pin:pin,parent_phone:phone||null,room_id:roomId||null,subjects})
+    body:JSON.stringify({id,name,grade,school_name:selSchool.name,school_code:selSchool.code,school_org:selSchool.orgCode,created_at:new Date().toISOString(),student_pin:pin,student_phone:stuPhone||null,parent_phone:phone||null,room_id:roomId||null,subjects})
   });
   buildSubjectChecks();
 
@@ -624,6 +630,7 @@ async function generateLink(){
 
   document.getElementById('link-result').style.display='block';
   document.getElementById('s-phone').value='';
+  document.getElementById('s-stu-phone').value='';
   loadStudents();
 
 // 연도 선택 초기화 (현재~2035)
@@ -698,9 +705,10 @@ function renderStudentList(){
       <div class="stu-avatar">${s.name[0]}</div>
       <div class="stu-info">
         <div class="stu-name">${s.name}</div>
-        <div class="stu-sub">${s.school_name||'학교 미정'} · ${s.grade||'?'}학년${s.parent_phone?' · '+s.parent_phone:''}</div>
+        <div class="stu-sub">${s.school_name||'학교 미정'} · ${s.grade||'?'}학년${s.student_phone?' · 학생 '+s.student_phone:''}${s.parent_phone?' · 학부모 '+s.parent_phone:''}</div>
         <div class="stu-extra-row" onclick="event.stopPropagation()">
           <span class="pin-badge ${s.student_pin?'':'muted'}">${s.student_pin?'PIN '+s.student_pin:'PIN 없음'}</span>
+          <button class="mini-btn" style="padding:3px 8px;font-size:10px" onclick="openPhonePop(event,'${s.id}')">📱 번호수정</button>
           <button class="mini-btn" style="padding:3px 8px;font-size:10px" onclick="regenPin('${s.id}','${s.name}')">재발급</button>
           <select class="f-select" onchange="assignRoom('${s.id}',this.value)">${roomOpts}</select>
           <button class="mini-btn" style="padding:3px 8px;font-size:10px" onclick="window.open('${BASE}/report.html?id=${s.id}&type=weekly','_blank')">📊 리포트</button>
@@ -865,6 +873,19 @@ async function genUniquePin(){
   }
   return randPin();
 }
+function derivePinFromPhone(phone){
+  const digits=(phone||'').replace(/\D/g,'');
+  return digits.length>=4?digits.slice(-4):null;
+}
+async function getPinForPhone(phone,excludeId){
+  const derived=derivePinFromPhone(phone);
+  if(derived){
+    const exist=await sb(`planner_students?student_pin=eq.${derived}&select=id`);
+    const taken=(exist||[]).some(s=>s.id!==excludeId);
+    if(!taken)return derived;
+  }
+  return await genUniquePin();
+}
 async function regenPin(id,name){
   if(!confirm(name+' 학생의 고유번호를 재발급할까요?'))return;
   const pin=await genUniquePin();
@@ -902,6 +923,43 @@ function openSubjPop(e,id){
     loadStudents();
   };
   setTimeout(()=>document.addEventListener('click',closeSubjPop,{once:true}),0);
+}
+
+/* ── 연락처(학생/학부모 번호) 수정 ── */
+function closePhonePop(){document.querySelectorAll('.phone-pop').forEach(p=>p.remove());}
+function openPhonePop(e,id){
+  closePhonePop();
+  const s=ALL_STUDENTS.find(x=>x.id===id);
+  if(!s)return;
+  const pop=document.createElement('div');
+  pop.className='subj-pop phone-pop';
+  const cx=e.clientX||window.innerWidth/2,cy=e.clientY||window.innerHeight/2;
+  pop.style.left=Math.min(cx,window.innerWidth-260)+'px';
+  pop.style.top=Math.min(cy,window.innerHeight-220)+'px';
+  pop.innerHTML=`<div class="subj-pop-ttl">${s.name} 학생 연락처</div>
+    <div class="field" style="margin-bottom:10px">
+      <label class="field-label">학생 휴대폰 (뒷자리 4개로 PIN 설정)</label>
+      <div class="seat-pop-field"><input type="text" id="phone-pop-stu" placeholder="010-1234-5678" value="${(s.student_phone||'').replace(/"/g,'&quot;')}"></div>
+    </div>
+    <div class="field" style="margin-bottom:6px">
+      <label class="field-label">학부모 연락처</label>
+      <div class="seat-pop-field"><input type="text" id="phone-pop-parent" placeholder="010-1234-5678" value="${(s.parent_phone||'').replace(/"/g,'&quot;')}"></div>
+    </div>
+    <button class="subj-pop-save">저장</button>`;
+  document.body.appendChild(pop);
+  pop.addEventListener('click',ev=>ev.stopPropagation());
+  pop.querySelector('.subj-pop-save').onclick=async()=>{
+    const stuPhone=document.getElementById('phone-pop-stu').value.trim();
+    const parentPhone=document.getElementById('phone-pop-parent').value.trim();
+    const patch={student_phone:stuPhone||null,parent_phone:parentPhone||null};
+    const derived=derivePinFromPhone(stuPhone);
+    if(derived)patch.student_pin=await getPinForPhone(stuPhone,id);
+    await sb(`planner_students?id=eq.${id}`,{method:'PATCH',body:JSON.stringify(patch)});
+    closePhonePop();
+    showToast('연락처가 저장됐어요'+(patch.student_pin?` (PIN ${patch.student_pin})`:''));
+    loadStudents();
+  };
+  setTimeout(()=>document.addEventListener('click',closePhonePop,{once:true}),0);
 }
 
 /* ══ 좌석현황 탭 ══ */

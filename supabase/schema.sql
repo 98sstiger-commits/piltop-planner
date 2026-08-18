@@ -67,6 +67,8 @@ create index if not exists idx_attendance_active on attendance(room_id) where ch
 alter table planner_students add column if not exists student_pin varchar(4) unique;
 alter table planner_students add column if not exists room_id uuid references study_rooms(id) on delete set null;
 alter table planner_students add column if not exists parent_phone text;
+-- 학생 본인 휴대폰번호 (뒷자리 4개를 PIN으로 자동 사용)
+alter table planner_students add column if not exists student_phone text;
 
 -- 이미 위 SQL을 한 번 실행한 적이 있다면(테이블이 이미 존재하면) 아래 줄들이
 -- 새로 추가된 컬럼/상태값을 기존 테이블에 안전하게 반영해줍니다.
