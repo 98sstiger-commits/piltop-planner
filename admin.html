@@ -491,7 +491,7 @@ let selSchool=null;
 let genLink='';
 let schoolTimer=null;
 let ROOMS=[];
-const SUBJECT_LIST=[{k:'kor',l:'국어'},{k:'math',l:'수학'},{k:'eng',l:'영어'},{k:'sci',l:'과학'},{k:'soc',l:'사회'},{k:'hist',l:'역사'}];
+const SUBJECT_LIST=[{k:'kor',l:'국어'},{k:'math',l:'수학'},{k:'eng',l:'영어'},{k:'sci',l:'과학'},{k:'soc',l:'사회'}];
 function subjLabel(k){return SUBJECT_LIST.find(s=>s.k===k)?.l||k;}
 function buildSubjectChecks(){
   const wrap=document.getElementById('s-subjects');
