@@ -27,6 +27,8 @@ create table if not exists study_rooms (
 );
 
 -- ── 2. seats : 좌석 정보 ───────────────────────────────────────
+-- kind='block'인 행은 실제 좌석이 아니라 배치도에서 "이 공간은 제외"
+-- 표시용으로 쓰는 사각형입니다 (벽/기둥/통로 등).
 create table if not exists seats (
   id uuid primary key default gen_random_uuid(),
   room_id uuid not null references study_rooms(id) on delete cascade,
@@ -37,9 +39,11 @@ create table if not exists seats (
   width numeric not null default 9,
   height numeric not null default 9,
   status text not null default 'empty' check (status in ('empty','reserved')),
+  kind text not null default 'seat' check (kind in ('seat','block')),
   created_at timestamptz not null default now(),
   unique (room_id, seat_number)
 );
+alter table seats add column if not exists kind text not null default 'seat' check (kind in ('seat','block'));
 
 -- ── 3. attendance : 출석 기록 ──────────────────────────────────
 -- status: studying(공부중) / in_class(학원수업중) / away(외출중) / checked_out(퇴실)

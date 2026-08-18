@@ -366,7 +366,7 @@ async function renderSeatMap(){
   const map=document.getElementById('sp-map');
   map.innerHTML='<div class="sp-empty">불러오는 중...</div>';
   const [seats,active]=await Promise.all([
-    sb(`seats?room_id=eq.${ROOM.id}&select=*&order=seat_number.asc`),
+    sb(`seats?room_id=eq.${ROOM.id}&kind=eq.seat&select=*&order=seat_number.asc`),
     sb(`attendance?room_id=eq.${ROOM.id}&checkout_at=is.null&select=seat_id,planner_students(name)`)
   ]);
   if(!seats||!seats.length){
