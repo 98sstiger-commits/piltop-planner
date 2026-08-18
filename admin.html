@@ -772,7 +772,7 @@ function openSpy(s){
     <div class="info-cell"><div class="info-cell-lbl">희망 대학/학과</div><div class="info-cell-val">${[s.univ1,s.dept1].filter(Boolean).join(' / ')||'미정'}</div></div>
   </div>`;
   if(Object.keys(plan).length){
-    html+=`<div class="sec-lbl" style="margin-bottom:10px">AI 연간 플래너</div><div class="month-grid">`;
+    html+=`<div class="sec-lbl" style="margin-bottom:10px">연간 플래너</div><div class="month-grid">`;
     Object.values(plan).forEach(m=>{
       html+=`<div class="month-cell">
         <div class="month-num">${m.month}<span style="font-size:9px;font-weight:400;color:#A8A49C;margin-left:2px">${MON_EN[(m.month||1)-1]}</span></div>
@@ -1320,7 +1320,7 @@ async function removeFloorImage(){
 async function detectSeatsFromImage(silent){
   const room=ROOMS.find(r=>r.id===curSeatRoomId);
   if(!room||!room.floor_image_url){showToast('먼저 도면을 업로드하세요');return;}
-  if(!silent&&!confirm('AI가 도면 이미지를 다시 분석해서 좌석을 추가로 만들어요.\n완벽하지 않을 수 있어 생성 후 드래그로 조정이 필요해요. 계속할까요?'))return;
+  if(!silent&&!confirm('도면 이미지를 다시 분석해서 좌석을 추가로 만들어요.\n완벽하지 않을 수 있어 생성 후 드래그로 조정이 필요해요. 계속할까요?'))return;
   const btn=document.getElementById('seat-detect-btn');
   btn.disabled=true;btn.textContent='🪄 분석 중...';
   if(!silent)showToast('도면을 분석하는 중이에요 (몇 초 걸릴 수 있어요)');

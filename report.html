@@ -438,11 +438,11 @@ async function renderMonthly(){
   renderAiComment('monthly',stats);
 }
 
-/* ── AI 한마디 ── */
+/* ── 선생님 한마디 ── */
 async function renderAiComment(type,stats){
   const el=document.getElementById('ai-card');
   if(!el)return;
-  el.innerHTML=`<div class="ai-card"><div class="ai-ttl">✨ AI ${type==='monthly'?'월간 총평':'한마디'}</div><div class="ai-loading">작성 중...</div></div>`;
+  el.innerHTML=`<div class="ai-card"><div class="ai-ttl">✨ ${type==='monthly'?'월간 총평':'선생님 한마디'}</div><div class="ai-loading">작성 중...</div></div>`;
   let comment=null;
   try{
     const r=await fetch('/api/generate-report-comment',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({type,name:STUDENT.name,stats})});
@@ -450,7 +450,7 @@ async function renderAiComment(type,stats){
     if(data.success&&data.comment)comment=data.comment;
   }catch(e){}
   if(!comment)comment=fallbackComment(type,stats);
-  el.innerHTML=`<div class="ai-card"><div class="ai-ttl">✨ AI ${type==='monthly'?'월간 총평':'한마디'}</div><div class="ai-text">${comment}</div></div>`;
+  el.innerHTML=`<div class="ai-card"><div class="ai-ttl">✨ ${type==='monthly'?'월간 총평':'선생님 한마디'}</div><div class="ai-text">${comment}</div></div>`;
 }
 function fallbackComment(type,stats){
   const name=STUDENT.name;

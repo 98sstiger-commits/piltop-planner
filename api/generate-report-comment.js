@@ -11,7 +11,7 @@ export default async function handler(req, res) {
 
     const label = type === 'monthly' ? '월간' : type === 'weekly' ? '주간' : '일간';
     const prompt = `당신은 학생을 따뜻하게 격려하는 학원 선생님입니다.
-아래 ${label} 학습 데이터를 보고 학부모에게 보여줄 "${label} AI 한마디"를 작성해주세요.
+아래 ${label} 학습 데이터를 보고 학부모에게 보여줄 "${label} 한마디"를 작성해주세요.
 
 학생: ${name}
 데이터: ${JSON.stringify(stats)}
