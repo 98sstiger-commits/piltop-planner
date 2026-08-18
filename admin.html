@@ -1317,13 +1317,13 @@ async function removeFloorImage(){
   const room=ROOMS.find(r=>r.id===curSeatRoomId);if(room)room.floor_image_url=null;
   refreshSeatData();
 }
-async function detectSeatsFromImage(){
+async function detectSeatsFromImage(silent){
   const room=ROOMS.find(r=>r.id===curSeatRoomId);
   if(!room||!room.floor_image_url){showToast('먼저 도면을 업로드하세요');return;}
-  if(!confirm('AI가 도면 이미지를 분석해서 좌석을 자동으로 만들어요.\n완벽하지 않을 수 있어 생성 후 드래그로 조정이 필요해요. 계속할까요?'))return;
+  if(!silent&&!confirm('AI가 도면 이미지를 다시 분석해서 좌석을 추가로 만들어요.\n완벽하지 않을 수 있어 생성 후 드래그로 조정이 필요해요. 계속할까요?'))return;
   const btn=document.getElementById('seat-detect-btn');
   btn.disabled=true;btn.textContent='🪄 분석 중...';
-  showToast('도면을 분석하는 중이에요 (몇 초 걸릴 수 있어요)');
+  if(!silent)showToast('도면을 분석하는 중이에요 (몇 초 걸릴 수 있어요)');
   try{
     const r=await fetch('/api/detect-seats',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({imageUrl:room.floor_image_url})});
     const data=await r.json();
@@ -1450,8 +1450,10 @@ async function uploadFloorImage(file){
     const url=`${SB_URL}/storage/v1/object/public/floorplans/${path}`;
     await sb(`study_rooms?id=eq.${curSeatRoomId}`,{method:'PATCH',body:JSON.stringify({floor_image_url:url})});
     const room=ROOMS.find(r=>r.id===curSeatRoomId);if(room)room.floor_image_url=url;
-    showToast('도면이 업로드됐어요');
+    showToast('도면이 업로드됐어요 — 좌석을 자동으로 분석할게요');
+    seatEditMode=true;
     refreshSeatData();
+    await detectSeatsFromImage(true);
   }catch(e){showToast('업로드 실패 — Supabase Storage의 floorplans 버킷을 확인하세요');}
 }
 
