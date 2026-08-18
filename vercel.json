@@ -4,5 +4,11 @@
       "memory": 512,
       "maxDuration": 60
     }
-  }
+  },
+  "crons": [
+    {
+      "path": "/api/weekly-report-cron",
+      "schedule": "0 9 * * 5"
+    }
+  ]
 }

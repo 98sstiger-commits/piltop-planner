@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>학습 리포트</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&family=Playfair+Display:ital,wght@0,700;1,400&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--ink);min-height:100vh;-webkit-font-smoothing:antialiased}
+button{cursor:pointer;border:none;background:none;font-family:inherit}
+
+:root{
+  --g:#1A4731;--gs:#E6EFE9;--gold:#C9A84C;
+  --ink:#1A1917;--ink2:#6B6860;--ink3:#A8A49E;
+  --surf:#FFFFFF;--bg:#F5F4F1;--line:#E8E5DF;--line2:#CCC9C1;
+}
+
+/* ── 상단 학원명 바 ── */
+.topbar{background:var(--g);padding:16px 20px;text-align:center}
+.topbar-name{color:#fff;font-family:'Playfair Display',serif;font-size:18px;letter-spacing:-.2px}
+.topbar-sub{color:rgba(255,255,255,.55);font-size:11px;margin-top:2px}
+
+.wrap{max-width:520px;margin:0 auto;padding:18px 16px 110px}
+
+/* ── 학생 헤더 ── */
+.stu-hd{display:flex;align-items:center;gap:14px;background:var(--surf);border:1px solid var(--line);border-radius:16px;padding:18px;margin-bottom:14px}
+.stu-avatar{width:50px;height:50px;border-radius:50%;background:var(--g);color:#fff;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:700;flex-shrink:0}
+.stu-name{font-size:18px;font-weight:800;letter-spacing:-.3px}
+.stu-sub{font-size:12px;color:var(--ink2);margin-top:2px}
+
+/* ── 탭 ── */
+.tabs{display:flex;background:var(--surf);border:1px solid var(--line);border-radius:12px;padding:4px;margin-bottom:14px;gap:4px}
+.tab{flex:1;padding:10px 0;text-align:center;font-size:13px;font-weight:700;color:var(--ink2);border-radius:9px;transition:all .12s}
+.tab.on{background:var(--g);color:#fff}
+
+/* ── 날짜 네비 ── */
+.datenav{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;padding:0 4px}
+.dn-btn{width:32px;height:32px;border-radius:50%;background:var(--surf);border:1px solid var(--line);font-size:15px;color:var(--ink2);display:flex;align-items:center;justify-content:center}
+.dn-btn:active{background:var(--gs)}
+.dn-label{font-size:14px;font-weight:700;letter-spacing:-.2px}
+
+/* ── 카드 ── */
+.card{background:var(--surf);border:1px solid var(--line);border-radius:16px;padding:20px;margin-bottom:14px}
+.card-ttl{font-size:11px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:var(--ink3);margin-bottom:14px;display:flex;align-items:center;gap:6px}
+
+/* stat grid */
+.stat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.stat-grid.c2{grid-template-columns:repeat(2,1fr)}
+.stat-cell{background:var(--bg);border-radius:12px;padding:14px 10px;text-align:center}
+.stat-num{font-size:19px;font-weight:800;color:var(--g);letter-spacing:-.3px;white-space:nowrap}
+.stat-lbl{font-size:11px;color:var(--ink2);margin-top:4px}
+
+/* progress */
+.prog-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.prog-pct{font-size:20px;font-weight:800;color:var(--g)}
+.prog-bar{height:10px;border-radius:5px;background:var(--bg);overflow:hidden}
+.prog-fill{height:100%;background:linear-gradient(90deg,var(--g),#2E9E5B);border-radius:5px;transition:width .4s}
+
+/* timeline list */
+.tl-item{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--line)}
+.tl-item:last-child{border-bottom:none}
+.tl-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.tl-time{font-size:11px;color:var(--ink3);width:80px;flex-shrink:0;font-variant-numeric:tabular-nums}
+.tl-ttl{font-size:13px;font-weight:500;flex:1}
+.tl-ttl.done{color:var(--ink3);text-decoration:line-through}
+.tl-badge{font-size:10px;font-weight:700;padding:2px 8px;border-radius:8px;flex-shrink:0}
+
+/* subject bars */
+.subj-row{margin-bottom:10px}
+.subj-row:last-child{margin-bottom:0}
+.subj-hd{display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px}
+.subj-name{font-weight:600}
+.subj-min{color:var(--ink2)}
+.subj-bar{height:8px;border-radius:4px;background:var(--bg);overflow:hidden}
+.subj-fill{height:100%;border-radius:4px}
+
+/* attendance session */
+.att-row{display:flex;align-items:center;justify-content:space-between;padding:11px 0;border-bottom:1px solid var(--line)}
+.att-row:last-child{border-bottom:none}
+.att-time{font-size:13px;font-weight:600}
+.att-dur{font-size:12px;color:var(--ink2);background:var(--gs);padding:3px 10px;border-radius:10px;font-weight:600}
+.att-empty{text-align:center;padding:20px 0;color:var(--ink3);font-size:12px}
+
+/* ai comment */
+.ai-card{background:linear-gradient(135deg,var(--g),#245C40);border-radius:16px;padding:20px;margin-bottom:14px;color:#fff}
+.ai-ttl{font-size:11px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:rgba(255,255,255,.6);margin-bottom:10px;display:flex;align-items:center;gap:6px}
+.ai-text{font-size:14px;line-height:1.7}
+.ai-loading{color:rgba(255,255,255,.5);font-size:12px}
+
+/* exam list */
+.exam-item{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--line)}
+.exam-item:last-child{border-bottom:none}
+.exam-badge{font-size:10px;font-weight:700;background:#FEF0F0;color:#B91C1C;padding:3px 8px;border-radius:8px;flex-shrink:0}
+.exam-date{font-size:12px;color:var(--ink2);width:56px;flex-shrink:0}
+.exam-name{font-size:13px;font-weight:500}
+
+/* growth bars */
+.growth{display:flex;align-items:flex-end;gap:8px;height:120px;padding-top:10px}
+.gr-col{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%}
+.gr-bar{width:100%;border-radius:6px 6px 0 0;background:var(--g);min-height:3px;transition:height .4s}
+.gr-lbl{font-size:10px;color:var(--ink3);margin-top:6px}
+.gr-val{font-size:10px;color:var(--ink2);font-weight:700;margin-bottom:4px}
+
+.empty-note{text-align:center;padding:24px 10px;color:var(--ink3);font-size:12px;line-height:1.7}
+
+/* ── 공유 바 ── */
+.sharebar{position:fixed;bottom:0;left:0;right:0;background:var(--surf);border-top:1px solid var(--line);padding:10px 16px calc(10px + env(safe-area-inset-bottom));display:flex;gap:8px;max-width:520px;margin:0 auto;z-index:50}
+.share-btn{flex:1;padding:12px 4px;border-radius:11px;font-size:11px;font-weight:700;display:flex;flex-direction:column;align-items:center;gap:3px;color:var(--ink2);background:var(--bg)}
+.share-btn .ico{font-size:17px}
+.share-btn.kakao{background:#FEE500;color:#3A1D1D}
+.share-btn.sms{background:var(--gs);color:var(--g)}
+
+.toast{position:fixed;bottom:78px;left:50%;transform:translateX(-50%) translateY(6px);background:#18170F;color:#fff;padding:10px 22px;border-radius:20px;font-size:12px;font-weight:500;opacity:0;transition:all .2s;pointer-events:none;z-index:999;white-space:nowrap}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+.loading-screen{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;color:var(--ink3);font-size:13px;z-index:200}
+
+@media print{
+  .tabs,.datenav,.sharebar,.toast{display:none !important}
+  body{background:#fff}
+  .card,.stu-hd{border:1px solid #ddd;box-shadow:none;break-inside:avoid}
+  .wrap{padding-bottom:20px}
+}
+</style>
+</head>
+<body>
+
+<div class="loading-screen" id="loading">불러오는 중...</div>
+
+<div id="app" style="display:none">
+  <div class="topbar">
+    <div class="topbar-name" id="tb-academy">필탑학원</div>
+    <div class="topbar-sub">학습 리포트</div>
+  </div>
+
+  <div class="wrap">
+    <div class="stu-hd">
+      <div class="stu-avatar" id="stu-avatar">-</div>
+      <div>
+        <div class="stu-name" id="stu-name">-</div>
+        <div class="stu-sub" id="stu-sub">-</div>
+      </div>
+    </div>
+
+    <div class="tabs">
+      <button class="tab" data-type="daily" onclick="switchType('daily')">일간</button>
+      <button class="tab" data-type="weekly" onclick="switchType('weekly')">주간</button>
+      <button class="tab" data-type="monthly" onclick="switchType('monthly')">월간</button>
+    </div>
+
+    <div class="datenav">
+      <button class="dn-btn" onclick="navDate(-1)">‹</button>
+      <div class="dn-label" id="dn-label">-</div>
+      <button class="dn-btn" onclick="navDate(1)">›</button>
+    </div>
+
+    <div id="report-body"></div>
+  </div>
+
+  <div class="sharebar">
+    <button class="share-btn kakao" onclick="shareKakao()"><span class="ico">💬</span>카카오톡</button>
+    <button class="share-btn sms" onclick="shareSms()"><span class="ico">📱</span>문자발송</button>
+    <button class="share-btn" onclick="copyLink()"><span class="ico">🔗</span>링크복사</button>
+    <button class="share-btn" onclick="window.print()"><span class="ico">🖨️</span>인쇄/PDF</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const SB="https://zmtldohklivkzpfdyflc.supabase.co";
+const SK="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InptdGxkb2hrbGl2a3pwZmR5ZmxjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI5NjgxMDQsImV4cCI6MjA4ODU0NDEwNH0.cv1WrvDzNedVZABWyRCS9ARRxf4Si9qgeUqEvhpHWlo";
+
+async function sb(path,opts={}){
+  try{
+    const r=await fetch(SB+'/rest/v1/'+path,{
+      headers:{'apikey':SK,'Authorization':'Bearer '+SK,'Content-Type':'application/json','Prefer':'return=representation',...(opts.headers||{})},
+      ...opts
+    });
+    if(r.status===204)return [];
+    return await r.json();
+  }catch(e){console.error('SB err',e);return null;}
+}
+
+const CATS=[
+  {k:'kor',l:'국어',c:'#5B8EF0'},{k:'math',l:'수학',c:'#F06B6B'},{k:'eng',l:'영어',c:'#52B788'},
+  {k:'sci',l:'과학',c:'#A47CF3'},{k:'soc',l:'사회',c:'#F4A442'},{k:'hist',l:'역사',c:'#D4874E'},
+  {k:'hw',l:'학원숙제',c:'#E879A0'},{k:'perf',l:'수행평가',c:'#C084FC'},{k:'read',l:'독서',c:'#34D399'},
+  {k:'self',l:'자습',c:'#78C6D4'},{k:'prep',l:'시험준비',c:'#F87171'},{k:'club',l:'동아리',c:'#60A5FA'},
+  {k:'rest',l:'쉬는시간',c:'#94A3B8'},{k:'ex',l:'운동',c:'#FB923C'},{k:'eat',l:'식사',c:'#FBBF24'},{k:'etc',l:'기타',c:'#A8A49E'},
+];
+const SUBJECT_KEYS=['kor','math','eng','sci','soc','hist','hw','perf','read','self','prep'];
+const DOW=['일','월','화','수','목','금','토'];
+
+function dk(d){return`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;}
+function parseDk(s){const[y,m,d]=s.split('-').map(Number);return new Date(y,m-1,d);}
+function addDays(d,n){const x=new Date(d);x.setDate(x.getDate()+n);return x;}
+function mondayOf(d){const x=new Date(d);const day=x.getDay();x.setDate(x.getDate()-(day===0?6:day-1));x.setHours(0,0,0,0);return x;}
+function fmtMin(mins){mins=Math.max(0,Math.round(mins));const h=Math.floor(mins/60),m=mins%60;return h?`${h}시간 ${m}분`:`${m}분`;}
+function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2200);}
+
+/* ── 상태 ── */
+const P=new URLSearchParams(location.search);
+const STATE={
+  id:P.get('id')||'',
+  type:P.get('type')||'daily',
+  date:P.get('date')?parseDk(P.get('date')):new Date(),
+};
+let STUDENT=null,ROOM=null;
+
+function syncUrl(){
+  const params=new URLSearchParams({id:STATE.id,type:STATE.type,date:dk(STATE.date)});
+  history.replaceState(null,'',location.pathname+'?'+params);
+}
+
+async function boot(){
+  if(!STATE.id){document.getElementById('loading').textContent='잘못된 링크예요 (학생 정보 없음)';return;}
+  const rows=await sb(`planner_students?id=eq.${STATE.id}&select=*`);
+  if(!rows||!rows[0]){document.getElementById('loading').textContent='학생 정보를 찾을 수 없어요';return;}
+  STUDENT=rows[0];
+  if(STUDENT.room_id){
+    const r=await sb(`study_rooms?id=eq.${STUDENT.room_id}&select=*`);
+    if(r&&r[0])ROOM=r[0];
+  }
+  document.getElementById('tb-academy').textContent=(ROOM&&ROOM.academy_name)||'필탑학원';
+  document.getElementById('stu-avatar').textContent=(STUDENT.name||'?')[0];
+  document.getElementById('stu-name').textContent=STUDENT.name+' 학생';
+  document.getElementById('stu-sub').textContent=`${STUDENT.school_name||'학교 미정'} · ${STUDENT.grade||'?'}학년`;
+  document.getElementById('loading').style.display='none';
+  document.getElementById('app').style.display='block';
+  switchType(STATE.type,true);
+}
+
+function switchType(type,initial){
+  STATE.type=type;
+  document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('on',t.dataset.type===type));
+  syncUrl();
+  render();
+}
+function navDate(dir){
+  if(STATE.type==='daily')STATE.date=addDays(STATE.date,dir);
+  else if(STATE.type==='weekly')STATE.date=addDays(STATE.date,dir*7);
+  else{const d=new Date(STATE.date);d.setMonth(d.getMonth()+dir);STATE.date=d;}
+  syncUrl();
+  render();
+}
+
+function render(){
+  if(STATE.type==='daily')renderDaily();
+  else if(STATE.type==='weekly')renderWeekly();
+  else renderMonthly();
+}
+
+/* ══════════ 일간 ══════════ */
+async function renderDaily(){
+  const d=STATE.date,ds=dk(d);
+  document.getElementById('dn-label').textContent=`${d.getMonth()+1}월 ${d.getDate()}일 (${DOW[d.getDay()]})`;
+  const body=document.getElementById('report-body');
+  body.innerHTML='<div class="empty-note">불러오는 중...</div>';
+
+  const items=(STUDENT.day_tl&&STUDENT.day_tl[ds])||[];
+  const checks=(STUDENT.day_checks&&STUDENT.day_checks[ds])||[];
+  const doneCnt=checks.filter(c=>c.done).length;
+  const clRate=checks.length?Math.round(doneCnt/checks.length*100):0;
+  let totalMin=0;
+  items.forEach(it=>{if(it.st&&it.et){const[sh,sm]=it.st.split(':').map(Number),[eh,em]=it.et.split(':').map(Number);totalMin+=Math.max(0,(eh*60+em)-(sh*60+sm));}});
+
+  const start=`${ds}T00:00:00`,end=`${dk(addDays(d,1))}T00:00:00`;
+  const att=await sb(`attendance?student_id=eq.${STATE.id}&checkin_at=gte.${start}&checkin_at=lt.${end}&select=*,seats(seat_number,label)&order=checkin_at.asc`)||[];
+  let attMin=0;
+  att.forEach(a=>{const end2=a.checkout_at?new Date(a.checkout_at):new Date();attMin+=(end2-new Date(a.checkin_at))/60000;});
+
+  let html=`<div class="card">
+    <div class="card-ttl">📊 오늘 요약</div>
+    <div class="stat-grid">
+      <div class="stat-cell"><div class="stat-num">${fmtMin(totalMin)}</div><div class="stat-lbl">총 계획 시간</div></div>
+      <div class="stat-cell"><div class="stat-num">${clRate}%</div><div class="stat-lbl">체크리스트 달성</div></div>
+      <div class="stat-cell"><div class="stat-num">${fmtMin(attMin)}</div><div class="stat-lbl">독서실 출석시간</div></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-ttl">✅ 체크리스트 (${doneCnt}/${checks.length})</div>
+    <div class="prog-bar"><div class="prog-fill" style="width:${clRate}%"></div></div>
+  </div>
+
+  <div class="card">
+    <div class="card-ttl">🕐 오늘 타임라인</div>
+    ${items.length?renderTlList(items):'<div class="empty-note">등록된 일정이 없어요</div>'}
+  </div>
+
+  <div class="card">
+    <div class="card-ttl">🚪 입실 · 퇴실 기록</div>
+    ${renderAttList(att)}
+  </div>`;
+  body.innerHTML=html;
+}
+
+function renderTlList(items){
+  return `<div>` + [...items].sort((a,b)=>(a.st||'').localeCompare(b.st||'')).map(it=>{
+    const cat=CATS.find(c=>c.k===it.cat)||CATS[CATS.length-1];
+    return `<div class="tl-item"><div class="tl-dot" style="background:${cat.c}"></div><div class="tl-time">${it.st||''}${it.et?'~'+it.et:''}</div><div class="tl-ttl ${it.done?'done':''}">${it.ttl||cat.l}</div><div class="tl-badge" style="background:${cat.c}22;color:${cat.c}">${cat.l}</div></div>`;
+  }).join('') + `</div>`;
+}
+function renderAttList(att){
+  if(!att.length)return '<div class="att-empty">출석 기록이 없어요</div>';
+  return att.map(a=>{
+    const inT=new Date(a.checkin_at);
+    const outT=a.checkout_at?new Date(a.checkout_at):null;
+    const dur=fmtMin(((outT||new Date())-inT)/60000);
+    const seat=a.seats?.seat_number?`${a.seats.seat_number}번 자리`:'';
+    return `<div class="att-row"><div><div class="att-time">${String(inT.getHours()).padStart(2,'0')}:${String(inT.getMinutes()).padStart(2,'0')} → ${outT?String(outT.getHours()).padStart(2,'0')+':'+String(outT.getMinutes()).padStart(2,'0'):'공부중'}</div><div style="font-size:11px;color:var(--ink3);margin-top:2px">${seat}</div></div><div class="att-dur">${dur}</div></div>`;
+  }).join('');
+}
+
+/* ══════════ 주간 ══════════ */
+async function renderWeekly(){
+  const mon=mondayOf(STATE.date),sun=addDays(mon,6);
+  document.getElementById('dn-label').textContent=`${mon.getMonth()+1}/${mon.getDate()} ~ ${sun.getMonth()+1}/${sun.getDate()}`;
+  const body=document.getElementById('report-body');
+  body.innerHTML='<div class="empty-note">불러오는 중...</div>';
+
+  const dayKeys=[...Array(7)].map((_,i)=>dk(addDays(mon,i)));
+  const subjMin={};let itemCnt=0,doneCnt=0;
+  dayKeys.forEach(ds=>{
+    (STUDENT.day_tl?.[ds]||[]).forEach(it=>{
+      itemCnt++;if(it.done)doneCnt++;
+      if(it.st&&it.et&&SUBJECT_KEYS.includes(it.cat)){
+        const[sh,sm]=it.st.split(':').map(Number),[eh,em]=it.et.split(':').map(Number);
+        subjMin[it.cat]=(subjMin[it.cat]||0)+Math.max(0,(eh*60+em)-(sh*60+sm));
+      }
+    });
+  });
+
+  const start=`${dayKeys[0]}T00:00:00`,end=`${dk(addDays(sun,1))}T00:00:00`;
+  const att=await sb(`attendance?student_id=eq.${STATE.id}&checkin_at=gte.${start}&checkin_at=lt.${end}&select=*&order=checkin_at.asc`)||[];
+  const attDays=new Set(att.map(a=>dk(new Date(a.checkin_at))));
+  let attMin=0;att.forEach(a=>{const e=a.checkout_at?new Date(a.checkout_at):new Date();attMin+=(e-new Date(a.checkin_at))/60000;});
+
+  const maxSubj=Math.max(1,...Object.values(subjMin));
+  const subjHtml=Object.keys(subjMin).length
+    ? Object.entries(subjMin).sort((a,b)=>b[1]-a[1]).map(([k,min])=>{
+        const c=CATS.find(c=>c.k===k);
+        return `<div class="subj-row"><div class="subj-hd"><span class="subj-name">${c.l}</span><span class="subj-min">${fmtMin(min)}</span></div><div class="subj-bar"><div class="subj-fill" style="width:${min/maxSubj*100}%;background:${c.c}"></div></div></div>`;
+      }).join('')
+    : '<div class="empty-note">등록된 타임라인이 없어요</div>';
+
+  const nextWeekStart=addDays(sun,1),nextWeekEnd=addDays(sun,7);
+  const exams=(STUDENT.school_schedule||[]).filter(e=>{
+    const ed=parseDk(e.date);
+    return (e.type==='school-exam'||e.type==='suneung')&&ed>=nextWeekStart&&ed<=nextWeekEnd;
+  }).sort((a,b)=>a.date.localeCompare(b.date));
+
+  const stats={attendanceDays:attDays.size,totalStudyMinutes:Math.round(attMin),timelineItems:itemCnt,timelineDone:doneCnt,topSubjects:Object.entries(subjMin).sort((a,b)=>b[1]-a[1]).slice(0,2).map(([k,m])=>({subject:CATS.find(c=>c.k===k)?.l,minutes:Math.round(m)}))};
+
+  let html=`<div class="card">
+    <div class="card-ttl">📊 이번 주 요약</div>
+    <div class="stat-grid">
+      <div class="stat-cell"><div class="stat-num">${attDays.size}일</div><div class="stat-lbl">출석일수</div></div>
+      <div class="stat-cell"><div class="stat-num">${fmtMin(attMin)}</div><div class="stat-lbl">독서실 공부시간</div></div>
+      <div class="stat-cell"><div class="stat-num">${itemCnt?Math.round(doneCnt/itemCnt*100):0}%</div><div class="stat-lbl">일정 완료율</div></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-ttl">📚 과목별 공부시간</div>
+    ${subjHtml}
+  </div>
+
+  <div class="card">
+    <div class="card-ttl">🗓️ 플래니 타임라인 요약</div>
+    <div class="stat-grid c2">
+      <div class="stat-cell"><div class="stat-num">${itemCnt}개</div><div class="stat-lbl">등록된 일정</div></div>
+      <div class="stat-cell"><div class="stat-num">${doneCnt}개</div><div class="stat-lbl">완료한 일정</div></div>
+    </div>
+  </div>
+
+  <div id="ai-card"></div>
+
+  <div class="card">
+    <div class="card-ttl">📝 다음 주 시험 일정</div>
+    ${exams.length?exams.map(e=>{const ed=parseDk(e.date);return `<div class="exam-item"><span class="exam-badge">${e.type==='suneung'?'수능':'내신'}</span><span class="exam-date">${ed.getMonth()+1}/${ed.getDate()}</span><span class="exam-name">${e.name}</span></div>`;}).join(''):'<div class="empty-note">등록된 시험 일정이 없어요</div>'}
+  </div>`;
+  body.innerHTML=html;
+  renderAiComment('weekly',stats);
+}
+
+/* ══════════ 월간 ══════════ */
+async function renderMonthly(){
+  const d=STATE.date,y=d.getFullYear(),m=d.getMonth();
+  document.getElementById('dn-label').textContent=`${y}년 ${m+1}월`;
+  const body=document.getElementById('report-body');
+  body.innerHTML='<div class="empty-note">불러오는 중...</div>';
+
+  const first=new Date(y,m,1),last=new Date(y,m+1,0);
+  const start=`${dk(first)}T00:00:00`,end=`${dk(addDays(last,1))}T00:00:00`;
+  const att=await sb(`attendance?student_id=eq.${STATE.id}&checkin_at=gte.${start}&checkin_at=lt.${end}&select=*&order=checkin_at.asc`)||[];
+  const attDays=new Set(att.map(a=>dk(new Date(a.checkin_at))));
+  let totalMin=0;att.forEach(a=>{const e=a.checkout_at?new Date(a.checkout_at):new Date();totalMin+=(e-new Date(a.checkin_at))/60000;});
+
+  const isCurMonth=(y===new Date().getFullYear()&&m===new Date().getMonth());
+  const daysConsidered=isCurMonth?new Date().getDate():last.getDate();
+  const attRate=daysConsidered?Math.round(attDays.size/daysConsidered*100):0;
+
+  // 주차별 성장 그래프
+  const weeks=[];
+  let cur=mondayOf(first);
+  while(cur<=last){
+    const wEnd=addDays(cur,6);
+    let wMin=0;
+    att.forEach(a=>{const t=new Date(a.checkin_at);if(t>=cur&&t<=addDays(wEnd,1)){const e=a.checkout_at?new Date(a.checkout_at):new Date();wMin+=(e-new Date(a.checkin_at))/60000;}});
+    weeks.push({label:`${cur.getMonth()+1}/${cur.getDate()}`,min:wMin});
+    cur=addDays(cur,7);
+  }
+  const maxW=Math.max(1,...weeks.map(w=>w.min));
+
+  const stats={attendanceDays:attDays.size,attendanceRate:attRate,totalStudyMinutes:Math.round(totalMin),weeklyTrend:weeks.map(w=>Math.round(w.min))};
+
+  let html=`<div class="card">
+    <div class="card-ttl">📊 이번 달 요약</div>
+    <div class="stat-grid">
+      <div class="stat-cell"><div class="stat-num">${attRate}%</div><div class="stat-lbl">출석률</div></div>
+      <div class="stat-cell"><div class="stat-num">${attDays.size}일</div><div class="stat-lbl">출석일수</div></div>
+      <div class="stat-cell"><div class="stat-num">${fmtMin(totalMin)}</div><div class="stat-lbl">누적 공부시간</div></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-ttl">📈 주차별 성장 그래프</div>
+    <div class="growth">
+      ${weeks.map(w=>`<div class="gr-col"><div class="gr-val">${w.min>=60?Math.round(w.min/60*10)/10+'h':Math.round(w.min)+'m'}</div><div class="gr-bar" style="height:${Math.max(3,w.min/maxW*100)}%"></div><div class="gr-lbl">${w.label}</div></div>`).join('')}
+    </div>
+  </div>
+
+  <div id="ai-card"></div>`;
+  body.innerHTML=html;
+  renderAiComment('monthly',stats);
+}
+
+/* ── AI 한마디 ── */
+async function renderAiComment(type,stats){
+  const el=document.getElementById('ai-card');
+  if(!el)return;
+  el.innerHTML=`<div class="ai-card"><div class="ai-ttl">✨ AI ${type==='monthly'?'월간 총평':'한마디'}</div><div class="ai-loading">작성 중...</div></div>`;
+  let comment=null;
+  try{
+    const r=await fetch('/api/generate-report-comment',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({type,name:STUDENT.name,stats})});
+    const data=await r.json();
+    if(data.success&&data.comment)comment=data.comment;
+  }catch(e){}
+  if(!comment)comment=fallbackComment(type,stats);
+  el.innerHTML=`<div class="ai-card"><div class="ai-ttl">✨ AI ${type==='monthly'?'월간 총평':'한마디'}</div><div class="ai-text">${comment}</div></div>`;
+}
+function fallbackComment(type,stats){
+  const name=STUDENT.name;
+  if(type==='monthly'){
+    if(!stats.attendanceDays)return `${name} 학생은 이번 달 독서실 출석 기록이 없어요. 다음 달엔 꾸준한 출석부터 함께 시작해봐요.`;
+    return `${name} 학생은 이번 달 ${stats.attendanceDays}일 출석해 출석률 ${stats.attendanceRate}%, 누적 ${fmtMin(stats.totalStudyMinutes)}를 공부했어요. 꾸준함을 유지하면서 다음 달엔 조금 더 긴 공부 세션에 도전해보면 좋겠어요.`;
+  }
+  if(!stats.attendanceDays)return `${name} 학생은 이번 주 독서실 출석 기록이 없어요. 다음 주엔 가벼운 목표부터 다시 시작해봐요.`;
+  const top=stats.topSubjects?.[0];
+  return `${name} 학생은 이번 주 ${stats.attendanceDays}일 출석해 ${fmtMin(stats.totalStudyMinutes)}를 공부했어요.${top?` 특히 ${top.subject} 공부에 집중했네요.`:''} 일정 완료율 ${stats.timelineItems?Math.round(stats.timelineDone/stats.timelineItems*100):0}%를 유지하며 다음 주도 꾸준히 이어가봐요.`;
+}
+
+/* ── 공유 ── */
+function copyLink(){
+  navigator.clipboard.writeText(location.href).then(()=>toast('링크가 복사됐어요'));
+}
+async function shareKakao(){
+  if(!ROOM?.kakao_js_key){
+    if(navigator.share){navigator.share({title:'학습 리포트',text:`${STUDENT.name} 학생의 학습 리포트`,url:location.href}).catch(()=>{});}
+    else{copyLink();toast('카카오 공유를 쓰려면 admin.html [설정]에서 카카오 JS 키를 등록하세요');}
+    return;
+  }
+  try{
+    if(!window.Kakao){
+      await new Promise((res,rej)=>{const s=document.createElement('script');s.src='https://t1.kakaocdn.net/kakao_js_sdk/2.7.2/kakao.min.js';s.onload=res;s.onerror=rej;document.head.appendChild(s);});
+    }
+    if(!window.Kakao.isInitialized())window.Kakao.init(ROOM.kakao_js_key);
+    window.Kakao.Share.sendDefault({
+      objectType:'feed',
+      content:{title:`${STUDENT.name} 학생 학습 리포트`,description:document.getElementById('dn-label').textContent,imageUrl:location.origin+'/icon.svg',link:{mobileWebUrl:location.href,webUrl:location.href}},
+      buttons:[{title:'리포트 보기',link:{mobileWebUrl:location.href,webUrl:location.href}}]
+    });
+  }catch(e){copyLink();}
+}
+async function shareSms(){
+  if(!STUDENT.parent_phone){toast('학부모 연락처가 등록되지 않았어요');return;}
+  if(!ROOM?.aligo_api_key){toast('admin.html [설정]에서 문자 발송 키를 먼저 등록하세요');return;}
+  const msg=`[${ROOM.academy_name||'필탑학원'}] ${STUDENT.name} 학생의 학습 리포트입니다.\n${location.href}`;
+  try{
+    const r=await fetch('/api/send-notify',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({phone:STUDENT.parent_phone,message:msg,channel:'sms',aligo:{key:ROOM.aligo_api_key,user:ROOM.aligo_user_id,sender:ROOM.aligo_sender}})});
+    const data=await r.json();
+    toast(data.success?'문자를 발송했어요':'발송에 실패했어요');
+  }catch(e){toast('발송 중 오류가 발생했어요');}
+}
+
+boot();
+</script>
+</body>
+</html>

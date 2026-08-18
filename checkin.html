@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>필탑 독서실 출석체크</title>
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#1A4731">
+<meta name="mobile-web-app-capable" content="yes">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&family=Playfair+Display:ital,wght@0,700;1,400&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;user-select:none}
+html,body{height:100%;overflow:hidden}
+body{font-family:'Noto Sans KR',sans-serif;background:var(--g);color:var(--ink);-webkit-font-smoothing:antialiased}
+button{cursor:pointer;border:none;background:none;font-family:inherit}
+
+:root{
+  --g:#1A4731;--gs:#E6EFE9;--gold:#C9A84C;
+  --ink:#1A1917;--ink2:#6B6860;--ink3:#A8A49E;
+  --surf:#FFFFFF;--bg:#F5F4F1;--line:#E8E5DF;--line2:#CCC9C1;
+  --busy:#2E9E5B;--wait:#F4A442;--danger:#D14343;
+}
+
+.screen{position:fixed;inset:0;display:flex;flex-direction:column;background:var(--bg)}
+.hide{display:none !important}
+
+/* ── 상단 헤더 ── */
+.hd{background:var(--g);padding:22px 28px 20px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.hd-brand{color:#fff}
+.hd-title{font-family:'Playfair Display',serif;font-size:22px;letter-spacing:-.3px}
+.hd-sub{font-size:12px;color:rgba(255,255,255,.55);margin-top:2px}
+.hd-clock{text-align:right;color:#fff}
+.hd-time{font-size:26px;font-weight:700;letter-spacing:-.5px;font-variant-numeric:tabular-nums}
+.hd-date{font-size:11px;color:rgba(255,255,255,.55);margin-top:2px}
+.hd-room-btn{position:absolute;top:18px;right:18px;font-size:10px;color:rgba(255,255,255,.4);padding:4px 8px}
+
+/* ── 룸 선택 화면 ── */
+#room-pick{align-items:center;justify-content:center;background:var(--g);gap:24px}
+.rp-card{width:100%;max-width:480px;padding:0 28px;text-align:center}
+.rp-logo{font-family:'Playfair Display',serif;font-size:30px;color:#fff;margin-bottom:6px}
+.rp-hint{font-size:13px;color:rgba(255,255,255,.6);margin-bottom:28px}
+.rp-list{display:flex;flex-direction:column;gap:10px}
+.rp-item{background:#fff;border-radius:16px;padding:20px 22px;text-align:left;font-size:17px;font-weight:700;color:var(--ink);display:flex;align-items:center;justify-content:space-between}
+.rp-item span.sub{display:block;font-size:12px;font-weight:400;color:var(--ink2);margin-top:3px}
+.rp-item:active{opacity:.8;transform:scale(.98)}
+.rp-empty{color:rgba(255,255,255,.7);font-size:13px;line-height:1.7}
+
+/* ── 키패드 화면 ── */
+#keypad{align-items:center}
+.kp-wrap{flex:1;width:100%;max-width:480px;margin:0 auto;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:0 24px}
+.kp-lead{font-size:15px;color:var(--ink2);margin-bottom:6px;font-weight:500}
+.kp-title{font-size:24px;font-weight:800;letter-spacing:-.5px;margin-bottom:26px;text-align:center}
+.kp-dots{display:flex;gap:16px;margin-bottom:34px}
+.kp-dot{width:20px;height:20px;border-radius:50%;border:2.5px solid var(--line2);transition:all .15s}
+.kp-dot.on{background:var(--g);border-color:var(--g);transform:scale(1.1)}
+.kp-dots.err .kp-dot{border-color:var(--danger)}
+.kp-dots.err .kp-dot.on{background:var(--danger);border-color:var(--danger)}
+.kp-msg{font-size:13px;height:18px;margin-bottom:18px;font-weight:600;color:var(--danger)}
+.kp-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;width:100%;max-width:340px}
+.kp-btn{aspect-ratio:1;border-radius:50%;background:#fff;border:1px solid var(--line);font-size:28px;font-weight:700;color:var(--ink);display:flex;align-items:center;justify-content:center;box-shadow:0 2px 6px rgba(0,0,0,.05);transition:all .1s}
+.kp-btn:active{background:var(--gs);transform:scale(.94)}
+.kp-btn.fn{font-size:14px;font-weight:600;color:var(--ink2);background:transparent;box-shadow:none;border:none}
+.kp-btn.fn:active{color:var(--danger)}
+.kp-foot{padding:18px 0 26px;font-size:12px;color:var(--ink3);text-align:center}
+
+/* ── 로딩 ── */
+.kp-loading{display:none;align-items:center;gap:8px;color:var(--ink2);font-size:13px;margin-bottom:18px}
+.kp-loading.on{display:flex}
+.spin{width:14px;height:14px;border:2px solid var(--line2);border-top-color:var(--g);border-radius:50%;animation:sp .7s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+
+/* ── 좌석 선택 화면 ── */
+#seat-pick{background:var(--bg)}
+.sp-body{flex:1;overflow-y:auto;padding:16px 20px 20px;max-width:640px;margin:0 auto;width:100%}
+.sp-hello{text-align:center;margin-bottom:18px}
+.sp-hello-name{font-size:20px;font-weight:800;letter-spacing:-.3px}
+.sp-hello-sub{font-size:12px;color:var(--ink2);margin-top:3px}
+.sp-legend{display:flex;justify-content:center;gap:16px;margin-bottom:16px;font-size:11px;color:var(--ink2)}
+.sp-legend span{display:inline-flex;align-items:center;gap:5px}
+.sp-legend i{width:10px;height:10px;border-radius:3px;display:inline-block}
+.sp-map{position:relative;width:100%;background:#fff;border-radius:14px;border:1px solid var(--line);overflow:hidden;min-height:280px}
+.sp-map img{width:100%;display:block}
+.sp-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(78px,1fr));gap:10px;padding:16px}
+.seat-btn{aspect-ratio:1;border-radius:12px;background:var(--line);color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;font-weight:700;font-size:13px;gap:2px;border:2px solid transparent;transition:all .1s}
+.seat-btn.abs{position:absolute;aspect-ratio:auto}
+.seat-btn.empty{background:#fff;border-color:var(--line2);color:var(--ink)}
+.seat-btn.empty:active{background:var(--gs);border-color:var(--g);transform:scale(.95)}
+.seat-btn.busy{background:#FBEAEA;border-color:#F3D0D0;color:var(--danger);opacity:.75}
+.seat-btn.reserved{background:#FEF5E8;border-color:#F5DDA8;color:#7A4710}
+.seat-num{font-size:15px;font-weight:800}
+.seat-name{font-size:9px;font-weight:600;opacity:.8;max-width:90%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sp-empty{padding:60px 20px;text-align:center;color:var(--ink3);font-size:13px;line-height:1.7}
+.sp-cancel{display:block;width:calc(100% - 40px);max-width:600px;margin:14px auto 0;padding:14px;border-radius:12px;background:#fff;border:1px solid var(--line2);font-weight:700;font-size:14px;color:var(--ink2);text-align:center}
+
+/* ── 퇴실 확인 ── */
+#checkout-confirm{align-items:center;justify-content:center;background:rgba(0,0,0,.5)}
+.co-card{background:#fff;border-radius:20px;padding:32px 26px;width:calc(100% - 48px);max-width:380px;text-align:center}
+.co-name{font-size:20px;font-weight:800;margin-bottom:6px}
+.co-time{font-size:13px;color:var(--ink2);margin-bottom:24px}
+.co-btns{display:flex;gap:10px}
+.co-btn{flex:1;padding:15px;border-radius:12px;font-size:15px;font-weight:700}
+.co-btn.no{background:var(--bg);color:var(--ink2)}
+.co-btn.yes{background:var(--danger);color:#fff}
+
+/* ── 결과 오버레이 ── */
+#result{align-items:center;justify-content:center;z-index:50}
+#result.in{background:var(--g)}
+#result.out{background:#3A3733}
+.res-card{text-align:center;color:#fff;padding:0 32px}
+.res-ico{width:96px;height:96px;border-radius:50%;background:rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;font-size:48px;margin:0 auto 22px;animation:pop .35s cubic-bezier(.34,1.56,.64,1)}
+@keyframes pop{from{transform:scale(.4);opacity:0}to{transform:scale(1);opacity:1}}
+.res-name{font-size:28px;font-weight:800;letter-spacing:-.5px;margin-bottom:8px}
+.res-msg{font-size:15px;color:rgba(255,255,255,.75);line-height:1.6}
+.res-seat{display:inline-block;margin-top:16px;padding:8px 20px;background:rgba(255,255,255,.15);border-radius:20px;font-size:14px;font-weight:700}
+
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(6px);background:#18170F;color:#fff;padding:11px 22px;border-radius:20px;font-size:12px;font-weight:500;opacity:0;transition:all .2s;pointer-events:none;z-index:999;white-space:nowrap}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+</style>
+</head>
+<body>
+
+<!-- 독서실 선택 (최초 1회) -->
+<div class="screen" id="room-pick">
+  <div class="rp-card">
+    <div class="rp-logo">필탑 독서실</div>
+    <div class="rp-hint">이 태블릿이 사용할 독서실을 선택해주세요</div>
+    <div class="rp-list" id="rp-list"></div>
+  </div>
+</div>
+
+<!-- 메인 키패드 -->
+<div class="screen hide" id="keypad">
+  <div class="hd">
+    <div class="hd-brand">
+      <div class="hd-title" id="hd-room-name">독서실</div>
+      <div class="hd-sub">고유번호 4자리를 입력해주세요</div>
+    </div>
+    <div class="hd-clock">
+      <div class="hd-time" id="hd-time">00:00</div>
+      <div class="hd-date" id="hd-date">-</div>
+    </div>
+  </div>
+  <button class="hd-room-btn" onclick="openRoomSwitch()">독서실 변경</button>
+  <div class="kp-wrap">
+    <div class="kp-lead">STUDY ROOM CHECK-IN</div>
+    <div class="kp-title">고유번호를 입력하세요</div>
+    <div class="kp-dots" id="kp-dots">
+      <div class="kp-dot"></div><div class="kp-dot"></div><div class="kp-dot"></div><div class="kp-dot"></div>
+    </div>
+    <div class="kp-loading" id="kp-loading"><div class="spin"></div>확인중...</div>
+    <div class="kp-msg" id="kp-msg"></div>
+    <div class="kp-grid" id="kp-grid"></div>
+  </div>
+  <div class="kp-foot">입실은 자동으로 좌석 선택 화면으로 이동해요</div>
+</div>
+
+<!-- 좌석 선택 -->
+<div class="screen hide" id="seat-pick">
+  <div class="hd">
+    <div class="hd-brand">
+      <div class="hd-title">좌석을 선택해주세요</div>
+      <div class="hd-sub" id="sp-room-name">독서실</div>
+    </div>
+  </div>
+  <div class="sp-body">
+    <div class="sp-hello">
+      <div class="sp-hello-name" id="sp-hello-name">학생</div>
+      <div class="sp-hello-sub">빈 좌석을 눌러 입실을 완료하세요</div>
+    </div>
+    <div class="sp-legend">
+      <span><i style="background:#fff;border:2px solid var(--line2)"></i>빈자리</span>
+      <span><i style="background:#FBEAEA;border:2px solid #F3D0D0"></i>사용중</span>
+      <span><i style="background:#FEF5E8;border:2px solid #F5DDA8"></i>예약</span>
+    </div>
+    <div class="sp-map" id="sp-map"></div>
+  </div>
+  <button class="sp-cancel" onclick="cancelSeatPick()">취소</button>
+</div>
+
+<!-- 퇴실 확인 -->
+<div class="screen hide" id="checkout-confirm">
+  <div class="co-card">
+    <div class="co-name" id="co-name">학생</div>
+    <div class="co-time" id="co-time"></div>
+    <div class="co-btns">
+      <button class="co-btn no" onclick="closeCheckoutConfirm()">취소</button>
+      <button class="co-btn yes" onclick="doCheckout()">퇴실하기</button>
+    </div>
+  </div>
+</div>
+
+<!-- 결과 -->
+<div class="screen hide" id="result">
+  <div class="res-card">
+    <div class="res-ico" id="res-ico"></div>
+    <div class="res-name" id="res-name"></div>
+    <div class="res-msg" id="res-msg"></div>
+    <div class="res-seat hide" id="res-seat"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const SB="https://zmtldohklivkzpfdyflc.supabase.co";
+const SK="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InptdGxkb2hrbGl2a3pwZmR5ZmxjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI5NjgxMDQsImV4cCI6MjA4ODU0NDEwNH0.cv1WrvDzNedVZABWyRCS9ARRxf4Si9qgeUqEvhpHWlo";
+const OWNER='piltop';
+
+async function sb(path,opts={}){
+  try{
+    const r=await fetch(SB+'/rest/v1/'+path,{
+      headers:{'apikey':SK,'Authorization':'Bearer '+SK,'Content-Type':'application/json','Prefer':'return=representation',...(opts.headers||{})},
+      ...opts
+    });
+    if(r.status===204)return [];
+    return await r.json();
+  }catch(e){console.error('SB err',e);return null;}
+}
+
+function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2200);}
+function show(id){['room-pick','keypad','seat-pick','checkout-confirm','result'].forEach(s=>document.getElementById(s).classList.toggle('hide',s!==id));}
+
+/* ── 시계 ── */
+function tickClock(){
+  const d=new Date();
+  document.getElementById('hd-time').textContent=`${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+  const DOW=['일','월','화','수','목','금','토'];
+  document.getElementById('hd-date').textContent=`${d.getMonth()+1}월 ${d.getDate()}일 ${DOW[d.getDay()]}요일`;
+}
+setInterval(tickClock,1000*10);
+
+/* ── 룸 선택 ── */
+let ROOM=null;
+
+async function initRoom(){
+  const saved=localStorage.getItem('checkin-room-id');
+  const url=new URLSearchParams(location.search).get('room');
+  const target=url||saved;
+  if(target){
+    const rows=await sb(`study_rooms?id=eq.${target}&select=*`);
+    if(rows&&rows[0]){ROOM=rows[0];localStorage.setItem('checkin-room-id',ROOM.id);startKeypad();return;}
+  }
+  await showRoomPicker();
+}
+
+async function showRoomPicker(){
+  show('room-pick');
+  const rows=await sb(`study_rooms?owner_id=eq.${OWNER}&select=*&order=created_at.asc`);
+  const list=document.getElementById('rp-list');
+  if(!rows||!rows.length){
+    list.innerHTML=`<div class="rp-empty">등록된 독서실이 없어요.<br>admin.html의 [좌석현황] 탭에서<br>먼저 독서실을 추가해주세요.</div>`;
+    return;
+  }
+  list.innerHTML='';
+  rows.forEach(r=>{
+    const b=document.createElement('button');
+    b.className='rp-item';
+    b.innerHTML=`<span>${r.name}<span class="sub">${r.description||''}</span></span><span>›</span>`;
+    b.onclick=()=>{ROOM=r;localStorage.setItem('checkin-room-id',r.id);startKeypad();};
+    list.appendChild(b);
+  });
+}
+function openRoomSwitch(){localStorage.removeItem('checkin-room-id');showRoomPicker();}
+
+function startKeypad(){
+  document.getElementById('hd-room-name').textContent=ROOM.name;
+  tickClock();
+  show('keypad');
+  resetKeypad();
+}
+
+/* ── 키패드 ── */
+let pin='';
+function buildKeypad(){
+  const g=document.getElementById('kp-grid');g.innerHTML='';
+  const keys=['1','2','3','4','5','6','7','8','9','clear','0','del'];
+  keys.forEach(k=>{
+    const b=document.createElement('button');
+    if(k==='clear'){b.className='kp-btn fn';b.textContent='전체삭제';b.onclick=()=>{pin='';renderDots();};}
+    else if(k==='del'){b.className='kp-btn fn';b.textContent='←';b.onclick=()=>{pin=pin.slice(0,-1);renderDots();};}
+    else{b.className='kp-btn';b.textContent=k;b.onclick=()=>pressDigit(k);}
+    g.appendChild(b);
+  });
+}
+buildKeypad();
+
+function pressDigit(d){
+  if(pin.length>=4)return;
+  pin+=d;
+  renderDots();
+  if(pin.length===4)submitPin();
+}
+function renderDots(){
+  const dots=document.querySelectorAll('#kp-dots .kp-dot');
+  dots.forEach((el,i)=>el.classList.toggle('on',i<pin.length));
+  document.getElementById('kp-dots').classList.remove('err');
+  document.getElementById('kp-msg').textContent='';
+}
+function resetKeypad(){pin='';renderDots();document.getElementById('kp-loading').classList.remove('on');}
+function kpError(msg){
+  document.getElementById('kp-dots').classList.add('err');
+  document.getElementById('kp-msg').textContent=msg;
+  document.getElementById('kp-loading').classList.remove('on');
+  setTimeout(()=>{pin='';renderDots();},1100);
+}
+
+async function submitPin(){
+  document.getElementById('kp-loading').classList.add('on');
+  const rows=await sb(`planner_students?student_pin=eq.${pin}&select=id,name,room_id,parent_phone`);
+  if(!rows||!rows.length){kpError('등록되지 않은 번호예요');return;}
+  const student=rows[0];
+  if(student.room_id&&student.room_id!==ROOM.id){kpError('다른 독서실 학생이에요');return;}
+  document.getElementById('kp-loading').classList.remove('on');
+
+  const active=await sb(`attendance?student_id=eq.${student.id}&room_id=eq.${ROOM.id}&checkout_at=is.null&select=*&order=checkin_at.desc`);
+  if(active&&active.length){
+    openCheckoutConfirm(student,active[0]);
+  }else{
+    openSeatPick(student);
+  }
+}
+
+/* ── 좌석 선택 ── */
+let curStudent=null;
+async function openSeatPick(student){
+  curStudent=student;
+  document.getElementById('sp-hello-name').textContent=student.name+' 님';
+  document.getElementById('sp-room-name').textContent=ROOM.name;
+  show('seat-pick');
+  await renderSeatMap();
+}
+function cancelSeatPick(){resetKeypad();show('keypad');}
+
+async function renderSeatMap(){
+  const map=document.getElementById('sp-map');
+  map.innerHTML='<div class="sp-empty">불러오는 중...</div>';
+  const [seats,active]=await Promise.all([
+    sb(`seats?room_id=eq.${ROOM.id}&select=*&order=seat_number.asc`),
+    sb(`attendance?room_id=eq.${ROOM.id}&checkout_at=is.null&select=seat_id,planner_students(name)`)
+  ]);
+  if(!seats||!seats.length){
+    map.innerHTML='<div class="sp-empty">등록된 좌석이 없어요.<br>admin.html [좌석현황] 탭에서 좌석을 먼저 배치해주세요.</div>';
+    return;
+  }
+  const occ={};
+  (active||[]).forEach(a=>{if(a.seat_id)occ[a.seat_id]=a.planner_students?.name||'사용중';});
+
+  const useMap=!!ROOM.floor_image_url;
+  map.innerHTML='';
+  map.className='sp-map'+(useMap?'':' sp-grid');
+  if(useMap){
+    map.style.aspectRatio='';
+    const img=document.createElement('img');img.src=ROOM.floor_image_url;map.appendChild(img);
+  }
+  seats.forEach(s=>{
+    const isBusy=!!occ[s.id];
+    const btn=document.createElement('button');
+    btn.className='seat-btn'+(useMap?' abs':'')+(isBusy?' busy':(s.status==='reserved'?' reserved':' empty'));
+    if(useMap){
+      btn.style.left=s.x+'%';btn.style.top=s.y+'%';btn.style.width=s.width+'%';btn.style.height=s.height+'%';
+    }
+    btn.innerHTML=`<span class="seat-num">${s.seat_number}</span>${isBusy?`<span class="seat-name">${occ[s.id]}</span>`:(s.label?`<span class="seat-name">${s.label}</span>`:'')}`;
+    if(!isBusy&&s.status!=='reserved'){
+      btn.onclick=()=>doCheckin(s);
+    }
+    map.appendChild(btn);
+  });
+}
+
+async function doCheckin(seat){
+  document.querySelectorAll('.seat-btn').forEach(b=>b.style.pointerEvents='none');
+  const now=new Date().toISOString();
+  await sb('attendance',{method:'POST',body:JSON.stringify({
+    student_id:curStudent.id,room_id:ROOM.id,seat_id:seat.id,checkin_at:now,status:'checked_in'
+  })});
+  notifyParent(curStudent,'checkin',seat.seat_number);
+  showResult('in','👋',curStudent.name+' 님 반가워요!','입실이 완료됐어요','좌석 '+seat.seat_number+'번');
+}
+
+/* ── 퇴실 ── */
+let coStudent=null,coAtt=null;
+function openCheckoutConfirm(student,att){
+  coStudent=student;coAtt=att;
+  document.getElementById('co-name').textContent=student.name+' 님, 퇴실하시겠어요?';
+  const inTime=new Date(att.checkin_at);
+  const mins=Math.max(0,Math.round((Date.now()-inTime.getTime())/60000));
+  const h=Math.floor(mins/60),m=mins%60;
+  document.getElementById('co-time').textContent=`입실 ${inTime.getHours()}:${String(inTime.getMinutes()).padStart(2,'0')} · 공부시간 ${h?h+'시간 ':''}${m}분`;
+  show('checkout-confirm');
+}
+function closeCheckoutConfirm(){resetKeypad();show('keypad');}
+async function doCheckout(){
+  const now=new Date().toISOString();
+  await sb(`attendance?id=eq.${coAtt.id}`,{method:'PATCH',body:JSON.stringify({checkout_at:now,status:'checked_out'})});
+  notifyParent(coStudent,'checkout');
+  const mins=Math.max(0,Math.round((Date.now()-new Date(coAtt.checkin_at).getTime())/60000));
+  const h=Math.floor(mins/60),m=mins%60;
+  showResult('out','🙌',coStudent.name+' 님 수고했어요!','퇴실이 완료됐어요',`오늘 공부시간 ${h?h+'시간 ':''}${m}분`);
+}
+
+/* ── 결과 화면 ── */
+function showResult(type,ico,name,msg,seatText){
+  const el=document.getElementById('result');
+  el.className='screen '+type;
+  document.getElementById('res-ico').textContent=ico;
+  document.getElementById('res-name').textContent=name;
+  document.getElementById('res-msg').textContent=msg;
+  const seatEl=document.getElementById('res-seat');
+  if(seatText){seatEl.textContent=seatText;seatEl.classList.remove('hide');}else{seatEl.classList.add('hide');}
+  show('result');
+  setTimeout(()=>{resetKeypad();show('keypad');},2600);
+}
+
+/* ── 학부모 알림 (설정에서 ON + 연락처 있을 때만, 실패해도 무시) ── */
+async function notifyParent(student,type,seatNumber){
+  try{
+    if(!ROOM.notify_enabled||!student.parent_phone)return;
+    const msg=type==='checkin'
+      ? `[${ROOM.academy_name||'필탑학원'}] ${student.name} 학생이 ${ROOM.name}에 입실했습니다.${seatNumber?' (좌석 '+seatNumber+'번)':''}`
+      : `[${ROOM.academy_name||'필탑학원'}] ${student.name} 학생이 ${ROOM.name}에서 퇴실했습니다.`;
+    await fetch('/api/send-notify',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        phone:student.parent_phone,message:msg,channel:ROOM.notify_channel,
+        aligo:{key:ROOM.aligo_api_key,user:ROOM.aligo_user_id,sender:ROOM.aligo_sender}
+      })
+    });
+  }catch(e){console.warn('notify skip',e);}
+}
+
+tickClock();
+initRoom();
+</script>
+</body>
+</html>
