@@ -359,6 +359,7 @@ body{font-family:'Noto Sans KR',sans-serif;background:#F6F5F2;color:#18170F;min-
       <button class="mini-btn" id="seat-upload-btn" onclick="document.getElementById('floor-img-input').click()">🖼️ 도면 업로드</button>
       <input type="file" id="floor-img-input" accept="image/*" style="display:none" onchange="uploadFloorImage(this.files[0])">
       <button class="mini-btn danger" id="seat-remove-img-btn" onclick="removeFloorImage()" style="display:none">🗑️ 도면 삭제</button>
+      <button class="mini-btn pri" id="seat-detect-btn" onclick="detectSeatsFromImage()" style="display:none">🪄 도면에서 자동 배치</button>
       <button class="mini-btn" id="seat-add-btn" onclick="addSeat()">+ 좌석 추가</button>
       <button class="mini-btn" id="seat-grid-btn" onclick="openGridModal()">▦ 격자로 여러 개 생성</button>
       <button class="mini-btn" id="seat-edit-toggle" onclick="toggleSeatEdit()">✏️ 배치 편집</button>
@@ -1002,6 +1003,7 @@ function renderSeatMap(){
     ?'💡 좌석을 클릭해서 선택하거나, 빈 공간을 드래그해서 여러 개를 한 번에 선택하세요. 선택된 좌석 중 하나를 드래그하면 전체가 같이 움직여요.'
     :'💡 좌석을 클릭하면 이름표·상태를 수정할 수 있어요. 여러 개를 한 번에 옮기려면 "선택 모드"를 켜보세요.';
   document.getElementById('seat-remove-img-btn').style.display=(room&&room.floor_image_url)?'':'none';
+  document.getElementById('seat-detect-btn').style.display=(room&&room.floor_image_url)?'':'none';
   document.getElementById('seat-select-toggle').classList.toggle('pri',selectMode);
   document.getElementById('seat-select-toggle').textContent=selectMode?'✓ 선택 모드 끄기':'🖱️ 선택 모드';
   document.getElementById('seat-select-clear').style.display=selectedSeats.size?'':'none';
@@ -1314,6 +1316,33 @@ async function removeFloorImage(){
   await sb(`study_rooms?id=eq.${curSeatRoomId}`,{method:'PATCH',body:JSON.stringify({floor_image_url:null})});
   const room=ROOMS.find(r=>r.id===curSeatRoomId);if(room)room.floor_image_url=null;
   refreshSeatData();
+}
+async function detectSeatsFromImage(){
+  const room=ROOMS.find(r=>r.id===curSeatRoomId);
+  if(!room||!room.floor_image_url){showToast('먼저 도면을 업로드하세요');return;}
+  if(!confirm('AI가 도면 이미지를 분석해서 좌석을 자동으로 만들어요.\n완벽하지 않을 수 있어 생성 후 드래그로 조정이 필요해요. 계속할까요?'))return;
+  const btn=document.getElementById('seat-detect-btn');
+  btn.disabled=true;btn.textContent='🪄 분석 중...';
+  showToast('도면을 분석하는 중이에요 (몇 초 걸릴 수 있어요)');
+  try{
+    const r=await fetch('/api/detect-seats',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({imageUrl:room.floor_image_url})});
+    const data=await r.json();
+    if(!data.success){showToast('자동 배치 실패: '+(data.error||'알 수 없는 오류'));return;}
+    let maxNum=SEATS.reduce((m,s)=>Math.max(m,s.seat_number),0);
+    const batch=data.seats.map(s=>{
+      maxNum++;
+      return {room_id:curSeatRoomId,seat_number:maxNum,x:s.x,y:s.y,width:s.width,height:s.height,status:'empty'};
+    });
+    const inserted=await sb('seats',{method:'POST',body:JSON.stringify(batch)});
+    selectedSeats=new Set((inserted||[]).map(row=>row.id));
+    seatEditMode=true;selectMode=true;
+    refreshSeatData();
+    showToast(`좌석 ${batch.length}개를 자동으로 배치했어요 — 어긋난 자리는 드래그로 조정해주세요`);
+  }catch(e){
+    showToast('자동 배치 중 오류가 발생했어요');
+  }finally{
+    btn.disabled=false;btn.textContent='🪄 도면에서 자동 배치';
+  }
 }
 async function deleteAllSeats(){
   const count=SEATS.length;
