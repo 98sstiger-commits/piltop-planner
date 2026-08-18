@@ -67,6 +67,16 @@ body{font-family:'Noto Sans KR',sans-serif;background:#F6F5F2;color:#18170F;min-
 .list-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
 .list-hd h2{font-size:14px;font-weight:700;letter-spacing:-.2px}
 .list-badge{font-size:11px;font-weight:600;color:var(--ink2);background:var(--surf);border:1px solid var(--line);border-radius:10px;padding:3px 10px}
+.stu-filter-row{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px;flex-wrap:wrap}
+.stu-filter-tabs{display:flex;gap:6px}
+.stu-filter-tab{padding:6px 12px;border-radius:8px;font-size:12px;font-weight:600;color:var(--ink2);background:var(--surf);border:1px solid var(--line)}
+.stu-filter-tab:hover{border-color:var(--line2)}
+.stu-filter-tab.on{background:var(--green);color:#fff;border-color:var(--green)}
+.stu-pagination{display:flex;justify-content:center;gap:6px;margin-top:16px;flex-wrap:wrap}
+.stu-page-btn{min-width:30px;height:30px;padding:0 6px;border-radius:8px;font-size:12px;font-weight:600;color:var(--ink2);background:var(--surf);border:1px solid var(--line)}
+.stu-page-btn:hover:not(:disabled){border-color:var(--line2)}
+.stu-page-btn.on{background:var(--green);color:#fff;border-color:var(--green)}
+.stu-page-btn:disabled{opacity:.35;cursor:default}
 
 .student-list{display:flex;flex-direction:column;gap:8px}
 .stu-card{background:var(--surf);border:1px solid var(--line);border-radius:10px;padding:14px 16px;display:flex;align-items:center;gap:12px;cursor:pointer;transition:all .15s}
@@ -285,9 +295,18 @@ body{font-family:'Noto Sans KR',sans-serif;background:#F6F5F2;color:#18170F;min-
     <h2>전체 학생</h2>
     <span class="list-badge" id="list-badge">0명</span>
   </div>
+  <div class="stu-filter-row">
+    <div class="stu-filter-tabs">
+      <button class="stu-filter-tab on" data-f="all" onclick="setStudentFilter('all')">전체</button>
+      <button class="stu-filter-tab" data-f="assigned" onclick="setStudentFilter('assigned')">배정</button>
+      <button class="stu-filter-tab" data-f="unassigned" onclick="setStudentFilter('unassigned')">미배정</button>
+    </div>
+    <button class="mini-btn" onclick="bulkGeneratePins()">PIN 일괄발급</button>
+  </div>
   <div class="student-list" id="student-list">
     <div class="empty">아직 생성된 학생이 없어요</div>
   </div>
+  <div class="stu-pagination" id="stu-pagination"></div>
 
 </div>
 
@@ -564,14 +583,43 @@ function copyLink(){navigator.clipboard.writeText(genLink).then(()=>showToast('�
 function shareKakao(){window.open(`kakaotalk://msg/send?text=${encodeURIComponent(genLink)}`);}
 
 /* 학생 목록 */
+let ALL_STUDENTS=[],STU_FILTER='all',STU_PAGE=1;
+const STU_PAGE_SIZE=10;
+
 async function loadStudents(){
-  const data=await sb('planner_students?select=*&order=created_at.desc');
+  ALL_STUDENTS=await sb('planner_students?select=*&order=created_at.desc')||[];
+  document.getElementById('list-badge').textContent=ALL_STUDENTS.length+'명';
+  renderStudentList();
+}
+
+function setStudentFilter(f){
+  STU_FILTER=f;STU_PAGE=1;
+  document.querySelectorAll('.stu-filter-tab').forEach(b=>b.classList.toggle('on',b.dataset.f===f));
+  renderStudentList();
+}
+
+function goStudentPage(p){STU_PAGE=p;renderStudentList();}
+
+function renderStudentList(){
   const list=document.getElementById('student-list');
-  const cnt=data?.length||0;
-  document.getElementById('list-badge').textContent=cnt+'명';
-  if(!cnt){list.innerHTML='<div class="empty">아직 생성된 학생이 없어요</div>';return;}
+  const pager=document.getElementById('stu-pagination');
+  let data=ALL_STUDENTS;
+  if(STU_FILTER==='assigned')data=data.filter(s=>s.room_id);
+  else if(STU_FILTER==='unassigned')data=data.filter(s=>!s.room_id);
+
+  if(!data.length){
+    list.innerHTML=`<div class="empty">${ALL_STUDENTS.length?'해당하는 학생이 없어요':'아직 생성된 학생이 없어요'}</div>`;
+    pager.innerHTML='';
+    return;
+  }
+
+  const totalPages=Math.max(1,Math.ceil(data.length/STU_PAGE_SIZE));
+  if(STU_PAGE>totalPages)STU_PAGE=totalPages;
+  const start=(STU_PAGE-1)*STU_PAGE_SIZE;
+  const pageData=data.slice(start,start+STU_PAGE_SIZE);
+
   list.innerHTML='';
-  data.forEach(s=>{
+  pageData.forEach(s=>{
     const hasPlan=(s.yearly_plan&&Object.keys(s.yearly_plan||{}).length>0)||s.career||s.career_field;
     const card=document.createElement('div');
     card.className='stu-card';
@@ -600,6 +648,38 @@ async function loadStudents(){
     card.onclick=()=>openSpy(s);
     list.appendChild(card);
   });
+
+  pager.innerHTML='';
+  if(totalPages>1){
+    const prev=document.createElement('button');
+    prev.className='stu-page-btn';prev.textContent='‹';prev.disabled=STU_PAGE===1;
+    prev.onclick=()=>goStudentPage(STU_PAGE-1);
+    pager.appendChild(prev);
+    for(let p=1;p<=totalPages;p++){
+      const b=document.createElement('button');
+      b.className='stu-page-btn'+(p===STU_PAGE?' on':'');
+      b.textContent=p;
+      b.onclick=()=>goStudentPage(p);
+      pager.appendChild(b);
+    }
+    const next=document.createElement('button');
+    next.className='stu-page-btn';next.textContent='›';next.disabled=STU_PAGE===totalPages;
+    next.onclick=()=>goStudentPage(STU_PAGE+1);
+    pager.appendChild(next);
+  }
+}
+
+async function bulkGeneratePins(){
+  const targets=ALL_STUDENTS.filter(s=>!s.student_pin);
+  if(!targets.length){showToast('PIN이 없는 학생이 없어요');return;}
+  if(!confirm(`PIN이 없는 학생 ${targets.length}명에게 고유번호를 발급할까요?`))return;
+  showToast(`${targets.length}명 발급 중...`);
+  for(const s of targets){
+    const pin=await genUniquePin();
+    await sb(`planner_students?id=eq.${s.id}`,{method:'PATCH',body:JSON.stringify({student_pin:pin})});
+  }
+  showToast('일괄 발급이 완료됐어요');
+  loadStudents();
 }
 
 /* 염탐 */
