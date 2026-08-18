@@ -1332,22 +1332,40 @@ async function addZone(){
 }
 
 /* ── 격자로 좌석 일괄 생성 ── */
+let gmMode='single';
+function setGmMode(m){
+  gmMode=m;
+  document.getElementById('gm-mode-single').classList.toggle('pri',m==='single');
+  document.getElementById('gm-mode-paired').classList.toggle('pri',m==='paired');
+  document.getElementById('gm-divider-row').style.display=m==='paired'?'flex':'none';
+  document.getElementById('gm-cols-label').textContent=m==='paired'?'열 (마주보기 다발 개수)':'열 (가로)';
+  document.getElementById('gm-rows-label').textContent=m==='paired'?'행 (다발당 마주보기 쌍 개수)':'행 (세로)';
+}
 function openGridModal(){
   if(!curSeatRoomId){showToast('독서실을 먼저 선택하세요');return;}
   closeGridModal();
+  gmMode='single';
   const bg=document.createElement('div');
   bg.className='grid-modal-bg';
   bg.id='grid-modal-bg';
   bg.innerHTML=`<div class="grid-modal">
     <div class="grid-modal-ttl">격자로 좌석 여러 개 만들기</div>
     <div class="grid-modal-sub">행×열을 입력하면 한 번에 생성돼요. 생성된 덩어리를 드래그해서 도면 위 원하는 자리로 옮기세요.</div>
-    <div class="gm-row"><label>행 (세로)</label><input type="number" id="gm-rows" value="3" min="1" max="20"></div>
-    <div class="gm-row"><label>열 (가로)</label><input type="number" id="gm-cols" value="3" min="1" max="20"></div>
+    <div class="gm-row">
+      <label>배치 방식</label>
+      <div style="display:flex;gap:6px">
+        <button type="button" class="mini-btn pri" id="gm-mode-single" onclick="setGmMode('single')">낱개</button>
+        <button type="button" class="mini-btn" id="gm-mode-paired" onclick="setGmMode('paired')">마주보기 2인1조</button>
+      </div>
+    </div>
+    <div class="gm-row"><label id="gm-rows-label">행 (세로)</label><input type="number" id="gm-rows" value="3" min="1" max="20"></div>
+    <div class="gm-row"><label id="gm-cols-label">열 (가로)</label><input type="number" id="gm-cols" value="3" min="1" max="20"></div>
     <div class="gm-row"><label>좌석 크기(%)</label><input type="number" id="gm-size" value="7" min="3" max="30" step="0.5"></div>
-    <div class="gm-row"><label>간격(%)</label><input type="number" id="gm-gap" value="1.5" min="0" max="10" step="0.5"></div>
+    <div class="gm-row"><label>줄 간격(%)</label><input type="number" id="gm-gap" value="1.5" min="0" max="10" step="0.5"></div>
+    <div class="gm-row" id="gm-divider-row" style="display:none"><label>마주보기 칸막이 간격(%)</label><input type="number" id="gm-divider" value="1" min="0" max="5" step="0.5"></div>
     <div class="gm-btns">
       <button class="mini-btn" onclick="closeGridModal()">취소</button>
-      <button class="mini-btn pri" onclick="generateSeatGrid()">생성</button>
+      <button class="mini-btn pri" id="gm-generate-btn" onclick="generateSeatGrid()">생성</button>
     </div>
   </div>`;
   document.body.appendChild(bg);
@@ -1360,19 +1378,24 @@ async function generateSeatGrid(){
   const cols=Math.max(1,Math.min(20,parseInt(document.getElementById('gm-cols').value)||1));
   const size=Math.max(3,Math.min(30,parseFloat(document.getElementById('gm-size').value)||7));
   const gap=Math.max(0,Math.min(10,parseFloat(document.getElementById('gm-gap').value)||1.5));
+  const divider=Math.max(0,Math.min(5,parseFloat(document.getElementById('gm-divider')?.value)||1));
   closeGridModal();
-  if(rows*cols>200){showToast('한 번에 200개까지만 생성할 수 있어요');return;}
+  const paired=gmMode==='paired';
+  const perCell=paired?2:1;
+  if(rows*cols*perCell>200){showToast('한 번에 200개까지만 생성할 수 있어요');return;}
   let maxNum=SEATS.reduce((m,s)=>Math.max(m,s.seat_number),0);
   const batch=[];
+  const cellW=paired?size*2+divider:size;
   for(let r=0;r<rows;r++){
     for(let c=0;c<cols;c++){
+      const baseX=Math.max(0,Math.min(100-cellW,4+c*(cellW+gap)));
+      const y=Math.max(0,Math.min(100-size,6+r*(size+gap)));
       maxNum++;
-      batch.push({
-        room_id:curSeatRoomId,seat_number:maxNum,
-        x:Math.max(0,Math.min(100-size,4+c*(size+gap))),
-        y:Math.max(0,Math.min(100-size,6+r*(size+gap))),
-        width:size,height:size,status:'empty'
-      });
+      batch.push({room_id:curSeatRoomId,seat_number:maxNum,x:baseX,y,width:size,height:size,status:'empty'});
+      if(paired){
+        maxNum++;
+        batch.push({room_id:curSeatRoomId,seat_number:maxNum,x:baseX+size+divider,y,width:size,height:size,status:'empty'});
+      }
     }
   }
   showToast(`${batch.length}개 좌석 생성 중...`);
