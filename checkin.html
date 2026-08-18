@@ -103,6 +103,21 @@ button{cursor:pointer;border:none;background:none;font-family:inherit}
 .co-btn.no{background:var(--bg);color:var(--ink2)}
 .co-btn.yes{background:var(--danger);color:#fff}
 
+/* ── 상태 선택 (공부중/학원수업중/외출중/퇴실) ── */
+#status-select{align-items:center;justify-content:center;background:rgba(0,0,0,.5)}
+.ss-card{background:#fff;border-radius:20px;padding:30px 26px;width:calc(100% - 48px);max-width:400px;text-align:center}
+.ss-name{font-size:20px;font-weight:800;margin-bottom:4px}
+.ss-sub{font-size:13px;color:var(--ink2);margin-bottom:22px}
+.ss-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:10px}
+.ss-btn{padding:18px 6px;border-radius:14px;font-size:12px;font-weight:700;display:flex;flex-direction:column;align-items:center;gap:7px;border:2px solid transparent}
+.ss-btn .ico{font-size:24px}
+.ss-btn.studying{background:#E7F8EE;color:#1C9962;border-color:#BEEBD1}
+.ss-btn.in_class{background:#EAF1FF;color:#2B5FD9;border-color:#C7D9FF}
+.ss-btn.away{background:#F3EEFF;color:#7C4DE0;border-color:#DCCBFF}
+.ss-btn.current{box-shadow:0 0 0 2px currentColor inset}
+.ss-checkout-btn{width:100%;padding:16px;border-radius:14px;font-size:15px;font-weight:700;background:var(--danger);color:#fff;margin-top:6px}
+.ss-cancel{width:100%;padding:12px;margin-top:8px;font-size:13px;color:var(--ink2)}
+
 /* ── 결과 오버레이 ── */
 #result{align-items:center;justify-content:center;z-index:50}
 #result.in{background:var(--g)}
@@ -178,6 +193,21 @@ button{cursor:pointer;border:none;background:none;font-family:inherit}
   <button class="sp-cancel" onclick="cancelSeatPick()">취소</button>
 </div>
 
+<!-- 상태 선택 -->
+<div class="screen hide" id="status-select">
+  <div class="ss-card">
+    <div class="ss-name" id="ss-name">학생</div>
+    <div class="ss-sub" id="ss-sub"></div>
+    <div class="ss-grid">
+      <button class="ss-btn studying" id="ss-btn-studying" onclick="setStudentStatus('studying')"><span class="ico">📚</span>공부중</button>
+      <button class="ss-btn in_class" id="ss-btn-in_class" onclick="setStudentStatus('in_class')"><span class="ico">🏫</span>학원수업중</button>
+      <button class="ss-btn away" id="ss-btn-away" onclick="setStudentStatus('away')"><span class="ico">🚶</span>외출중</button>
+    </div>
+    <button class="ss-checkout-btn" onclick="openCheckoutConfirm()">🚪 퇴실하기</button>
+    <button class="ss-cancel" onclick="closeStatusSelect()">닫기</button>
+  </div>
+</div>
+
 <!-- 퇴실 확인 -->
 <div class="screen hide" id="checkout-confirm">
   <div class="co-card">
@@ -219,7 +249,7 @@ async function sb(path,opts={}){
 }
 
 function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2200);}
-function show(id){['room-pick','keypad','seat-pick','checkout-confirm','result'].forEach(s=>document.getElementById(s).classList.toggle('hide',s!==id));}
+function show(id){['room-pick','keypad','seat-pick','status-select','checkout-confirm','result'].forEach(s=>document.getElementById(s).classList.toggle('hide',s!==id));}
 
 /* ── 시계 ── */
 function tickClock(){
@@ -315,7 +345,7 @@ async function submitPin(){
 
   const active=await sb(`attendance?student_id=eq.${student.id}&room_id=eq.${ROOM.id}&checkout_at=is.null&select=*&order=checkin_at.desc`);
   if(active&&active.length){
-    openCheckoutConfirm(student,active[0]);
+    openStatusSelect(student,active[0]);
   }else{
     openSeatPick(student);
   }
@@ -372,24 +402,44 @@ async function doCheckin(seat){
   document.querySelectorAll('.seat-btn').forEach(b=>b.style.pointerEvents='none');
   const now=new Date().toISOString();
   await sb('attendance',{method:'POST',body:JSON.stringify({
-    student_id:curStudent.id,room_id:ROOM.id,seat_id:seat.id,checkin_at:now,status:'checked_in'
+    student_id:curStudent.id,room_id:ROOM.id,seat_id:seat.id,checkin_at:now,status:'studying'
   })});
   notifyParent(curStudent,'checkin',seat.seat_number);
   showResult('in','👋',curStudent.name+' 님 반가워요!','입실이 완료됐어요','좌석 '+seat.seat_number+'번');
 }
 
-/* ── 퇴실 ── */
+/* ── 상태 선택 (공부중/학원수업중/외출중/퇴실) ── */
+const STATUS_LABEL={studying:'공부중',in_class:'학원수업중',away:'외출중'};
 let coStudent=null,coAtt=null;
-function openCheckoutConfirm(student,att){
+
+function openStatusSelect(student,att){
   coStudent=student;coAtt=att;
-  document.getElementById('co-name').textContent=student.name+' 님, 퇴실하시겠어요?';
-  const inTime=new Date(att.checkin_at);
+  document.getElementById('ss-name').textContent=student.name+' 님';
+  document.getElementById('ss-sub').textContent=`현재 상태: ${STATUS_LABEL[att.status]||'공부중'} · 상태를 선택해주세요`;
+  ['studying','in_class','away'].forEach(st=>{
+    document.getElementById('ss-btn-'+st).classList.toggle('current',att.status===st);
+  });
+  show('status-select');
+}
+function closeStatusSelect(){resetKeypad();show('keypad');}
+
+async function setStudentStatus(status){
+  if(status===coAtt.status){closeStatusSelect();return;}
+  await sb(`attendance?id=eq.${coAtt.id}`,{method:'PATCH',body:JSON.stringify({status})});
+  showToast(coStudent.name+' 님 '+STATUS_LABEL[status]+'(으)로 변경됐어요');
+  resetKeypad();show('keypad');
+}
+
+/* ── 퇴실 ── */
+function openCheckoutConfirm(){
+  document.getElementById('co-name').textContent=coStudent.name+' 님, 퇴실하시겠어요?';
+  const inTime=new Date(coAtt.checkin_at);
   const mins=Math.max(0,Math.round((Date.now()-inTime.getTime())/60000));
   const h=Math.floor(mins/60),m=mins%60;
   document.getElementById('co-time').textContent=`입실 ${inTime.getHours()}:${String(inTime.getMinutes()).padStart(2,'0')} · 공부시간 ${h?h+'시간 ':''}${m}분`;
   show('checkout-confirm');
 }
-function closeCheckoutConfirm(){resetKeypad();show('keypad');}
+function closeCheckoutConfirm(){show('status-select');}
 async function doCheckout(){
   const now=new Date().toISOString();
   await sb(`attendance?id=eq.${coAtt.id}`,{method:'PATCH',body:JSON.stringify({checkout_at:now,status:'checked_out'})});

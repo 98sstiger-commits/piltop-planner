@@ -42,6 +42,8 @@ create table if not exists seats (
 );
 
 -- ── 3. attendance : 출석 기록 ──────────────────────────────────
+-- status: studying(공부중) / in_class(학원수업중) / away(외출중) / checked_out(퇴실)
+-- 체크인~체크아웃 사이에는 세션이 유지된 채로 status만 바뀝니다 (좌석은 계속 그 학생 것).
 create table if not exists attendance (
   id uuid primary key default gen_random_uuid(),
   student_id uuid not null references planner_students(id) on delete cascade,
@@ -49,7 +51,7 @@ create table if not exists attendance (
   seat_id uuid references seats(id) on delete set null,
   checkin_at timestamptz not null default now(),
   checkout_at timestamptz,
-  status text not null default 'checked_in' check (status in ('checked_in','checked_out')),
+  status text not null default 'studying' check (status in ('studying','in_class','away','checked_out')),
   created_at timestamptz not null default now()
 );
 
@@ -62,13 +64,37 @@ alter table planner_students add column if not exists student_pin varchar(4) uni
 alter table planner_students add column if not exists room_id uuid references study_rooms(id) on delete set null;
 alter table planner_students add column if not exists parent_phone text;
 
--- 이미 위 SQL을 한 번 실행한 적이 있다면(테이블이 이미 존재하면) 아래 줄이
--- study_rooms에 좌석 배치판 높이 조절용 컬럼을 새로 추가해줍니다.
+-- 이미 위 SQL을 한 번 실행한 적이 있다면(테이블이 이미 존재하면) 아래 줄들이
+-- 새로 추가된 컬럼/상태값을 기존 테이블에 안전하게 반영해줍니다.
 alter table study_rooms add column if not exists canvas_height integer not null default 420;
 
+-- 수강 과목: ["kor","math","eng","sci","soc","hist"] 형태의 JSON 배열로 저장
+alter table planner_students add column if not exists subjects jsonb not null default '[]'::jsonb;
+
+-- attendance.status를 공부중/학원수업중/외출중/퇴실 4단계로 확장
+-- (기존에 'checked_in'/'checked_out' 2단계로 실행했던 경우를 위한 마이그레이션)
+update attendance set status='studying' where status='checked_in';
+alter table attendance alter column status set default 'studying';
+do $$
+begin
+  alter table attendance drop constraint if exists attendance_status_check;
+  alter table attendance add constraint attendance_status_check
+    check (status in ('studying','in_class','away','checked_out'));
+exception when others then null;
+end $$;
+
 -- ── 5. Realtime 활성화 (좌석 실시간 업데이트용) ────────────────
-alter publication supabase_realtime add table attendance;
-alter publication supabase_realtime add table seats;
+-- 이미 등록돼 있으면 조용히 건너뜁니다 (여러 번 실행해도 안전).
+do $$
+begin
+  alter publication supabase_realtime add table attendance;
+exception when duplicate_object then null;
+end $$;
+do $$
+begin
+  alter publication supabase_realtime add table seats;
+exception when duplicate_object then null;
+end $$;
 
 -- ── 6. RLS — 기존 planner_students와 동일하게 anon key로 전체
 --      CRUD가 가능하도록 개방형 정책을 둡니다 (별도 로그인 없이
@@ -77,8 +103,11 @@ alter table study_rooms enable row level security;
 alter table seats enable row level security;
 alter table attendance enable row level security;
 
+drop policy if exists "public full access" on study_rooms;
 create policy "public full access" on study_rooms for all using (true) with check (true);
+drop policy if exists "public full access" on seats;
 create policy "public full access" on seats for all using (true) with check (true);
+drop policy if exists "public full access" on attendance;
 create policy "public full access" on attendance for all using (true) with check (true);
 
 -- ── 7. Storage — 도면 이미지 업로드용 버킷 ─────────────────────
@@ -86,18 +115,22 @@ insert into storage.buckets (id, name, public)
 values ('floorplans', 'floorplans', true)
 on conflict (id) do nothing;
 
+drop policy if exists "floorplans public read" on storage.objects;
 create policy "floorplans public read"
 on storage.objects for select
 using (bucket_id = 'floorplans');
 
+drop policy if exists "floorplans public write" on storage.objects;
 create policy "floorplans public write"
 on storage.objects for insert
 with check (bucket_id = 'floorplans');
 
+drop policy if exists "floorplans public update" on storage.objects;
 create policy "floorplans public update"
 on storage.objects for update
 using (bucket_id = 'floorplans');
 
+drop policy if exists "floorplans public delete" on storage.objects;
 create policy "floorplans public delete"
 on storage.objects for delete
 using (bucket_id = 'floorplans');

@@ -145,6 +145,18 @@ body{font-family:'Noto Sans KR',sans-serif;background:#F6F5F2;color:#18170F;min-
 .stu-extra-row{display:flex;align-items:center;gap:6px;margin-top:8px;flex-wrap:wrap}
 .stu-extra-row .f-select{width:auto;padding:6px 10px;font-size:11px;border-radius:7px}
 
+/* 수강 과목 */
+.subj-check-row{display:flex;flex-wrap:wrap;gap:6px}
+.subj-chk{padding:7px 12px;border-radius:8px;font-size:12px;font-weight:600;background:var(--bg);color:var(--ink2);border:1px solid var(--line2)}
+.subj-chk.on{background:var(--green);color:#fff;border-color:var(--green)}
+.subj-badges{display:flex;flex-wrap:wrap;gap:4px}
+.subj-badge{font-size:9px;font-weight:700;padding:2px 7px;border-radius:7px;background:var(--gs);color:var(--green)}
+.subj-badge.muted{background:var(--bg2,#F1F0EC);color:var(--ink3)}
+.subj-pop{position:fixed;background:#fff;border:1px solid var(--line2);border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,.15);padding:12px;z-index:60;min-width:220px}
+.subj-pop-ttl{font-size:12px;font-weight:700;padding:0 2px 8px;border-bottom:1px solid var(--line);margin-bottom:10px}
+.subj-pop-grid{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
+.subj-pop-save{width:100%;background:var(--green);color:#fff;font-weight:700;padding:9px;border-radius:8px}
+
 /* ══ 좌석현황 ══ */
 .seat-toolbar{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:14px;flex-wrap:wrap}
 .seat-toolbar-right{display:flex;gap:8px;flex-wrap:wrap}
@@ -155,6 +167,8 @@ body{font-family:'Noto Sans KR',sans-serif;background:#F6F5F2;color:#18170F;min-
 .seat-node.empty{background:#fff;border-color:var(--line2);color:var(--ink)}
 .seat-node.empty:hover{border-color:var(--green)}
 .seat-node.studying{background:#22B573;color:#fff;border-color:#1C9962}
+.seat-node.in_class{background:#4C8DFF;color:#fff;border-color:#3A6FDB}
+.seat-node.away{background:#A78BFA;color:#fff;border-color:#8B6BE8}
 .seat-node.reserved{background:#FFB648;color:#5A3A00;border-color:#E89F2E}
 .seat-node.dragging{box-shadow:0 8px 22px rgba(0,0,0,.28);z-index:6;transform:scale(1.04)}
 .seat-node .sn-num{font-size:13px;line-height:1.2}
@@ -283,6 +297,11 @@ body{font-family:'Noto Sans KR',sans-serif;background:#F6F5F2;color:#18170F;min-
         <select class="f-select" id="s-room"><option value="">미배정</option></select>
       </div>
 
+      <div class="field">
+        <label class="field-label">수강 과목 (선택)</label>
+        <div class="subj-check-row" id="s-subjects"></div>
+      </div>
+
       <button class="gen-btn" onclick="generateLink()">링크 생성</button>
 
       <div class="link-result" id="link-result" style="display:none"></div>
@@ -330,8 +349,10 @@ body{font-family:'Noto Sans KR',sans-serif;background:#F6F5F2;color:#18170F;min-
   </div>
   <div class="seat-legend">
     <span><i style="background:var(--line2)"></i>비어있음</span>
-    <span><i style="background:#2E9E5B"></i>공부중</span>
-    <span><i style="background:#F4A442"></i>예약</span>
+    <span><i style="background:#22B573"></i>공부중</span>
+    <span><i style="background:#4C8DFF"></i>학원수업중</span>
+    <span><i style="background:#A78BFA"></i>외출중</span>
+    <span><i style="background:#FFB648"></i>예약</span>
   </div>
 </div>
 
@@ -345,9 +366,10 @@ body{font-family:'Noto Sans KR',sans-serif;background:#F6F5F2;color:#18170F;min-
   <div class="card" style="margin-bottom:16px">
     <div class="card-hd"><div class="card-title">오늘 출석 현황</div></div>
     <div class="card-bd">
-      <div class="att-stat-grid">
+      <div class="att-stat-grid" style="grid-template-columns:repeat(4,1fr)">
         <div class="att-stat-cell"><div class="att-stat-num" id="att-total">0</div><div class="att-stat-lbl">총 입실</div></div>
-        <div class="att-stat-cell"><div class="att-stat-num" id="att-studying">0</div><div class="att-stat-lbl">현재 공부중</div></div>
+        <div class="att-stat-cell"><div class="att-stat-num" id="att-studying">0</div><div class="att-stat-lbl">공부중</div></div>
+        <div class="att-stat-cell"><div class="att-stat-num" id="att-elsewhere">0</div><div class="att-stat-lbl">수업·외출중</div></div>
         <div class="att-stat-cell"><div class="att-stat-num" id="att-out">0</div><div class="att-stat-lbl">퇴실</div></div>
       </div>
     </div>
@@ -367,8 +389,8 @@ body{font-family:'Noto Sans KR',sans-serif;background:#F6F5F2;color:#18170F;min-
     <div class="card-hd"><div class="card-title">날짜별 출석 기록</div></div>
     <div class="card-bd" style="overflow-x:auto">
       <table class="date-table" id="date-record-table">
-        <thead><tr><th>학생</th><th>좌석</th><th>입실</th><th>퇴실</th><th>시간</th></tr></thead>
-        <tbody id="date-record-body"><tr><td colspan="5" class="empty">기록이 없어요</td></tr></tbody>
+        <thead><tr><th>학생</th><th>좌석</th><th>상태</th><th>입실</th><th>퇴실</th><th>시간</th></tr></thead>
+        <tbody id="date-record-body"><tr><td colspan="6" class="empty">기록이 없어요</td></tr></tbody>
       </table>
     </div>
   </div>
@@ -469,6 +491,19 @@ let selSchool=null;
 let genLink='';
 let schoolTimer=null;
 let ROOMS=[];
+const SUBJECT_LIST=[{k:'kor',l:'국어'},{k:'math',l:'수학'},{k:'eng',l:'영어'},{k:'sci',l:'과학'},{k:'soc',l:'사회'},{k:'hist',l:'역사'}];
+function subjLabel(k){return SUBJECT_LIST.find(s=>s.k===k)?.l||k;}
+function buildSubjectChecks(){
+  const wrap=document.getElementById('s-subjects');
+  wrap.innerHTML='';
+  SUBJECT_LIST.forEach(s=>{
+    const b=document.createElement('button');
+    b.type='button';b.className='subj-chk';b.dataset.k=s.k;b.textContent=s.l;
+    b.onclick=()=>b.classList.toggle('on');
+    wrap.appendChild(b);
+  });
+}
+buildSubjectChecks();
 
 /* 학교 검색 — NEIS API (demo key) + 실패시 직접입력 허용 */
 async function searchSchool(q){
@@ -543,6 +578,7 @@ async function generateLink(){
   const grade=document.getElementById('s-grade').value;
   const phone=document.getElementById('s-phone').value.trim();
   const roomId=document.getElementById('s-room').value;
+  const subjects=[...document.querySelectorAll('#s-subjects .subj-chk.on')].map(b=>b.dataset.k);
   if(!name){showToast('이름을 입력해주세요');return;}
   if(!selSchool){showToast('학교를 검색해서 선택해주세요');return;}
   if(!grade){showToast('학년을 선택해주세요');return;}
@@ -551,8 +587,9 @@ async function generateLink(){
   const pin=await genUniquePin();
   await sb('planner_students',{
     method:'POST',
-    body:JSON.stringify({id,name,grade,school_name:selSchool.name,school_code:selSchool.code,school_org:selSchool.orgCode,created_at:new Date().toISOString(),student_pin:pin,parent_phone:phone||null,room_id:roomId||null})
+    body:JSON.stringify({id,name,grade,school_name:selSchool.name,school_code:selSchool.code,school_org:selSchool.orgCode,created_at:new Date().toISOString(),student_pin:pin,parent_phone:phone||null,room_id:roomId||null,subjects})
   });
+  buildSubjectChecks();
 
   const year=document.getElementById('s-year').value;
   const params=new URLSearchParams({id,name,school:selSchool.name,grade,year});
@@ -628,6 +665,10 @@ function renderStudentList(){
     if(s.school_org)sparams.set('so',s.school_org);
     const slink=`${BASE}/index.html?${sparams}`;
     const roomOpts=`<option value="">독서실 미배정</option>`+ROOMS.map(r=>`<option value="${r.id}" ${s.room_id===r.id?'selected':''}>${r.name}</option>`).join('');
+    const subjects=Array.isArray(s.subjects)?s.subjects:[];
+    const subjBadges=subjects.length
+      ? subjects.map(k=>`<span class="subj-badge">${subjLabel(k)}</span>`).join('')
+      : `<span class="subj-badge muted">과목 미설정</span>`;
     card.innerHTML=`
       <div class="stu-avatar">${s.name[0]}</div>
       <div class="stu-info">
@@ -638,6 +679,10 @@ function renderStudentList(){
           <button class="mini-btn" style="padding:3px 8px;font-size:10px" onclick="regenPin('${s.id}','${s.name}')">재발급</button>
           <select class="f-select" onchange="assignRoom('${s.id}',this.value)">${roomOpts}</select>
           <button class="mini-btn" style="padding:3px 8px;font-size:10px" onclick="window.open('${BASE}/report.html?id=${s.id}&type=weekly','_blank')">📊 리포트</button>
+        </div>
+        <div class="stu-extra-row" onclick="event.stopPropagation();openSubjPop(event,'${s.id}')" style="cursor:pointer">
+          <div class="subj-badges">${subjBadges}</div>
+          <span style="font-size:10px;color:var(--ink3)">✏️ 과목수정</span>
         </div>
       </div>
       ${hasPlan
@@ -807,6 +852,33 @@ async function assignRoom(id,roomId){
   showToast('배정 독서실이 변경됐어요');
 }
 
+/* ── 수강 과목 수정 ── */
+function closeSubjPop(){document.querySelectorAll('.subj-pop').forEach(p=>p.remove());}
+function openSubjPop(e,id){
+  closeSubjPop();
+  const s=ALL_STUDENTS.find(x=>x.id===id);
+  if(!s)return;
+  const cur=new Set(Array.isArray(s.subjects)?s.subjects:[]);
+  const pop=document.createElement('div');
+  pop.className='subj-pop';
+  const cx=e.clientX||window.innerWidth/2,cy=e.clientY||window.innerHeight/2;
+  pop.style.left=Math.min(cx,window.innerWidth-240)+'px';
+  pop.style.top=Math.min(cy,window.innerHeight-220)+'px';
+  pop.innerHTML=`<div class="subj-pop-ttl">${s.name} 학생 수강 과목</div>
+    <div class="subj-pop-grid">${SUBJECT_LIST.map(sub=>`<button type="button" class="subj-chk${cur.has(sub.k)?' on':''}" data-k="${sub.k}">${sub.l}</button>`).join('')}</div>
+    <button class="subj-pop-save">저장</button>`;
+  document.body.appendChild(pop);
+  pop.addEventListener('click',ev=>ev.stopPropagation());
+  pop.querySelectorAll('.subj-chk').forEach(b=>b.onclick=()=>b.classList.toggle('on'));
+  pop.querySelector('.subj-pop-save').onclick=async()=>{
+    const subjects=[...pop.querySelectorAll('.subj-chk.on')].map(b=>b.dataset.k);
+    await sb(`planner_students?id=eq.${id}`,{method:'PATCH',body:JSON.stringify({subjects})});
+    closeSubjPop();
+    loadStudents();
+  };
+  setTimeout(()=>document.addEventListener('click',closeSubjPop,{once:true}),0);
+}
+
 /* ══ 좌석현황 탭 ══ */
 let SEATS=[],ACTIVE_ATT=[],seatEditMode=false,dragMoved=false;
 
@@ -824,11 +896,12 @@ async function refreshSeatData(){
   if(!curSeatRoomId)return;
   const [s,a]=await Promise.all([
     sb(`seats?room_id=eq.${curSeatRoomId}&select=*&order=seat_number.asc`),
-    sb(`attendance?room_id=eq.${curSeatRoomId}&checkout_at=is.null&select=seat_id,planner_students(name)`)
+    sb(`attendance?room_id=eq.${curSeatRoomId}&checkout_at=is.null&select=seat_id,status,planner_students(name)`)
   ]);
   SEATS=s||[];ACTIVE_ATT=a||[];
   renderSeatMap();
 }
+const OCC_STATUS_LABEL={studying:'공부중',in_class:'학원수업중',away:'외출중'};
 window.refreshSeatData=refreshSeatData;
 
 const DRAG_THRESHOLD=4;
@@ -839,7 +912,7 @@ function renderSeatMap(){
   wrap.classList.toggle('editing',seatEditMode);
   document.getElementById('seat-edit-toggle').classList.toggle('pri',seatEditMode);
   document.getElementById('seat-edit-toggle').textContent=seatEditMode?'✓ 편집 종료':'✏️ 배치 편집';
-  const occ={};ACTIVE_ATT.forEach(a=>{if(a.seat_id)occ[a.seat_id]=a.planner_students?.name||'공부중';});
+  const occ={};ACTIVE_ATT.forEach(a=>{if(a.seat_id)occ[a.seat_id]={name:a.planner_students?.name||'학생',status:a.status||'studying'};});
   wrap.innerHTML='';
 
   if(room&&room.floor_image_url){
@@ -859,11 +932,11 @@ function renderSeatMap(){
     wrap.appendChild(hint);
   }
   SEATS.forEach(s=>{
-    const isBusy=!!occ[s.id];
+    const occStu=occ[s.id];
     const node=document.createElement('div');
-    node.className='seat-node '+(isBusy?'studying':(s.status==='reserved'?'reserved':'empty'));
+    node.className='seat-node '+(occStu?occStu.status:(s.status==='reserved'?'reserved':'empty'));
     node.style.left=s.x+'%';node.style.top=s.y+'%';node.style.width=s.width+'%';node.style.height=s.height+'%';
-    node.innerHTML=`<span class="sn-num">${s.seat_number}</span>${isBusy?`<span class="sn-name">${occ[s.id]}</span>`:(s.label?`<span class="sn-name">${s.label}</span>`:'')}`;
+    node.innerHTML=`<span class="sn-num">${s.seat_number}</span>${occStu?`<span class="sn-name">${occStu.name}</span>`:(s.label?`<span class="sn-name">${s.label}</span>`:'')}`;
     if(seatEditMode){
       node.onmousedown=(e)=>startDrag(e,node,s);
       node.ontouchstart=(e)=>startDrag(e,node,s);
@@ -874,8 +947,8 @@ function renderSeatMap(){
       handle.ontouchstart=(e)=>startSeatResize(e,node,s);
       handle.addEventListener('click',e=>e.stopPropagation());
       node.appendChild(handle);
-    }else if(isBusy){
-      node.onclick=()=>showToast(occ[s.id]+' 님이 공부중이에요');
+    }else if(occStu){
+      node.onclick=()=>showToast(occStu.name+' 님 · '+(OCC_STATUS_LABEL[occStu.status]||'공부중'));
     }
     wrap.appendChild(node);
   });
@@ -1101,7 +1174,8 @@ async function loadAttendanceTab(){
   const start=`${todayStr}T00:00:00`,end=`${dk(addDaysA(new Date(),1))}T00:00:00`;
   const today=await sb(`attendance?checkin_at=gte.${start}&checkin_at=lt.${end}${filter}&select=*`)||[];
   document.getElementById('att-total').textContent=today.length;
-  document.getElementById('att-studying').textContent=today.filter(a=>!a.checkout_at).length;
+  document.getElementById('att-studying').textContent=today.filter(a=>a.status==='studying').length;
+  document.getElementById('att-elsewhere').textContent=today.filter(a=>a.status==='in_class'||a.status==='away').length;
   document.getElementById('att-out').textContent=today.filter(a=>a.checkout_at).length;
 
   const mon=mondayOfA(new Date());
@@ -1140,11 +1214,12 @@ async function loadDateRecord(){
   const start=`${date}T00:00:00`,end=`${dk(addDaysA(parseDkA(date),1))}T00:00:00`;
   const rows=await sb(`attendance?checkin_at=gte.${start}&checkin_at=lt.${end}${filter}&select=*,planner_students(name),seats(seat_number)&order=checkin_at.asc`)||[];
   const body=document.getElementById('date-record-body');
-  if(!rows.length){body.innerHTML='<tr><td colspan="5" class="empty">기록이 없어요</td></tr>';return;}
+  if(!rows.length){body.innerHTML='<tr><td colspan="6" class="empty">기록이 없어요</td></tr>';return;}
   body.innerHTML=rows.map(a=>{
     const inT=new Date(a.checkin_at),outT=a.checkout_at?new Date(a.checkout_at):null;
     const dur=fmtMinA(((outT||new Date())-inT)/60000);
-    return `<tr><td>${a.planner_students?.name||'?'}</td><td>${a.seats?.seat_number?a.seats.seat_number+'번':'-'}</td><td>${String(inT.getHours()).padStart(2,'0')}:${String(inT.getMinutes()).padStart(2,'0')}</td><td>${outT?String(outT.getHours()).padStart(2,'0')+':'+String(outT.getMinutes()).padStart(2,'0'):'공부중'}</td><td>${dur}</td></tr>`;
+    const statusText=outT?'퇴실':(OCC_STATUS_LABEL[a.status]||'공부중');
+    return `<tr><td>${a.planner_students?.name||'?'}</td><td>${a.seats?.seat_number?a.seats.seat_number+'번':'-'}</td><td>${statusText}</td><td>${String(inT.getHours()).padStart(2,'0')}:${String(inT.getMinutes()).padStart(2,'0')}</td><td>${outT?String(outT.getHours()).padStart(2,'0')+':'+String(outT.getMinutes()).padStart(2,'0'):'-'}</td><td>${dur}</td></tr>`;
   }).join('');
 }
 
