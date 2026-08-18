@@ -138,25 +138,44 @@ body{font-family:'Noto Sans KR',sans-serif;background:#F6F5F2;color:#18170F;min-
 /* ══ 좌석현황 ══ */
 .seat-toolbar{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:14px;flex-wrap:wrap}
 .seat-toolbar-right{display:flex;gap:8px;flex-wrap:wrap}
-.seat-map-wrap{position:relative;background:#fff;border:1px solid var(--line);border-radius:14px;min-height:420px;overflow:hidden}
+.seat-map-wrap{position:relative;background:#F9F8F5;border:1px solid var(--line);border-radius:14px;height:420px;overflow:hidden}
 .seat-map-wrap.editing{cursor:crosshair}
-.seat-map-img{width:100%;display:block;pointer-events:none;user-select:none}
-.seat-node{position:absolute;border-radius:10px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-weight:700;font-size:12px;color:#fff;cursor:pointer;border:2px solid transparent;transition:box-shadow .12s;user-select:none}
-.seat-node.empty{background:var(--line2);color:#69675E}
-.seat-node.studying{background:#2E9E5B}
-.seat-node.reserved{background:#F4A442}
-.seat-node.dragging{box-shadow:0 6px 18px rgba(0,0,0,.25);z-index:5}
+.seat-map-img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;pointer-events:none;user-select:none}
+.seat-node{position:absolute;border-radius:10px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-weight:700;font-size:12px;cursor:pointer;border:2px solid transparent;box-shadow:0 1px 3px rgba(0,0,0,.08);transition:box-shadow .12s,transform .08s;user-select:none}
+.seat-node.empty{background:#fff;border-color:var(--line2);color:var(--ink)}
+.seat-node.empty:hover{border-color:var(--green)}
+.seat-node.studying{background:#22B573;color:#fff;border-color:#1C9962}
+.seat-node.reserved{background:#FFB648;color:#5A3A00;border-color:#E89F2E}
+.seat-node.dragging{box-shadow:0 8px 22px rgba(0,0,0,.28);z-index:6;transform:scale(1.04)}
 .seat-node .sn-num{font-size:13px;line-height:1.2}
 .seat-node .sn-name{font-size:9px;font-weight:600;opacity:.9;max-width:90%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.seat-empty-hint{padding:60px 24px;text-align:center;color:var(--ink3);font-size:13px;line-height:1.8}
+.seat-resize-handle{position:absolute;right:1px;bottom:1px;width:12px;height:12px;border-radius:3px;background:var(--green);border:2px solid #fff;cursor:nwse-resize;z-index:3;box-shadow:0 1px 3px rgba(0,0,0,.3)}
+.canvas-resize-handle{position:absolute;right:10px;bottom:10px;width:26px;height:26px;border-radius:8px;background:var(--green);color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;cursor:ns-resize;z-index:10;box-shadow:0 2px 8px rgba(0,0,0,.25)}
+.seat-empty-hint{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;text-align:center;color:var(--ink3);font-size:13px;line-height:1.8;padding:24px}
+.seat-empty-hint.overlay{background:rgba(255,255,255,.82)}
 .seat-legend{display:flex;gap:16px;margin:12px 4px 0;font-size:11px;color:var(--ink2)}
 .seat-legend span{display:inline-flex;align-items:center;gap:5px}
 .seat-legend i{width:10px;height:10px;border-radius:3px;display:inline-block}
-.seat-pop{position:fixed;background:#fff;border:1px solid var(--line2);border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,.15);padding:10px;z-index:60;min-width:160px}
-.seat-pop-ttl{font-size:12px;font-weight:700;padding:4px 8px 8px;border-bottom:1px solid var(--line);margin-bottom:6px}
+.seat-pop{position:fixed;background:#fff;border:1px solid var(--line2);border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,.15);padding:10px;z-index:60;min-width:200px}
+.seat-pop-ttl{font-size:12px;font-weight:700;padding:4px 8px 8px;border-bottom:1px solid var(--line);margin-bottom:8px}
+.seat-pop-field{display:flex;gap:6px;padding:0 2px 8px}
+.seat-pop-field input{flex:1;padding:8px 10px;border:1px solid var(--line2);border-radius:7px;font-size:12px;font-family:inherit;color:var(--ink)}
+.seat-pop-field input:focus{outline:none;border-color:var(--green)}
+.seat-pop-field button{width:auto;flex-shrink:0;background:var(--green);color:#fff;font-weight:700;padding:8px 12px}
+.seat-pop-field button:hover{background:var(--green);opacity:.88}
 .seat-pop button{display:block;width:100%;text-align:left;padding:8px;font-size:12px;border-radius:7px;color:var(--ink)}
 .seat-pop button:hover{background:var(--gs)}
 .seat-pop button.danger{color:#B91C1C}
+.grid-modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:70;display:flex;align-items:center;justify-content:center;padding:20px}
+.grid-modal{background:#fff;border-radius:16px;padding:22px;width:100%;max-width:340px}
+.grid-modal-ttl{font-size:15px;font-weight:700;margin-bottom:6px}
+.grid-modal-sub{font-size:11px;color:var(--ink2);line-height:1.6;margin-bottom:16px}
+.gm-row{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}
+.gm-row label{font-size:12px;color:var(--ink2);font-weight:600}
+.gm-row input{width:80px;padding:8px 10px;border:1px solid var(--line2);border-radius:8px;font-size:13px;text-align:right;font-family:inherit}
+.gm-row input:focus{outline:none;border-color:var(--green)}
+.gm-btns{display:flex;gap:8px;margin-top:16px}
+.gm-btns .mini-btn{flex:1;text-align:center}
 
 /* ══ 출석기록 ══ */
 .att-stat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:18px}
@@ -283,6 +302,7 @@ body{font-family:'Noto Sans KR',sans-serif;background:#F6F5F2;color:#18170F;min-
       <button class="mini-btn" id="seat-upload-btn" onclick="document.getElementById('floor-img-input').click()">🖼️ 도면 업로드</button>
       <input type="file" id="floor-img-input" accept="image/*" style="display:none" onchange="uploadFloorImage(this.files[0])">
       <button class="mini-btn" id="seat-add-btn" onclick="addSeat()">+ 좌석 추가</button>
+      <button class="mini-btn" id="seat-grid-btn" onclick="openGridModal()">▦ 격자로 여러 개 생성</button>
       <button class="mini-btn" id="seat-edit-toggle" onclick="toggleSeatEdit()">✏️ 배치 편집</button>
     </div>
   </div>
@@ -731,6 +751,8 @@ async function refreshSeatData(){
 }
 window.refreshSeatData=refreshSeatData;
 
+const DRAG_THRESHOLD=4;
+
 function renderSeatMap(){
   const room=ROOMS.find(r=>r.id===curSeatRoomId);
   const wrap=document.getElementById('seat-map-wrap');
@@ -739,14 +761,22 @@ function renderSeatMap(){
   document.getElementById('seat-edit-toggle').textContent=seatEditMode?'✓ 편집 종료':'✏️ 배치 편집';
   const occ={};ACTIVE_ATT.forEach(a=>{if(a.seat_id)occ[a.seat_id]=a.planner_students?.name||'공부중';});
   wrap.innerHTML='';
-  if(!SEATS.length){
-    wrap.innerHTML='<div class="seat-empty-hint">등록된 좌석이 없어요.<br>"+ 좌석 추가" 버튼으로 좌석을 만들어보세요.</div>';
-    return;
-  }
+
   if(room&&room.floor_image_url){
-    const img=document.createElement('img');img.src=room.floor_image_url;img.className='seat-map-img';wrap.appendChild(img);
+    // 도면 이미지는 원본 비율 그대로 채워야 좌석 % 좌표가 그림과 어긋나지 않아요.
+    wrap.style.height=(room.canvas_height||420)+'px';
+    const img=document.createElement('img');
+    img.src=room.floor_image_url;img.className='seat-map-img';
+    img.onload=()=>{ wrap.style.height=(wrap.clientWidth*img.naturalHeight/img.naturalWidth)+'px'; };
+    wrap.appendChild(img);
   }else{
-    wrap.style.minHeight='420px';
+    wrap.style.height=(room&&room.canvas_height?room.canvas_height:420)+'px';
+  }
+  if(!SEATS.length){
+    const hint=document.createElement('div');
+    hint.className='seat-empty-hint'+(room&&room.floor_image_url?' overlay':'');
+    hint.innerHTML='등록된 좌석이 없어요.<br>"+ 좌석 추가" 버튼으로 좌석을 만들어보세요.';
+    wrap.appendChild(hint);
   }
   SEATS.forEach(s=>{
     const isBusy=!!occ[s.id];
@@ -758,11 +788,28 @@ function renderSeatMap(){
       node.onmousedown=(e)=>startDrag(e,node,s);
       node.ontouchstart=(e)=>startDrag(e,node,s);
       node.onclick=(e)=>{if(dragMoved){dragMoved=false;return;}openSeatPop(e,s);};
+      const handle=document.createElement('div');
+      handle.className='seat-resize-handle';
+      handle.onmousedown=(e)=>startSeatResize(e,node,s);
+      handle.ontouchstart=(e)=>startSeatResize(e,node,s);
+      handle.addEventListener('click',e=>e.stopPropagation());
+      node.appendChild(handle);
     }else if(isBusy){
       node.onclick=()=>showToast(occ[s.id]+' 님이 공부중이에요');
     }
     wrap.appendChild(node);
   });
+
+  if(seatEditMode&&!(room&&room.floor_image_url)){
+    const chandle=document.createElement('div');
+    chandle.className='canvas-resize-handle';
+    chandle.textContent='↕';
+    chandle.title='강의실 크기 조절';
+    chandle.onmousedown=startCanvasResize;
+    chandle.ontouchstart=startCanvasResize;
+    chandle.addEventListener('click',e=>e.stopPropagation());
+    wrap.appendChild(chandle);
+  }
 }
 
 function startDrag(e,node,seat){
@@ -770,10 +817,15 @@ function startDrag(e,node,seat){
   dragMoved=false;
   const wrap=document.getElementById('seat-map-wrap');
   const rect=wrap.getBoundingClientRect();
-  node.classList.add('dragging');
+  const startPt=e.touches?e.touches[0]:e;
+  const startX=startPt.clientX,startY=startPt.clientY;
   function move(ev){
-    dragMoved=true;
     const pt=ev.touches?ev.touches[0]:ev;
+    if(!dragMoved){
+      if(Math.abs(pt.clientX-startX)<DRAG_THRESHOLD&&Math.abs(pt.clientY-startY)<DRAG_THRESHOLD)return;
+      dragMoved=true;
+      node.classList.add('dragging');
+    }
     const w=parseFloat(node.style.width)||9,h=parseFloat(node.style.height)||9;
     let x=(pt.clientX-rect.left)/rect.width*100;
     let y=(pt.clientY-rect.top)/rect.height*100;
@@ -794,27 +846,84 @@ function startDrag(e,node,seat){
   document.addEventListener('touchmove',move,{passive:false});document.addEventListener('touchend',up);
 }
 
+function startSeatResize(e,node,seat){
+  e.preventDefault();e.stopPropagation();
+  const wrap=document.getElementById('seat-map-wrap');
+  const rect=wrap.getBoundingClientRect();
+  const startPt=e.touches?e.touches[0]:e;
+  const startX=startPt.clientX,startY=startPt.clientY;
+  const startW=parseFloat(node.style.width)||9,startH=parseFloat(node.style.height)||9;
+  function move(ev){
+    const pt=ev.touches?ev.touches[0]:ev;
+    let w=startW+(pt.clientX-startX)/rect.width*100;
+    let h=startH+(pt.clientY-startY)/rect.height*100;
+    w=Math.max(4,Math.min(40,w));h=Math.max(4,Math.min(40,h));
+    node.style.width=w+'%';node.style.height=h+'%';
+  }
+  function up(){
+    document.removeEventListener('mousemove',move);document.removeEventListener('mouseup',up);
+    document.removeEventListener('touchmove',move);document.removeEventListener('touchend',up);
+    const w=parseFloat(node.style.width),h=parseFloat(node.style.height);
+    seat.width=w;seat.height=h;
+    sb(`seats?id=eq.${seat.id}`,{method:'PATCH',body:JSON.stringify({width:w,height:h})});
+  }
+  document.addEventListener('mousemove',move);document.addEventListener('mouseup',up);
+  document.addEventListener('touchmove',move,{passive:false});document.addEventListener('touchend',up);
+}
+
+function startCanvasResize(e){
+  e.preventDefault();e.stopPropagation();
+  const wrap=document.getElementById('seat-map-wrap');
+  const startPt=e.touches?e.touches[0]:e;
+  const startY=startPt.clientY;
+  const startH=wrap.offsetHeight;
+  function move(ev){
+    const pt=ev.touches?ev.touches[0]:ev;
+    const h=Math.max(240,Math.min(1000,startH+(pt.clientY-startY)));
+    wrap.style.height=h+'px';
+  }
+  function up(){
+    document.removeEventListener('mousemove',move);document.removeEventListener('mouseup',up);
+    document.removeEventListener('touchmove',move);document.removeEventListener('touchend',up);
+    const h=wrap.offsetHeight;
+    const room=ROOMS.find(r=>r.id===curSeatRoomId);if(room)room.canvas_height=h;
+    if(curSeatRoomId)sb(`study_rooms?id=eq.${curSeatRoomId}`,{method:'PATCH',body:JSON.stringify({canvas_height:h})});
+  }
+  document.addEventListener('mousemove',move);document.addEventListener('mouseup',up);
+  document.addEventListener('touchmove',move,{passive:false});document.addEventListener('touchend',up);
+}
+
+function closeSeatPop(){document.querySelectorAll('.seat-pop').forEach(p=>p.remove());}
+
 function openSeatPop(e,seat){
-  document.querySelectorAll('.seat-pop').forEach(p=>p.remove());
+  closeSeatPop();
   const pop=document.createElement('div');
   pop.className='seat-pop';
   const cx=e.clientX||window.innerWidth/2,cy=e.clientY||window.innerHeight/2;
-  pop.style.left=Math.min(cx,window.innerWidth-180)+'px';
-  pop.style.top=Math.min(cy,window.innerHeight-190)+'px';
+  pop.style.left=Math.min(cx,window.innerWidth-210)+'px';
+  pop.style.top=Math.min(cy,window.innerHeight-230)+'px';
   pop.innerHTML=`<div class="seat-pop-ttl">${seat.seat_number}번 좌석</div>
-    <button onclick="setSeatLabel('${seat.id}')">이름표 수정</button>
-    <button onclick="setSeatStatus('${seat.id}','empty')">비어있음으로 표시</button>
-    <button onclick="setSeatStatus('${seat.id}','reserved')">예약으로 표시</button>
-    <button class="danger" onclick="deleteSeat('${seat.id}')">좌석 삭제</button>`;
+    <div class="seat-pop-field">
+      <input type="text" id="seat-pop-label-input" placeholder="이름표 (예: 창가석)" value="${(seat.label||'').replace(/"/g,'&quot;')}">
+      <button id="seat-pop-save-btn">저장</button>
+    </div>
+    <button data-act="empty">비어있음으로 표시</button>
+    <button data-act="reserved">예약으로 표시</button>
+    <button class="danger" data-act="delete">좌석 삭제</button>`;
   document.body.appendChild(pop);
-  setTimeout(()=>document.addEventListener('click',()=>document.querySelectorAll('.seat-pop').forEach(p=>p.remove()),{once:true}),0);
-}
-async function setSeatLabel(id){
-  const seat=SEATS.find(s=>s.id===id);
-  const label=prompt('좌석 이름표 (예: 창가석)',seat?.label||'');
-  if(label===null)return;
-  await sb(`seats?id=eq.${id}`,{method:'PATCH',body:JSON.stringify({label})});
-  refreshSeatData();
+  pop.addEventListener('click',ev=>ev.stopPropagation());
+  const input=pop.querySelector('#seat-pop-label-input');
+  input.focus();input.select();
+  const saveLabel=()=>{
+    const v=input.value.trim();
+    sb(`seats?id=eq.${seat.id}`,{method:'PATCH',body:JSON.stringify({label:v})}).then(()=>{closeSeatPop();refreshSeatData();});
+  };
+  pop.querySelector('#seat-pop-save-btn').onclick=saveLabel;
+  input.onkeydown=(ev)=>{if(ev.key==='Enter')saveLabel();};
+  pop.querySelector('[data-act="empty"]').onclick=()=>{closeSeatPop();setSeatStatus(seat.id,'empty');};
+  pop.querySelector('[data-act="reserved"]').onclick=()=>{closeSeatPop();setSeatStatus(seat.id,'reserved');};
+  pop.querySelector('[data-act="delete"]').onclick=()=>{closeSeatPop();deleteSeat(seat.id);};
+  setTimeout(()=>document.addEventListener('click',closeSeatPop,{once:true}),0);
 }
 async function setSeatStatus(id,status){
   await sb(`seats?id=eq.${id}`,{method:'PATCH',body:JSON.stringify({status})});
@@ -829,9 +938,60 @@ async function addSeat(){
   if(!curSeatRoomId){showToast('독서실을 먼저 선택하세요');return;}
   const maxNum=SEATS.reduce((m,s)=>Math.max(m,s.seat_number),0);
   await sb('seats',{method:'POST',body:JSON.stringify({room_id:curSeatRoomId,seat_number:maxNum+1,x:8+Math.random()*15,y:8+Math.random()*15,width:9,height:9,status:'empty'})});
+  if(!seatEditMode){seatEditMode=true;}
   refreshSeatData();
 }
 function toggleSeatEdit(){seatEditMode=!seatEditMode;renderSeatMap();}
+
+/* ── 격자로 좌석 일괄 생성 ── */
+function openGridModal(){
+  if(!curSeatRoomId){showToast('독서실을 먼저 선택하세요');return;}
+  closeGridModal();
+  const bg=document.createElement('div');
+  bg.className='grid-modal-bg';
+  bg.id='grid-modal-bg';
+  bg.innerHTML=`<div class="grid-modal">
+    <div class="grid-modal-ttl">격자로 좌석 여러 개 만들기</div>
+    <div class="grid-modal-sub">행×열을 입력하면 한 번에 생성돼요. 생성된 덩어리를 드래그해서 도면 위 원하는 자리로 옮기세요.</div>
+    <div class="gm-row"><label>행 (세로)</label><input type="number" id="gm-rows" value="3" min="1" max="20"></div>
+    <div class="gm-row"><label>열 (가로)</label><input type="number" id="gm-cols" value="3" min="1" max="20"></div>
+    <div class="gm-row"><label>좌석 크기(%)</label><input type="number" id="gm-size" value="7" min="3" max="30" step="0.5"></div>
+    <div class="gm-row"><label>간격(%)</label><input type="number" id="gm-gap" value="1.5" min="0" max="10" step="0.5"></div>
+    <div class="gm-btns">
+      <button class="mini-btn" onclick="closeGridModal()">취소</button>
+      <button class="mini-btn pri" onclick="generateSeatGrid()">생성</button>
+    </div>
+  </div>`;
+  document.body.appendChild(bg);
+  bg.onclick=(e)=>{if(e.target===bg)closeGridModal();};
+}
+function closeGridModal(){document.getElementById('grid-modal-bg')?.remove();}
+
+async function generateSeatGrid(){
+  const rows=Math.max(1,Math.min(20,parseInt(document.getElementById('gm-rows').value)||1));
+  const cols=Math.max(1,Math.min(20,parseInt(document.getElementById('gm-cols').value)||1));
+  const size=Math.max(3,Math.min(30,parseFloat(document.getElementById('gm-size').value)||7));
+  const gap=Math.max(0,Math.min(10,parseFloat(document.getElementById('gm-gap').value)||1.5));
+  closeGridModal();
+  if(rows*cols>200){showToast('한 번에 200개까지만 생성할 수 있어요');return;}
+  let maxNum=SEATS.reduce((m,s)=>Math.max(m,s.seat_number),0);
+  const batch=[];
+  for(let r=0;r<rows;r++){
+    for(let c=0;c<cols;c++){
+      maxNum++;
+      batch.push({
+        room_id:curSeatRoomId,seat_number:maxNum,
+        x:Math.max(0,Math.min(100-size,4+c*(size+gap))),
+        y:Math.max(0,Math.min(100-size,6+r*(size+gap))),
+        width:size,height:size,status:'empty'
+      });
+    }
+  }
+  showToast(`${batch.length}개 좌석 생성 중...`);
+  await sb('seats',{method:'POST',body:JSON.stringify(batch)});
+  seatEditMode=true;
+  refreshSeatData();
+}
 
 async function uploadFloorImage(file){
   if(!file||!curSeatRoomId)return;

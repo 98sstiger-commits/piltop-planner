@@ -14,6 +14,7 @@ create table if not exists study_rooms (
   name text not null,
   description text,
   floor_image_url text,
+  canvas_height integer not null default 420,
   academy_name text not null default '필탑학원',
   notify_enabled boolean not null default false,
   notify_channel text not null default 'sms' check (notify_channel in ('sms','kakao')),
@@ -60,6 +61,10 @@ create index if not exists idx_attendance_active on attendance(room_id) where ch
 alter table planner_students add column if not exists student_pin varchar(4) unique;
 alter table planner_students add column if not exists room_id uuid references study_rooms(id) on delete set null;
 alter table planner_students add column if not exists parent_phone text;
+
+-- 이미 위 SQL을 한 번 실행한 적이 있다면(테이블이 이미 존재하면) 아래 줄이
+-- study_rooms에 좌석 배치판 높이 조절용 컬럼을 새로 추가해줍니다.
+alter table study_rooms add column if not exists canvas_height integer not null default 420;
 
 -- ── 5. Realtime 활성화 (좌석 실시간 업데이트용) ────────────────
 alter publication supabase_realtime add table attendance;
