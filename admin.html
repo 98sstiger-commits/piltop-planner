@@ -222,8 +222,6 @@ body{font-family:'Pretendard','Noto Sans KR',sans-serif;color:var(--ink);min-hei
 .seat-pop-status-grid button.st-away{background:#F3EEFF;color:#7C4DE0}
 .seat-pop-status-grid button.st-idle{background:var(--bg2,#F1F0EC);color:var(--ink2)}
 .seat-pop-status-grid button.st-current{border-color:currentColor}
-.seat-pop-checkout-btn{width:100%;text-align:center;background:#FBEAEA;color:#B91C1C;font-weight:700;padding:8px;border-radius:7px;margin-bottom:6px}
-.seat-pop-checkout-btn:hover{background:#F6D5D5}
 .seat-pop-field{display:flex;gap:6px;padding:0 2px 8px}
 .seat-pop-field input{flex:1;padding:8px 10px;border:1px solid var(--line2);border-radius:7px;font-size:12px;font-family:inherit;color:var(--ink)}
 .seat-pop-field input:focus{outline:none;border-color:var(--green)}
@@ -1278,24 +1276,18 @@ function openSeatPop(e,seat){
   pop.className='seat-pop';
   const cx=e.clientX||window.innerWidth/2,cy=e.clientY||window.innerHeight/2;
   pop.style.left=Math.min(cx,window.innerWidth-220)+'px';
-  pop.style.top=Math.min(cy,window.innerHeight-(isBlock?170:(occAtt?290:240)+(assignedMode?60:0)))+'px';
+  pop.style.top=Math.min(cy,window.innerHeight-(isBlock?170:240+(assignedMode?60:0)))+'px';
 
   const manualStatus=seat.status&&seat.status!=='empty'?seat.status:'empty';
-  const statusHtml=isBlock?'':(occAtt?`
-    <div class="seat-pop-sub">${occAtt.planner_students?.name||'학생'} 상태 변경</div>
-    <div class="seat-pop-status-grid">
-      <button class="st-studying${occAtt.status==='studying'?' st-current':''}" data-st="studying">📚 공부중</button>
-      <button class="st-in_class${occAtt.status==='in_class'?' st-current':''}" data-st="in_class">🏫 학원수업중</button>
-      <button class="st-away${occAtt.status==='away'?' st-current':''}" data-st="away" style="grid-column:span 2">🚶 외출중</button>
-    </div>
-    <button class="seat-pop-checkout-btn" data-act="checkout">🚪 퇴실 처리</button>`:`
+  const currentStatus=occAtt?occAtt.status:manualStatus;
+  const statusHtml=isBlock?'':`
     <div class="seat-pop-sub">좌석 상태</div>
     <div class="seat-pop-status-grid">
-      <button class="st-idle${manualStatus==='empty'?' st-current':''}" data-mst="empty">🚪 퇴실</button>
-      <button class="st-studying${manualStatus==='studying'?' st-current':''}" data-mst="studying">📚 공부중</button>
-      <button class="st-in_class${manualStatus==='in_class'?' st-current':''}" data-mst="in_class">🏫 학원수업중</button>
-      <button class="st-away${manualStatus==='away'?' st-current':''}" data-mst="away">🚶 외출중</button>
-    </div>`);
+      <button class="st-idle${currentStatus==='empty'?' st-current':''}" data-mst="empty">🚪 퇴실</button>
+      <button class="st-studying${currentStatus==='studying'?' st-current':''}" data-mst="studying">📚 공부중</button>
+      <button class="st-in_class${currentStatus==='in_class'?' st-current':''}" data-mst="in_class">🏫 학원수업중</button>
+      <button class="st-away${currentStatus==='away'?' st-current':''}" data-mst="away">🚶 외출중</button>
+    </div>`;
 
   const roomStudents=assignedMode&&!isBlock?ALL_STUDENTS.filter(st=>st.room_id===curSeatRoomId):[];
   const assignedElsewhere=new Set(SEATS.filter(sx=>sx.id!==seat.id&&sx.assigned_student_id).map(sx=>sx.assigned_student_id));
@@ -1329,14 +1321,18 @@ function openSeatPop(e,seat){
     pop.querySelector('#seat-pop-save-btn').onclick=saveLabel;
     input.onkeydown=(ev)=>{if(ev.key==='Enter')saveLabel();};
   }
-  if(occAtt){
+  if(!isBlock){
     pop.querySelectorAll('.seat-pop-status-grid button').forEach(b=>{
-      b.onclick=()=>{closeSeatPop();setOccupantStatus(occAtt.id,b.dataset.st);};
-    });
-    pop.querySelector('[data-act="checkout"]').onclick=()=>{closeSeatPop();forceCheckout(occAtt.id,occAtt.planner_students?.name||'학생');};
-  }else if(!isBlock){
-    pop.querySelectorAll('.seat-pop-status-grid button').forEach(b=>{
-      b.onclick=()=>{closeSeatPop();setSeatStatus(seat.id,b.dataset.mst);};
+      b.onclick=()=>{
+        const st=b.dataset.mst;
+        closeSeatPop();
+        if(occAtt){
+          if(st==='empty')forceCheckout(occAtt.id,occAtt.planner_students?.name||'학생');
+          else setOccupantStatus(occAtt.id,st);
+        }else{
+          setSeatStatus(seat.id,st);
+        }
+      };
     });
   }
   pop.querySelector('[data-act="delete"]').onclick=()=>{closeSeatPop();deleteSeat(seat.id);};
