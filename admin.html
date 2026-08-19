@@ -1090,9 +1090,12 @@ function renderSeatMap(){
     if(selectedSeats.has(s.id))node.classList.add('selected');
     node.dataset.seatId=s.id;
     node.style.left=s.x+'%';node.style.top=s.y+'%';node.style.width=s.width+'%';node.style.height=s.height+'%';
+    const nameHtml=occStu?`<span class="sn-name">${occStu.name}</span>`
+      :assignedStu?(manualStatus!=='st-empty'?`<span class="sn-name">${assignedStu.name}</span>`:`<span class="sn-name">📌 ${assignedStu.name}</span>`)
+      :(s.label?`<span class="sn-name">${s.label}</span>`:'');
     node.innerHTML=isBlock
       ?`<span class="sn-num">${s.label||'제외구역'}</span>`
-      :`<span class="sn-num">${s.seat_number}</span>${occStu?`<span class="sn-name">${occStu.name}</span>`:(assignedStu?`<span class="sn-name">📌 ${assignedStu.name}</span>`:(s.label?`<span class="sn-name">${s.label}</span>`:''))}`;
+      :`<span class="sn-num">${s.seat_number}</span>${nameHtml}`;
     if(seatEditMode){
       if(selectMode){
         node.onmousedown=(e)=>startDrag(e,node,s);
