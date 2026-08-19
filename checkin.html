@@ -167,7 +167,7 @@ button{cursor:pointer;border:none;background:none;font-family:inherit}
     <div class="kp-msg" id="kp-msg"></div>
     <div class="kp-grid" id="kp-grid"></div>
   </div>
-  <div class="kp-foot">입실은 자동으로 좌석 선택 화면으로 이동해요</div>
+  <div class="kp-foot" id="kp-foot">입실은 자동으로 좌석 선택 화면으로 이동해요</div>
 </div>
 
 <!-- 좌석 선택 -->
@@ -295,6 +295,9 @@ function openRoomSwitch(){localStorage.removeItem('checkin-room-id');showRoomPic
 
 function startKeypad(){
   document.getElementById('hd-room-name').textContent=ROOM.name;
+  document.getElementById('kp-foot').textContent=ROOM.seating_mode==='assigned'
+    ?'입실은 배정된 좌석으로 자동으로 처리돼요'
+    :'입실은 자동으로 좌석 선택 화면으로 이동해요';
   tickClock();
   show('keypad');
   resetKeypad();
@@ -346,9 +349,17 @@ async function submitPin(){
   const active=await sb(`attendance?student_id=eq.${student.id}&room_id=eq.${ROOM.id}&checkout_at=is.null&select=*&order=checkin_at.desc`);
   if(active&&active.length){
     openStatusSelect(student,active[0]);
-  }else{
-    openSeatPick(student);
+    return;
   }
+  if(ROOM.seating_mode==='assigned'){
+    const seats=await sb(`seats?room_id=eq.${ROOM.id}&assigned_student_id=eq.${student.id}&kind=eq.seat&select=*`);
+    const seat=seats&&seats[0];
+    if(!seat){kpError('배정된 좌석이 없어요. 선생님께 문의해주세요');return;}
+    curStudent=student;
+    doCheckin(seat);
+    return;
+  }
+  openSeatPick(student);
 }
 
 /* ── 좌석 선택 ── */

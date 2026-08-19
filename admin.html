@@ -180,6 +180,7 @@ body{font-family:'Noto Sans KR',sans-serif;background:#F6F5F2;color:#18170F;min-
 .seat-node.dragging{box-shadow:0 8px 22px rgba(0,0,0,.28);z-index:6;transform:scale(1.04)}
 .seat-node.selected{outline:2px dashed var(--green);outline-offset:2px}
 .seat-node.zone-block{background:repeating-linear-gradient(45deg,#EAE8E1,#EAE8E1 6px,#DEDBD2 6px,#DEDBD2 12px);color:var(--ink3);border-color:var(--line2)}
+.seat-node.assigned-empty{background:#fff;border:1.5px dashed var(--green);color:var(--green)}
 .seat-node.zone-block .sn-num{font-size:10px;font-weight:600}
 .marquee-box{position:absolute;border:1.5px dashed var(--green);background:rgba(26,71,49,.08);pointer-events:none;z-index:8}
 .seat-node .sn-num{font-size:13px;line-height:1.2}
@@ -396,6 +397,7 @@ body{font-family:'Noto Sans KR',sans-serif;background:#F6F5F2;color:#18170F;min-
     <span><i style="background:#22B573"></i>공부중</span>
     <span><i style="background:#4C8DFF"></i>학원수업중</span>
     <span><i style="background:#A78BFA"></i>외출중</span>
+    <span id="legend-assigned" style="display:none"><i style="background:#fff;border:1.5px dashed var(--green)"></i>지정석(빈 자리)</span>
   </div>
 </div>
 
@@ -488,6 +490,17 @@ body{font-family:'Noto Sans KR',sans-serif;background:#F6F5F2;color:#18170F;min-
         <div class="toggle" id="auto-report-toggle" onclick="toggleAutoReport()"></div>
       </div>
       <button class="gen-btn" style="margin-top:14px" onclick="saveNotifySettings()">알림 설정 저장</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-hd"><div class="card-title">좌석 배정 방식</div><div class="card-sub">자유석은 아무 빈자리나 골라 앉고, 지정자석은 학생마다 정해둔 자리로 자동 입실돼요</div></div>
+    <div class="card-bd">
+      <div style="display:flex;gap:8px">
+        <button class="mini-btn pri" id="seating-mode-free" style="flex:1" onclick="setSeatingMode('free')">🔓 자유석</button>
+        <button class="mini-btn" id="seating-mode-assigned" style="flex:1" onclick="setSeatingMode('assigned')">📌 지정자석</button>
+      </div>
+      <div class="settings-hint" style="margin-top:10px">지정자석으로 바꾸면 [좌석현황] 탭에서 좌석을 클릭해 학생을 배정할 수 있어요. 배정 안 된 학생이 체크인하면 안내 메시지가 떠요.</div>
     </div>
   </div>
 
@@ -1042,18 +1055,27 @@ function renderSeatMap(){
     hint.innerHTML='등록된 좌석이 없어요.<br>"+ 좌석 추가" 버튼으로 좌석을 만들어보세요.';
     wrap.appendChild(hint);
   }
+  const assignedMode=room&&room.seating_mode==='assigned';
+  document.getElementById('legend-assigned').style.display=assignedMode?'':'none';
   SEATS.forEach(s=>{
     const isBlock=s.kind==='block';
     const occStu=!isBlock&&occ[s.id];
+    const assignedStu=(assignedMode&&!isBlock&&s.assigned_student_id)?ALL_STUDENTS.find(st=>st.id===s.assigned_student_id):null;
     const node=document.createElement('div');
     const manualStatus=s.status&&s.status!=='empty'?s.status:'st-empty';
-    node.className='seat-node '+(isBlock?'zone-block':(occStu?occStu.status:manualStatus));
+    let seatCls;
+    if(isBlock)seatCls='zone-block';
+    else if(occStu)seatCls=occStu.status;
+    else if(manualStatus!=='st-empty')seatCls=manualStatus;
+    else if(assignedStu)seatCls='assigned-empty';
+    else seatCls='st-empty';
+    node.className='seat-node '+seatCls;
     if(selectedSeats.has(s.id))node.classList.add('selected');
     node.dataset.seatId=s.id;
     node.style.left=s.x+'%';node.style.top=s.y+'%';node.style.width=s.width+'%';node.style.height=s.height+'%';
     node.innerHTML=isBlock
       ?`<span class="sn-num">${s.label||'제외구역'}</span>`
-      :`<span class="sn-num">${s.seat_number}</span>${occStu?`<span class="sn-name">${occStu.name}</span>`:(s.label?`<span class="sn-name">${s.label}</span>`:'')}`;
+      :`<span class="sn-num">${s.seat_number}</span>${occStu?`<span class="sn-name">${occStu.name}</span>`:(assignedStu?`<span class="sn-name">📌 ${assignedStu.name}</span>`:(s.label?`<span class="sn-name">${s.label}</span>`:''))}`;
     if(seatEditMode){
       if(selectMode){
         node.onmousedown=(e)=>startDrag(e,node,s);
@@ -1193,11 +1215,13 @@ function openSeatPop(e,seat){
   closeSeatPop();
   const isBlock=seat.kind==='block';
   const occAtt=!isBlock&&ACTIVE_ATT.find(a=>a.seat_id===seat.id);
+  const room=ROOMS.find(r=>r.id===curSeatRoomId);
+  const assignedMode=room&&room.seating_mode==='assigned';
   const pop=document.createElement('div');
   pop.className='seat-pop';
   const cx=e.clientX||window.innerWidth/2,cy=e.clientY||window.innerHeight/2;
   pop.style.left=Math.min(cx,window.innerWidth-220)+'px';
-  pop.style.top=Math.min(cy,window.innerHeight-(isBlock?170:(occAtt?340:290)))+'px';
+  pop.style.top=Math.min(cy,window.innerHeight-(isBlock?170:(occAtt?340:290)+(assignedMode?60:0)))+'px';
 
   const manualStatus=seat.status&&seat.status!=='empty'?seat.status:'empty';
   const statusHtml=isBlock?'':(occAtt?`
@@ -1216,8 +1240,18 @@ function openSeatPop(e,seat){
       <button class="st-away${manualStatus==='away'?' st-current':''}" data-mst="away">🚶 외출중</button>
     </div>`);
 
+  const roomStudents=assignedMode&&!isBlock?ALL_STUDENTS.filter(st=>st.room_id===curSeatRoomId):[];
+  const assignedElsewhere=new Set(SEATS.filter(sx=>sx.id!==seat.id&&sx.assigned_student_id).map(sx=>sx.assigned_student_id));
+  const assignHtml=(assignedMode&&!isBlock)?`
+    <div class="seat-pop-sub">이 좌석 배정</div>
+    <select id="seat-pop-assign-select" class="f-select" style="margin-bottom:8px;font-size:12px">
+      <option value="">배정 안 함</option>
+      ${roomStudents.map(st=>`<option value="${st.id}"${st.id===seat.assigned_student_id?' selected':''}>${st.name}${assignedElsewhere.has(st.id)?' (다른 자리 배정됨)':''}</option>`).join('')}
+    </select>`:'';
+
   pop.innerHTML=`<div class="seat-pop-ttl">${isBlock?'제외구역':seat.seat_number+'번 좌석'}</div>
     ${statusHtml}
+    ${assignHtml}
     <div class="seat-pop-field">
       <input type="text" id="seat-pop-label-input" placeholder="${isBlock?'구역 이름 (예: 통로)':'이름표 (예: 창가석)'}" value="${(seat.label||'').replace(/"/g,'&quot;')}">
       <button class="seat-pop-save-btn" id="seat-pop-save-btn">저장</button>
@@ -1244,7 +1278,18 @@ function openSeatPop(e,seat){
     });
   }
   pop.querySelector('[data-act="delete"]').onclick=()=>{closeSeatPop();deleteSeat(seat.id);};
+  const assignSel=pop.querySelector('#seat-pop-assign-select');
+  if(assignSel)assignSel.onchange=()=>{closeSeatPop();assignSeatStudent(seat.id,assignSel.value);};
   setTimeout(()=>document.addEventListener('click',closeSeatPop,{once:true}),0);
+}
+async function assignSeatStudent(seatId,studentId){
+  if(studentId){
+    await sb(`seats?room_id=eq.${curSeatRoomId}&assigned_student_id=eq.${studentId}&id=neq.${seatId}`,{method:'PATCH',body:JSON.stringify({assigned_student_id:null})});
+  }
+  const result=await sb(`seats?id=eq.${seatId}`,{method:'PATCH',body:JSON.stringify({assigned_student_id:studentId||null})});
+  if(!Array.isArray(result)||!result.length){showToast('배정 저장에 실패했어요 — Supabase에 최신 SQL을 실행했는지 확인해주세요');return;}
+  showToast(studentId?'좌석을 배정했어요':'배정을 해제했어요');
+  refreshSeatData();
 }
 async function setSeatStatus(id,status){
   const result=await sb(`seats?id=eq.${id}`,{method:'PATCH',body:JSON.stringify({status})});
@@ -1561,9 +1606,22 @@ function loadSettingsTab(){
   document.getElementById('set-kakao-key').value=room.kakao_js_key||'';
   document.getElementById('notify-toggle').classList.toggle('on',!!room.notify_enabled);
   document.getElementById('auto-report-toggle').classList.toggle('on',!!room.auto_report_enabled);
+  const mode=room.seating_mode||'free';
+  document.getElementById('seating-mode-free').classList.toggle('pri',mode==='free');
+  document.getElementById('seating-mode-assigned').classList.toggle('pri',mode==='assigned');
 }
 function toggleNotify(){document.getElementById('notify-toggle').classList.toggle('on');}
 function toggleAutoReport(){document.getElementById('auto-report-toggle').classList.toggle('on');}
+async function setSeatingMode(mode){
+  const roomId=document.getElementById('set-room-select').value;
+  if(!roomId){showToast('독서실을 먼저 추가하세요');return;}
+  document.getElementById('seating-mode-free').classList.toggle('pri',mode==='free');
+  document.getElementById('seating-mode-assigned').classList.toggle('pri',mode==='assigned');
+  const result=await sb(`study_rooms?id=eq.${roomId}`,{method:'PATCH',body:JSON.stringify({seating_mode:mode})});
+  if(!Array.isArray(result)||!result.length){showToast('저장 실패 — Supabase에 최신 SQL을 실행했는지 확인해주세요');return;}
+  const room=ROOMS.find(r=>r.id===roomId);if(room)room.seating_mode=mode;
+  showToast(mode==='assigned'?'지정자석으로 바뀌었어요':'자유석으로 바뀌었어요');
+}
 async function saveRoomInfo(){
   const roomId=document.getElementById('set-room-select').value;
   if(!roomId){showToast('독서실을 먼저 추가하세요');return;}

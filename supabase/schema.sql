@@ -25,6 +25,8 @@ create table if not exists study_rooms (
   auto_report_enabled boolean not null default false,
   created_at timestamptz not null default now()
 );
+-- 좌석 배정 방식: free(자유석, 아무 자리나) / assigned(지정자석, 학생마다 정해진 자리)
+alter table study_rooms add column if not exists seating_mode text not null default 'free' check (seating_mode in ('free','assigned'));
 
 -- ── 2. seats : 좌석 정보 ───────────────────────────────────────
 -- kind='block'인 행은 실제 좌석이 아니라 배치도에서 "이 공간은 제외"
@@ -44,6 +46,10 @@ create table if not exists seats (
   unique (room_id, seat_number)
 );
 alter table seats add column if not exists kind text not null default 'seat' check (kind in ('seat','block'));
+
+-- 지정자석용: 이 좌석이 어느 학생 전용인지 (자유석 모드에서는 무시됨)
+alter table seats add column if not exists assigned_student_id uuid references planner_students(id) on delete set null;
+create unique index if not exists idx_seats_assigned_student on seats(assigned_student_id) where assigned_student_id is not null;
 
 -- 좌석 상태를 비어있음/공부중/학원수업중/외출중으로 확장 — 실제 체크인 기록이
 -- 없는 좌석도 관리자가 직접 클릭해서 상태를 표시할 수 있도록 함 ('예약'은 제거)
