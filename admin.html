@@ -888,7 +888,7 @@ let lastMainTab='students';
 function switchTab(name){
   if(name==='checkin'){
     const iframe=document.getElementById('checkin-iframe');
-    if(!iframe.src)iframe.src='checkin.html';
+    if(!iframe.src)iframe.src='checkin.html'+(curSeatRoomId?'?room='+curSeatRoomId:'');
     document.getElementById('panel-checkin').classList.add('on');
     return;
   }
