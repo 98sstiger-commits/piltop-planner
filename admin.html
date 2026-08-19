@@ -1064,7 +1064,7 @@ function renderSeatMap(){
       }else{
         node.onmousedown=(e)=>startDrag(e,node,s);
         node.ontouchstart=(e)=>startDrag(e,node,s);
-        node.onclick=(e)=>{if(dragMoved){dragMoved=false;return;}openSeatPop(e,s);};
+        node.onclick=(e)=>{e.stopPropagation();if(dragMoved){dragMoved=false;return;}openSeatPop(e,s);};
         const handle=document.createElement('div');
         handle.className='seat-resize-handle';
         handle.onmousedown=(e)=>startSeatResize(e,node,s);
@@ -1074,7 +1074,7 @@ function renderSeatMap(){
       }
     }else{
       node.style.cursor='pointer';
-      node.onclick=(e)=>openSeatPop(e,s);
+      node.onclick=(e)=>{e.stopPropagation();openSeatPop(e,s);};
     }
     wrap.appendChild(node);
   });
@@ -1243,11 +1243,13 @@ function openSeatPop(e,seat){
   setTimeout(()=>document.addEventListener('click',closeSeatPop,{once:true}),0);
 }
 async function setSeatStatus(id,status){
-  await sb(`seats?id=eq.${id}`,{method:'PATCH',body:JSON.stringify({status})});
+  const result=await sb(`seats?id=eq.${id}`,{method:'PATCH',body:JSON.stringify({status})});
+  if(!Array.isArray(result)||!result.length){showToast('상태 변경에 실패했어요 — Supabase에 최신 SQL을 실행했는지 확인해주세요');return;}
   refreshSeatData();
 }
 async function setOccupantStatus(attId,status){
-  await sb(`attendance?id=eq.${attId}`,{method:'PATCH',body:JSON.stringify({status})});
+  const result=await sb(`attendance?id=eq.${attId}`,{method:'PATCH',body:JSON.stringify({status})});
+  if(!Array.isArray(result)||!result.length){showToast('상태 변경에 실패했어요');return;}
   refreshSeatData();
 }
 async function forceCheckout(attId,name){
