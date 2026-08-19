@@ -1238,7 +1238,7 @@ function openSeatPop(e,seat){
   pop.className='seat-pop';
   const cx=e.clientX||window.innerWidth/2,cy=e.clientY||window.innerHeight/2;
   pop.style.left=Math.min(cx,window.innerWidth-220)+'px';
-  pop.style.top=Math.min(cy,window.innerHeight-(isBlock?170:(occAtt?340:290)+(assignedMode?60:0)))+'px';
+  pop.style.top=Math.min(cy,window.innerHeight-(isBlock?170:(occAtt?290:240)+(assignedMode?60:0)))+'px';
 
   const manualStatus=seat.status&&seat.status!=='empty'?seat.status:'empty';
   const statusHtml=isBlock?'':(occAtt?`
@@ -1267,24 +1267,29 @@ function openSeatPop(e,seat){
       ${roomStudents.map(st=>`<option value="${st.id}"${st.id===seat.assigned_student_id?' selected':''}>${st.name}${assignedElsewhere.has(st.id)?' (다른 자리 배정됨)':''}</option>`).join('')}
     </select>`:'';
 
+  const labelHtml=isBlock?`
+    <div class="seat-pop-field">
+      <input type="text" id="seat-pop-label-input" placeholder="구역 이름 (예: 통로)" value="${(seat.label||'').replace(/"/g,'&quot;')}">
+      <button class="seat-pop-save-btn" id="seat-pop-save-btn">저장</button>
+    </div>`:'';
+
   pop.innerHTML=`<div class="seat-pop-ttl">${isBlock?'제외구역':seat.seat_number+'번 좌석'}</div>
     ${statusHtml}
     ${assignHtml}
-    <div class="seat-pop-field">
-      <input type="text" id="seat-pop-label-input" placeholder="${isBlock?'구역 이름 (예: 통로)':'이름표 (예: 창가석)'}" value="${(seat.label||'').replace(/"/g,'&quot;')}">
-      <button class="seat-pop-save-btn" id="seat-pop-save-btn">저장</button>
-    </div>
+    ${labelHtml}
     <button class="danger" data-act="delete">${isBlock?'구역 삭제':'좌석 삭제'}</button>`;
   document.body.appendChild(pop);
   pop.addEventListener('click',ev=>ev.stopPropagation());
   const input=pop.querySelector('#seat-pop-label-input');
-  input.focus();input.select();
-  const saveLabel=()=>{
-    const v=input.value.trim();
-    sb(`seats?id=eq.${seat.id}`,{method:'PATCH',body:JSON.stringify({label:v})}).then(()=>{closeSeatPop();refreshSeatData();});
-  };
-  pop.querySelector('#seat-pop-save-btn').onclick=saveLabel;
-  input.onkeydown=(ev)=>{if(ev.key==='Enter')saveLabel();};
+  if(input){
+    input.focus();input.select();
+    const saveLabel=()=>{
+      const v=input.value.trim();
+      sb(`seats?id=eq.${seat.id}`,{method:'PATCH',body:JSON.stringify({label:v})}).then(()=>{closeSeatPop();refreshSeatData();});
+    };
+    pop.querySelector('#seat-pop-save-btn').onclick=saveLabel;
+    input.onkeydown=(ev)=>{if(ev.key==='Enter')saveLabel();};
+  }
   if(occAtt){
     pop.querySelectorAll('.seat-pop-status-grid button').forEach(b=>{
       b.onclick=()=>{closeSeatPop();setOccupantStatus(occAtt.id,b.dataset.st);};
