@@ -1469,22 +1469,31 @@ async function detectSeatsFromImage(silent){
   if(!silent)showToast('도면을 정밀 분석하는 중이에요 (1차 인식 후 재검토까지, 최대 1분 정도 걸려요)');
   try{
     const r=await fetch('/api/detect-seats',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({imageUrl:room.floor_image_url})});
-    const data=await r.json();
+    let data;
+    try{data=await r.json();}
+    catch(parseErr){
+      console.error('detect-seats: 응답이 JSON이 아니에요 (서버 시간 초과 등)',r.status,parseErr);
+      showToast(`자동 배치 실패: 서버 응답 오류 (status ${r.status}) — 도면이 너무 복잡하면 구역을 나눠서 다시 시도해보세요`);
+      return;
+    }
     if(!data.success){showToast('자동 배치 실패: '+(data.error||'알 수 없는 오류'));return;}
+    if(!Array.isArray(data.seats)||!data.seats.length){showToast('자동 배치 실패: 좌석을 찾지 못했어요');return;}
     let maxNum=SEATS.reduce((m,s)=>Math.max(m,s.seat_number),0);
     const batch=data.seats.map(s=>{
       maxNum++;
       return {room_id:curSeatRoomId,seat_number:maxNum,x:s.x,y:s.y,width:s.width,height:s.height,status:'empty'};
     });
     const inserted=await sb('seats',{method:'POST',body:JSON.stringify(batch)});
-    selectedSeats=new Set((inserted||[]).map(row=>row.id));
+    if(!Array.isArray(inserted)||!inserted.length){showToast('좌석 저장에 실패했어요 — Supabase 연결을 확인해주세요');return;}
+    selectedSeats=new Set(inserted.map(row=>row.id));
     seatEditMode=true;selectMode=true;
     await sb(`study_rooms?id=eq.${curSeatRoomId}`,{method:'PATCH',body:JSON.stringify({floor_image_url:null})});
     room.floor_image_url=null;
     refreshSeatData();
     showToast(`좌석 ${batch.length}개를 자동으로 배치하고 도면 이미지는 지웠어요 — 어긋난 자리는 드래그로 조정해주세요`);
   }catch(e){
-    showToast('자동 배치 중 오류가 발생했어요');
+    console.error('detect-seats 요청 실패:',e);
+    showToast('자동 배치 중 네트워크 오류가 발생했어요 — 잠시 후 다시 시도해주세요');
   }finally{
     btn.disabled=false;btn.textContent='🪄 도면에서 자동 배치';
   }
