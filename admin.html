@@ -1143,11 +1143,12 @@ function startSeatResize(e,node,seat){
   const startPt=e.touches?e.touches[0]:e;
   const startX=startPt.clientX,startY=startPt.clientY;
   const startW=parseFloat(node.style.width)||9,startH=parseFloat(node.style.height)||9;
+  const maxSize=seat.kind==='block'?96:40;
   function move(ev){
     const pt=ev.touches?ev.touches[0]:ev;
     let w=startW+(pt.clientX-startX)/rect.width*100;
     let h=startH+(pt.clientY-startY)/rect.height*100;
-    w=Math.max(4,Math.min(40,w));h=Math.max(4,Math.min(40,h));
+    w=Math.max(4,Math.min(maxSize,w));h=Math.max(4,Math.min(maxSize,h));
     node.style.width=w+'%';node.style.height=h+'%';
   }
   function up(){
@@ -1379,10 +1380,10 @@ async function addZone(){
   const maxNum=SEATS.reduce((m,s)=>Math.max(m,s.seat_number),0);
   const result=await sb('seats',{method:'POST',body:JSON.stringify({room_id:curSeatRoomId,seat_number:maxNum+1,kind:'block',label:'제외구역',x:35,y:35,width:22,height:16,status:'empty'})});
   if(!Array.isArray(result)||!result.length){showToast('제외구역 추가에 실패했어요 — Supabase에 최신 SQL을 실행했는지 확인해주세요');return;}
-  seatEditMode=true;selectMode=true;
+  seatEditMode=true;selectMode=false;
   selectedSeats=new Set([result[0].id]);
   refreshSeatData();
-  showToast('제외구역을 추가했어요 — 드래그로 위치·크기를 조정해보세요');
+  showToast('제외구역을 추가했어요 — 드래그로 위치를, 우측 하단 손잡이로 크기를 조정해보세요');
 }
 
 /* ── 격자로 좌석 일괄 생성 ── */
