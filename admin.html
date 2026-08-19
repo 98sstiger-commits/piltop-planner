@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>필탑 플래너 관리</title>
+<title>플래니 관리</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
 <style>
@@ -24,6 +24,8 @@ body{font-family:'Pretendard','Noto Sans KR',sans-serif;color:var(--ink);min-hei
 
 /* nav */
 .nav{background:rgba(10,32,24,.55);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);padding:0 24px;height:56px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid rgba(255,255,255,.08)}
+.nav-brand{display:flex;align-items:center;gap:10px}
+.nav-logo{width:32px;height:32px;border-radius:9px;background:linear-gradient(135deg,var(--gold),var(--gold2));color:#1B2A20;font-size:14px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;letter-spacing:-.5px}
 .nav-title{color:var(--cream);font-size:15px;font-weight:700;letter-spacing:-.3px}
 .nav-sub{color:rgba(255,255,255,.45);font-size:11px;margin-top:1px}
 
@@ -268,9 +270,12 @@ body{font-family:'Pretendard','Noto Sans KR',sans-serif;color:var(--ink);min-hei
 <body>
 
 <div class="nav">
-  <div>
-    <div class="nav-title">필탑학원 플래너 관리</div>
-    <div class="nav-sub">학생 링크 생성 · 독서실 관리</div>
+  <div class="nav-brand">
+    <div class="nav-logo" id="nav-logo">플</div>
+    <div>
+      <div class="nav-title">플래니</div>
+      <div class="nav-sub">자기주도학습 종합관리</div>
+    </div>
   </div>
 </div>
 
@@ -1702,7 +1707,7 @@ async function saveRoomInfo(){
   const roomId=document.getElementById('set-room-select').value;
   if(!roomId){showToast('독서실을 먼저 추가하세요');return;}
   await sb(`study_rooms?id=eq.${roomId}`,{method:'PATCH',body:JSON.stringify({
-    academy_name:document.getElementById('set-academy').value.trim()||'필탑학원',
+    academy_name:document.getElementById('set-academy').value.trim()||'학원',
     name:document.getElementById('set-room-name').value.trim(),
     description:document.getElementById('set-room-desc').value.trim()
   })});

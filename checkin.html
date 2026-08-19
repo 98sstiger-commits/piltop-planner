@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>필탑 독서실 출석체크</title>
+<title>플래니 출석체크</title>
 <link rel="manifest" href="/manifest.json">
 <meta name="theme-color" content="#0E2C22">
 <meta name="mobile-web-app-capable" content="yes">
@@ -139,7 +139,7 @@ button{cursor:pointer;border:none;background:none;font-family:inherit}
 <!-- 독서실 선택 (최초 1회) -->
 <div class="screen" id="room-pick">
   <div class="rp-card">
-    <div class="rp-logo">필탑 독서실</div>
+    <div class="rp-logo">플래니</div>
     <div class="rp-hint">이 태블릿이 사용할 독서실을 선택해주세요</div>
     <div class="rp-list" id="rp-list"></div>
   </div>
@@ -484,8 +484,8 @@ async function notifyParent(student,type,seatNumber){
   try{
     if(!ROOM.notify_enabled||!student.parent_phone)return;
     const msg=type==='checkin'
-      ? `[${ROOM.academy_name||'필탑학원'}] ${student.name} 학생이 ${ROOM.name}에 입실했습니다.${seatNumber?' (좌석 '+seatNumber+'번)':''}`
-      : `[${ROOM.academy_name||'필탑학원'}] ${student.name} 학생이 ${ROOM.name}에서 퇴실했습니다.`;
+      ? `[${ROOM.academy_name||'학원'}] ${student.name} 학생이 ${ROOM.name}에 입실했습니다.${seatNumber?' (좌석 '+seatNumber+'번)':''}`
+      : `[${ROOM.academy_name||'학원'}] ${student.name} 학생이 ${ROOM.name}에서 퇴실했습니다.`;
     await fetch('/api/send-notify',{
       method:'POST',headers:{'Content-Type':'application/json'},
       body:JSON.stringify({

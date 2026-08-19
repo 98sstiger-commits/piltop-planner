@@ -142,7 +142,7 @@ button{cursor:pointer;border:none;background:none;font-family:inherit}
 
 <div id="app" style="display:none">
   <div class="topbar">
-    <div class="topbar-name" id="tb-academy">필탑학원</div>
+    <div class="topbar-name" id="tb-academy">학원</div>
     <div class="topbar-sub">학습 리포트</div>
   </div>
 
@@ -292,7 +292,7 @@ async function boot(){
     const r=await sb(`study_rooms?id=eq.${STUDENT.room_id}&select=*`);
     if(r&&r[0])ROOM=r[0];
   }
-  document.getElementById('tb-academy').textContent=(ROOM&&ROOM.academy_name)||'필탑학원';
+  document.getElementById('tb-academy').textContent=(ROOM&&ROOM.academy_name)||'학원';
   document.getElementById('stu-avatar').textContent=(STUDENT.name||'?')[0];
   document.getElementById('stu-name').textContent=STUDENT.name+' 학생';
   document.getElementById('stu-sub').textContent=`${STUDENT.school_name||'학교 미정'} · ${STUDENT.grade||'?'}학년`;
@@ -596,7 +596,7 @@ async function shareKakao(type){
     if(!window.Kakao.isInitialized())window.Kakao.init(ROOM.kakao_js_key);
     window.Kakao.Share.sendDefault({
       objectType:'feed',
-      content:{title:`${STUDENT.name} 학생 ${TYPE_LABEL[type||STATE.type]} 리포트`,description:`필탑 플래너에서 확인해보세요`,imageUrl:location.origin+'/icon.svg',link:{mobileWebUrl:url,webUrl:url}},
+      content:{title:`${STUDENT.name} 학생 ${TYPE_LABEL[type||STATE.type]} 리포트`,description:`플래니에서 확인해보세요`,imageUrl:location.origin+'/icon.svg',link:{mobileWebUrl:url,webUrl:url}},
       buttons:[{title:'리포트 보기',link:{mobileWebUrl:url,webUrl:url}}]
     });
   }catch(e){navigator.clipboard.writeText(url).then(()=>toast('링크가 복사됐어요'));}
@@ -605,7 +605,7 @@ async function shareSms(type){
   if(!STUDENT.parent_phone){toast('학부모 연락처가 등록되지 않았어요');return;}
   if(!ROOM?.aligo_api_key){toast('admin.html [설정]에서 문자 발송 키를 먼저 등록하세요');return;}
   const url=buildShareUrl(type||STATE.type);
-  const msg=`[${ROOM.academy_name||'필탑학원'}] ${STUDENT.name} 학생의 ${TYPE_LABEL[type||STATE.type]} 학습 리포트입니다.\n${url}`;
+  const msg=`[${ROOM.academy_name||'학원'}] ${STUDENT.name} 학생의 ${TYPE_LABEL[type||STATE.type]} 학습 리포트입니다.\n${url}`;
   try{
     const r=await fetch('/api/send-notify',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({phone:STUDENT.parent_phone,message:msg,channel:'sms',aligo:{key:ROOM.aligo_api_key,user:ROOM.aligo_user_id,sender:ROOM.aligo_sender}})});
     const data=await r.json();
