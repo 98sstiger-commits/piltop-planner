@@ -881,7 +881,7 @@ function computeAttSegments(att,logsForAtt){
 }
 function groupLogsByAttendance(logs){
   const m={};
-  (logs||[]).forEach(l=>{(m[l.attendance_id]=m[l.attendance_id]||[]).push(l);});
+  (Array.isArray(logs)?logs:[]).forEach(l=>{(m[l.attendance_id]=m[l.attendance_id]||[]).push(l);});
   return m;
 }
 
@@ -1073,7 +1073,7 @@ async function refreshSeatData(){
     sb(`seats?room_id=eq.${curSeatRoomId}&select=*&order=seat_number.asc`),
     sb(`attendance?room_id=eq.${curSeatRoomId}&checkout_at=is.null&select=id,seat_id,status,checkin_at,planner_students(name)`)
   ]);
-  SEATS=s||[];ACTIVE_ATT=a||[];
+  SEATS=Array.isArray(s)?s:[];ACTIVE_ATT=Array.isArray(a)?a:[];
   renderSeatMap();
 }
 const OCC_STATUS_LABEL={studying:'공부중',in_class:'학원수업중',away:'외출중'};
@@ -1612,40 +1612,57 @@ async function loadAttendanceTab(){
   const filter=roomId?`&room_id=eq.${roomId}`:'';
   const todayStr=dk(new Date());
   const start=`${todayStr}T00:00:00`,end=`${dk(addDaysA(new Date(),1))}T00:00:00`;
-  const today=await sb(`attendance?checkin_at=gte.${start}&checkin_at=lt.${end}${filter}&select=*`)||[];
+  const todayRes=await sb(`attendance?checkin_at=gte.${start}&checkin_at=lt.${end}${filter}&select=*`);
+  const today=Array.isArray(todayRes)?todayRes:[];
   document.getElementById('att-total').textContent=today.length;
   document.getElementById('att-studying').textContent=today.filter(a=>a.status==='studying').length;
   document.getElementById('att-elsewhere').textContent=today.filter(a=>a.status==='in_class'||a.status==='away').length;
   document.getElementById('att-out').textContent=today.filter(a=>a.checkout_at).length;
 
-  const mon=mondayOfA(new Date());
-  const wStart=`${dk(mon)}T00:00:00`,wEnd=`${dk(addDaysA(mon,7))}T00:00:00`;
-  const week=await sb(`attendance?checkin_at=gte.${wStart}&checkin_at=lt.${wEnd}${filter}&select=id,student_id,checkin_at,checkout_at,planner_students(name)`)||[];
-  const weekIds=week.map(a=>a.id);
-  const weekLogs=weekIds.length?(await sb(`attendance_status_log?attendance_id=in.(${weekIds.join(',')})&select=attendance_id,status,changed_at`)||[]):[];
-  const weekLogsByAtt=groupLogsByAttendance(weekLogs);
-  const byStu={};
-  week.forEach(a=>{
-    const mins=computeAttSegments(a,weekLogsByAtt[a.id]).studying;
-    if(!byStu[a.student_id])byStu[a.student_id]={name:a.planner_students?.name||'?',min:0};
-    byStu[a.student_id].min+=mins;
-  });
-  const ranked=Object.values(byStu).sort((a,b)=>b.min-a.min).slice(0,10);
-  document.getElementById('rank-list').innerHTML=ranked.length?ranked.map((r,i)=>`<div class="rank-row"><div class="rank-no ${i<3?'top':''}">${i+1}</div><div class="rank-name">${r.name}</div><div class="rank-time">${fmtMinA(r.min)}</div></div>`).join(''):'<div class="empty">데이터가 없어요</div>';
+  // 아래 두 구간은 서로 독립적으로 실패할 수 있게 분리합니다 —
+  // 한쪽 계산(예: attendance_status_log 미반영)이 오류나도
+  // 날짜별 출석 기록(학생 이름 포함)까지 함께 멈추면 안 되기 때문입니다.
+  try{
+    const mon=mondayOfA(new Date());
+    const wStart=`${dk(mon)}T00:00:00`,wEnd=`${dk(addDaysA(mon,7))}T00:00:00`;
+    const weekRes=await sb(`attendance?checkin_at=gte.${wStart}&checkin_at=lt.${wEnd}${filter}&select=id,student_id,checkin_at,checkout_at,planner_students(name)`);
+    const week=Array.isArray(weekRes)?weekRes:[];
+    const weekIds=week.map(a=>a.id);
+    const weekLogsRes=weekIds.length?await sb(`attendance_status_log?attendance_id=in.(${weekIds.join(',')})&select=attendance_id,status,changed_at`):[];
+    const weekLogs=Array.isArray(weekLogsRes)?weekLogsRes:[];
+    const weekLogsByAtt=groupLogsByAttendance(weekLogs);
+    const byStu={};
+    week.forEach(a=>{
+      const mins=computeAttSegments(a,weekLogsByAtt[a.id]).studying;
+      if(!byStu[a.student_id])byStu[a.student_id]={name:a.planner_students?.name||'?',min:0};
+      byStu[a.student_id].min+=mins;
+    });
+    const ranked=Object.values(byStu).sort((a,b)=>b.min-a.min).slice(0,10);
+    document.getElementById('rank-list').innerHTML=ranked.length?ranked.map((r,i)=>`<div class="rank-row"><div class="rank-no ${i<3?'top':''}">${i+1}</div><div class="rank-name">${r.name}</div><div class="rank-time">${fmtMinA(r.min)}</div></div>`).join(''):'<div class="empty">데이터가 없어요</div>';
+  }catch(e){
+    console.error('공부시간 랭킹을 불러오지 못했어요 — Supabase에 최신 schema.sql(attendance_status_log)을 실행했는지 확인해주세요:',e);
+    document.getElementById('rank-list').innerHTML='<div class="empty">랭킹을 불러오지 못했어요</div>';
+  }
 
-  const d7Start=`${dk(addDaysA(new Date(),-7))}T00:00:00`;
-  const recent=await sb(`attendance?checkin_at=gte.${d7Start}&checkin_at=lt.${end}${filter}&select=student_id,checkin_at,planner_students(name)`)||[];
-  const byStu2={};
-  recent.forEach(a=>{
-    if(!byStu2[a.student_id])byStu2[a.student_id]={name:a.planner_students?.name||'?',days:new Set()};
-    byStu2[a.student_id].days.add(dk(new Date(a.checkin_at)));
-  });
-  const todaySet=new Set(today.map(a=>a.student_id));
-  const alerts=Object.entries(byStu2).filter(([id,v])=>v.days.size>=4&&!todaySet.has(id)).map(([id,v])=>v.name);
-  document.getElementById('alert-list').innerHTML=alerts.length?alerts.map(n=>`<div class="alert-row">⚠️ ${n} 학생이 평소와 달리 오늘 출석하지 않았어요</div>`).join(''):'<div class="empty">해당 학생이 없어요</div>';
+  try{
+    const d7Start=`${dk(addDaysA(new Date(),-7))}T00:00:00`;
+    const recentRes=await sb(`attendance?checkin_at=gte.${d7Start}&checkin_at=lt.${end}${filter}&select=student_id,checkin_at,planner_students(name)`);
+    const recent=Array.isArray(recentRes)?recentRes:[];
+    const byStu2={};
+    recent.forEach(a=>{
+      if(!byStu2[a.student_id])byStu2[a.student_id]={name:a.planner_students?.name||'?',days:new Set()};
+      byStu2[a.student_id].days.add(dk(new Date(a.checkin_at)));
+    });
+    const todaySet=new Set(today.map(a=>a.student_id));
+    const alerts=Object.entries(byStu2).filter(([id,v])=>v.days.size>=4&&!todaySet.has(id)).map(([id,v])=>v.name);
+    document.getElementById('alert-list').innerHTML=alerts.length?alerts.map(n=>`<div class="alert-row">⚠️ ${n} 학생이 평소와 달리 오늘 출석하지 않았어요</div>`).join(''):'<div class="empty">해당 학생이 없어요</div>';
+  }catch(e){
+    console.error('결석 알림을 불러오지 못했어요:',e);
+    document.getElementById('alert-list').innerHTML='<div class="empty">결석 알림을 불러오지 못했어요</div>';
+  }
 
   if(!document.getElementById('att-date-picker').value)document.getElementById('att-date-picker').value=todayStr;
-  loadDateRecord();
+  await loadDateRecord();
 }
 window.loadAttendanceTab=loadAttendanceTab;
 
@@ -1655,8 +1672,10 @@ async function loadDateRecord(){
   const date=document.getElementById('att-date-picker').value||dk(new Date());
   const filter=roomId?`&room_id=eq.${roomId}`:'';
   const start=`${date}T00:00:00`,end=`${dk(addDaysA(parseDkA(date),1))}T00:00:00`;
-  const rows=await sb(`attendance?checkin_at=gte.${start}&checkin_at=lt.${end}${filter}&select=*,planner_students(name),seats(seat_number)&order=checkin_at.asc`)||[];
   const body=document.getElementById('date-record-body');
+  const rowsRes=await sb(`attendance?checkin_at=gte.${start}&checkin_at=lt.${end}${filter}&select=*,planner_students(name),seats(seat_number)&order=checkin_at.asc`);
+  if(!Array.isArray(rowsRes)){body.innerHTML='<tr><td colspan="6" class="empty">기록을 불러오지 못했어요</td></tr>';return;}
+  const rows=rowsRes;
   if(!rows.length){body.innerHTML='<tr><td colspan="6" class="empty">기록이 없어요</td></tr>';return;}
 
   const byStu=new Map();
