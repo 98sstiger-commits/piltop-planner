@@ -177,6 +177,8 @@ body{font-family:'Noto Sans KR',sans-serif;background:#F6F5F2;color:#18170F;min-
 .seat-node{position:absolute;border-radius:10px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-weight:700;font-size:12px;cursor:pointer;border:2px solid transparent;box-shadow:0 1px 3px rgba(0,0,0,.08);transition:box-shadow .12s,transform .08s;user-select:none}
 .seat-node.st-empty{background:#EFEDE8;border-color:var(--line2);color:var(--ink2)}
 .seat-node.st-empty:hover{border-color:var(--green)}
+.seat-node.unassigned{background:#fff;border-color:var(--line2);color:var(--ink3)}
+.seat-node.unassigned:hover{border-color:var(--green)}
 .seat-node.studying{background:#22B573;color:#fff;border-color:#1C9962}
 .seat-node.in_class{background:#4C8DFF;color:#fff;border-color:#3A6FDB}
 .seat-node.away{background:#A78BFA;color:#fff;border-color:#8B6BE8}
@@ -401,6 +403,7 @@ body{font-family:'Noto Sans KR',sans-serif;background:#F6F5F2;color:#18170F;min-
     <span><i style="background:#22B573"></i>공부중</span>
     <span><i style="background:#4C8DFF"></i>학원수업중</span>
     <span><i style="background:#A78BFA"></i>외출중</span>
+    <span id="legend-unassigned" style="display:none"><i style="background:#fff;border:1px solid var(--line2)"></i>미등록</span>
   </div>
 </div>
 
@@ -675,19 +678,6 @@ async function generateLink(){
   document.getElementById('s-phone').value='';
   document.getElementById('s-stu-phone').value='';
   loadStudents();
-
-// 연도 선택 초기화 (현재~2035)
-(function(){
-  const sel = document.getElementById('s-year');
-  const cur = new Date().getFullYear();
-  for(let y = cur; y <= 2035; y++){
-    const opt = document.createElement('option');
-    opt.value = y;
-    opt.textContent = y + '년';
-    if(y === cur) opt.selected = true;
-    sel.appendChild(opt);
-  }
-})();
   showToast('링크가 생성됐어요!');
 }
 
@@ -839,19 +829,6 @@ async function deleteStudent(id, name){
   if(!confirm(name+' 학생을 삭제할까요?'))return;
   await sb('planner_students?id=eq.'+id,{method:'DELETE'});
   loadStudents();
-
-// 연도 선택 초기화 (현재~2035)
-(function(){
-  const sel = document.getElementById('s-year');
-  const cur = new Date().getFullYear();
-  for(let y = cur; y <= 2035; y++){
-    const opt = document.createElement('option');
-    opt.value = y;
-    opt.textContent = y + '년';
-    if(y === cur) opt.selected = true;
-    sel.appendChild(opt);
-  }
-})();
   showToast(name+' 학생이 삭제됐어요');
 }
 
@@ -961,6 +938,7 @@ async function regenPin(id,name){
 async function assignRoom(id,roomId){
   await sb(`planner_students?id=eq.${id}`,{method:'PATCH',body:JSON.stringify({room_id:roomId||null})});
   showToast('배정 독서실이 변경됐어요');
+  loadStudents();
 }
 
 /* ── 수강 과목 수정 ── */
@@ -1095,6 +1073,7 @@ function renderSeatMap(){
     wrap.appendChild(hint);
   }
   const assignedMode=room&&room.seating_mode==='assigned';
+  document.getElementById('legend-unassigned').style.display=assignedMode?'':'none';
   SEATS.forEach(s=>{
     const isBlock=s.kind==='block';
     const occStu=!isBlock&&occ[s.id];
@@ -1105,6 +1084,7 @@ function renderSeatMap(){
     if(isBlock)seatCls='zone-block';
     else if(occStu)seatCls=occStu.status;
     else if(manualStatus!=='st-empty')seatCls=manualStatus;
+    else if(assignedMode&&!assignedStu)seatCls='unassigned';
     else seatCls='st-empty';
     node.className='seat-node '+seatCls;
     if(selectedSeats.has(s.id))node.classList.add('selected');
