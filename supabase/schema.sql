@@ -27,6 +27,8 @@ create table if not exists study_rooms (
 );
 -- 좌석 배정 방식: free(자유석, 아무 자리나) / assigned(지정자석, 학생마다 정해진 자리)
 alter table study_rooms add column if not exists seating_mode text not null default 'free' check (seating_mode in ('free','assigned'));
+-- 관리자가 admin.html [학생 입출입] 탭(키오스크 모드)에서 관리 화면으로 되돌아갈 때 필요한 4자리 비밀번호
+alter table study_rooms add column if not exists kiosk_pin text;
 
 -- ── 2. seats : 좌석 정보 ───────────────────────────────────────
 -- kind='block'인 행은 실제 좌석이 아니라 배치도에서 "이 공간은 제외"
