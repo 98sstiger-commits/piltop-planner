@@ -38,12 +38,23 @@ create table if not exists seats (
   y numeric not null default 10,
   width numeric not null default 9,
   height numeric not null default 9,
-  status text not null default 'empty' check (status in ('empty','reserved')),
+  status text not null default 'empty' check (status in ('empty','studying','in_class','away')),
   kind text not null default 'seat' check (kind in ('seat','block')),
   created_at timestamptz not null default now(),
   unique (room_id, seat_number)
 );
 alter table seats add column if not exists kind text not null default 'seat' check (kind in ('seat','block'));
+
+-- 좌석 상태를 비어있음/공부중/학원수업중/외출중으로 확장 — 실제 체크인 기록이
+-- 없는 좌석도 관리자가 직접 클릭해서 상태를 표시할 수 있도록 함 ('예약'은 제거)
+update seats set status='empty' where status not in ('empty','studying','in_class','away');
+do $$
+begin
+  alter table seats drop constraint if exists seats_status_check;
+  alter table seats add constraint seats_status_check
+    check (status in ('empty','studying','in_class','away'));
+exception when others then null;
+end $$;
 
 -- ── 3. attendance : 출석 기록 ──────────────────────────────────
 -- status: studying(공부중) / in_class(학원수업중) / away(외출중) / checked_out(퇴실)

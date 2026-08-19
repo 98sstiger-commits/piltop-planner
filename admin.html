@@ -134,11 +134,12 @@ body{font-family:'Noto Sans KR',sans-serif;background:#F6F5F2;color:#18170F;min-
 /* ══ 공용 소형 컴포넌트 ══ */
 .room-select-row{display:flex;align-items:center;gap:10px;margin-bottom:18px;flex-wrap:wrap}
 .room-select-row .f-select{width:auto;min-width:180px;flex:none}
-.mini-btn{padding:9px 14px;border-radius:8px;font-size:12px;font-weight:700;background:var(--surf);border:1px solid var(--line2);color:var(--ink2)}
-.mini-btn:hover{border-color:var(--green);color:var(--green)}
-.mini-btn.pri{background:var(--green);color:#fff;border-color:var(--green)}
-.mini-btn.pri:hover{opacity:.88;color:#fff}
+.mini-btn{padding:9px 14px;border-radius:9px;font-size:12px;font-weight:700;background:var(--surf);border:1px solid var(--line2);color:var(--ink2);transition:border-color .12s,color .12s,background .12s}
+.mini-btn:hover{border-color:var(--green);color:var(--green);background:var(--gs)}
+.mini-btn.pri{background:var(--green);color:#fff;border-color:var(--green);box-shadow:0 1px 2px rgba(26,71,49,.2)}
+.mini-btn.pri:hover{opacity:.88;color:#fff;background:var(--green)}
 .mini-btn.danger{color:#B91C1C;border-color:#F3D0D0}
+.mini-btn.danger:hover{background:#FEE8E8;border-color:#F3B0B0;color:#B91C1C}
 
 .pin-badge{font-size:10px;font-weight:700;letter-spacing:.5px;background:#FEF5E8;color:#7A4710;padding:3px 8px;border-radius:8px;flex-shrink:0;font-variant-numeric:tabular-nums}
 .pin-badge.muted{background:var(--bg2,#F1F0EC);color:var(--ink3)}
@@ -158,9 +159,12 @@ body{font-family:'Noto Sans KR',sans-serif;background:#F6F5F2;color:#18170F;min-
 .subj-pop-save{width:100%;background:var(--green);color:#fff;font-weight:700;padding:9px;border-radius:8px}
 
 /* ══ 좌석현황 ══ */
-.seat-toolbar{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:14px;flex-wrap:wrap}
-.seat-toolbar-right{display:flex;gap:8px;flex-wrap:wrap}
-.seat-edit-hint{font-size:11px;color:var(--ink2);background:var(--gs);border-radius:8px;padding:8px 12px;line-height:1.6}
+.seat-toolbar{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-bottom:14px;flex-wrap:wrap;background:var(--surf);border:1px solid var(--line);border-radius:16px;padding:14px 16px;box-shadow:0 1px 3px rgba(24,23,15,.04)}
+.seat-toolbar-right{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.seat-toolbar-divider{width:1px;align-self:stretch;background:var(--line);margin:0 2px}
+.seat-edit-tools-card{background:var(--gs);border:1px solid #D3E5DA;border-radius:14px;padding:12px 14px;margin-bottom:14px}
+.seat-edit-hint{display:flex;align-items:flex-start;gap:8px;font-size:11.5px;color:var(--green);line-height:1.6;margin-top:10px}
+.seat-edit-hint::before{content:'💡';flex-shrink:0;font-size:13px;line-height:1.5}
 .seat-map-wrap{position:relative;background:#F9F8F5;border:1px solid var(--line);border-radius:14px;height:420px;overflow:hidden}
 .seat-map-wrap.editing{cursor:crosshair}
 .seat-map-img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;pointer-events:none;user-select:none}
@@ -182,9 +186,9 @@ body{font-family:'Noto Sans KR',sans-serif;background:#F6F5F2;color:#18170F;min-
 .canvas-resize-handle{position:absolute;right:10px;bottom:10px;width:26px;height:26px;border-radius:8px;background:var(--green);color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;cursor:ns-resize;z-index:10;box-shadow:0 2px 8px rgba(0,0,0,.25)}
 .seat-empty-hint{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;text-align:center;color:var(--ink3);font-size:13px;line-height:1.8;padding:24px}
 .seat-empty-hint.overlay{background:rgba(255,255,255,.82)}
-.seat-legend{display:flex;gap:16px;margin:12px 4px 0;font-size:11px;color:var(--ink2)}
-.seat-legend span{display:inline-flex;align-items:center;gap:5px}
-.seat-legend i{width:10px;height:10px;border-radius:3px;display:inline-block}
+.seat-legend{display:flex;gap:16px;flex-wrap:wrap;margin-top:12px;padding:10px 14px;background:var(--surf);border:1px solid var(--line);border-radius:12px;font-size:11.5px;font-weight:600;color:var(--ink2)}
+.seat-legend span{display:inline-flex;align-items:center;gap:6px}
+.seat-legend i{width:9px;height:9px;border-radius:50%;display:inline-block}
 .seat-pop{position:fixed;background:#fff;border:1px solid var(--line2);border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,.15);padding:10px;z-index:60;min-width:220px}
 .seat-pop-ttl{font-size:12px;font-weight:700;padding:4px 8px 8px;border-bottom:1px solid var(--line);margin-bottom:8px}
 .seat-pop-sub{font-size:10px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--ink3);padding:6px 8px 4px}
@@ -196,6 +200,7 @@ body{font-family:'Noto Sans KR',sans-serif;background:#F6F5F2;color:#18170F;min-
 .seat-pop-status-grid button.st-studying{background:#E7F8EE;color:#1C9962}
 .seat-pop-status-grid button.st-in_class{background:#EAF1FF;color:#2B5FD9}
 .seat-pop-status-grid button.st-away{background:#F3EEFF;color:#7C4DE0}
+.seat-pop-status-grid button.st-idle{background:var(--bg2,#F1F0EC);color:var(--ink2)}
 .seat-pop-status-grid button.st-current{border-color:currentColor}
 .seat-pop-checkout-btn{width:100%;text-align:center;background:#FBEAEA;color:#B91C1C;font-weight:700;padding:8px;border-radius:7px;margin-bottom:6px}
 .seat-pop-checkout-btn:hover{background:#F6D5D5}
@@ -360,20 +365,25 @@ body{font-family:'Noto Sans KR',sans-serif;background:#F6F5F2;color:#18170F;min-
       <input type="file" id="floor-img-input" accept="image/*" style="display:none" onchange="uploadFloorImage(this.files[0])">
       <button class="mini-btn danger" id="seat-remove-img-btn" onclick="removeFloorImage()" style="display:none">🗑️ 도면 삭제</button>
       <button class="mini-btn pri" id="seat-detect-btn" onclick="detectSeatsFromImage()" style="display:none">🪄 도면에서 자동 배치</button>
+      <div class="seat-toolbar-divider"></div>
       <button class="mini-btn" id="seat-add-btn" onclick="addSeat()">+ 좌석 추가</button>
       <button class="mini-btn" id="seat-grid-btn" onclick="openGridModal()">▦ 격자로 여러 개 생성</button>
+      <div class="seat-toolbar-divider"></div>
       <button class="mini-btn" id="seat-edit-toggle" onclick="toggleSeatEdit()">✏️ 배치 편집</button>
     </div>
   </div>
-  <div id="seat-edit-tools" style="display:none;margin-bottom:14px">
-    <div class="seat-toolbar-right" style="margin-bottom:6px">
-      <button class="mini-btn" id="seat-select-toggle" onclick="toggleSelectMode()">🖱️ 선택 모드</button>
-      <button class="mini-btn" id="seat-select-clear" onclick="clearSelection()" style="display:none">선택 해제</button>
-      <button class="mini-btn danger" id="seat-select-delete" onclick="deleteSelectedSeats()" style="display:none">선택 삭제</button>
-      <button class="mini-btn" onclick="addZone()">🚫 제외구역 추가</button>
-      <button class="mini-btn danger" onclick="deleteAllSeats()">좌석 전체 삭제</button>
+  <div id="seat-edit-tools" style="display:none">
+    <div class="seat-edit-tools-card">
+      <div class="seat-toolbar-right">
+        <button class="mini-btn" id="seat-select-toggle" onclick="toggleSelectMode()">🖱️ 선택 모드</button>
+        <button class="mini-btn" id="seat-select-clear" onclick="clearSelection()" style="display:none">선택 해제</button>
+        <button class="mini-btn danger" id="seat-select-delete" onclick="deleteSelectedSeats()" style="display:none">선택 삭제</button>
+        <div class="seat-toolbar-divider"></div>
+        <button class="mini-btn" onclick="addZone()">🚫 제외구역 추가</button>
+        <button class="mini-btn danger" onclick="deleteAllSeats()">좌석 전체 삭제</button>
+      </div>
+      <div class="seat-edit-hint" id="seat-edit-hint"></div>
     </div>
-    <div class="seat-edit-hint" id="seat-edit-hint"></div>
   </div>
   <div class="seat-map-wrap" id="seat-map-wrap">
     <div class="seat-empty-hint">독서실을 먼저 추가해주세요</div>
@@ -999,8 +1009,8 @@ function renderSeatMap(){
   document.getElementById('seat-edit-toggle').textContent=seatEditMode?'✓ 편집 종료':'✏️ 배치 편집';
   document.getElementById('seat-edit-tools').style.display=seatEditMode?'block':'none';
   document.getElementById('seat-edit-hint').textContent=selectMode
-    ?'💡 좌석을 클릭해서 선택하거나, 빈 공간을 드래그해서 여러 개를 한 번에 선택하세요. 선택된 좌석 중 하나를 드래그하면 전체가 같이 움직여요.'
-    :'💡 좌석을 클릭하면 이름표·상태를 수정할 수 있어요. 여러 개를 한 번에 옮기려면 "선택 모드"를 켜보세요.';
+    ?'좌석을 클릭해서 선택하거나, 빈 공간을 드래그해서 여러 개를 한 번에 선택하세요. 선택된 좌석 중 하나를 드래그하면 전체가 같이 움직여요.'
+    :'좌석을 드래그하면 위치를 옮기고, 클릭하면 이름표·상태를 수정할 수 있어요. 여러 개를 한 번에 옮기려면 "선택 모드"를 켜보세요.';
   document.getElementById('seat-remove-img-btn').style.display=(room&&room.floor_image_url)?'':'none';
   document.getElementById('seat-detect-btn').style.display=(room&&room.floor_image_url)?'':'none';
   document.getElementById('seat-select-toggle').classList.toggle('pri',selectMode);
@@ -1033,7 +1043,8 @@ function renderSeatMap(){
     const isBlock=s.kind==='block';
     const occStu=!isBlock&&occ[s.id];
     const node=document.createElement('div');
-    node.className='seat-node '+(isBlock?'zone-block':(occStu?occStu.status:(s.status==='reserved'?'reserved':'st-empty')));
+    const manualStatus=s.status&&s.status!=='empty'?s.status:'st-empty';
+    node.className='seat-node '+(isBlock?'zone-block':(occStu?occStu.status:manualStatus));
     if(selectedSeats.has(s.id))node.classList.add('selected');
     node.dataset.seatId=s.id;
     node.style.left=s.x+'%';node.style.top=s.y+'%';node.style.width=s.width+'%';node.style.height=s.height+'%';
@@ -1061,9 +1072,9 @@ function renderSeatMap(){
         handle.addEventListener('click',e=>e.stopPropagation());
         node.appendChild(handle);
       }
-    }else if(occStu){
+    }else{
       node.style.cursor='pointer';
-      node.onclick=(e)=>openSeatPop(e,s,true);
+      node.onclick=(e)=>openSeatPop(e,s);
     }
     wrap.appendChild(node);
   });
@@ -1182,16 +1193,24 @@ function openSeatPop(e,seat){
   pop.className='seat-pop';
   const cx=e.clientX||window.innerWidth/2,cy=e.clientY||window.innerHeight/2;
   pop.style.left=Math.min(cx,window.innerWidth-220)+'px';
-  pop.style.top=Math.min(cy,window.innerHeight-(occAtt?340:230))+'px';
+  pop.style.top=Math.min(cy,window.innerHeight-(isBlock?170:(occAtt?340:290)))+'px';
 
-  const statusHtml=occAtt?`
+  const manualStatus=seat.status&&seat.status!=='empty'?seat.status:'empty';
+  const statusHtml=isBlock?'':(occAtt?`
     <div class="seat-pop-sub">${occAtt.planner_students?.name||'학생'} 상태 변경</div>
     <div class="seat-pop-status-grid">
       <button class="st-studying${occAtt.status==='studying'?' st-current':''}" data-st="studying">📚 공부중</button>
       <button class="st-in_class${occAtt.status==='in_class'?' st-current':''}" data-st="in_class">🏫 학원수업중</button>
       <button class="st-away${occAtt.status==='away'?' st-current':''}" data-st="away" style="grid-column:span 2">🚶 외출중</button>
     </div>
-    <button class="seat-pop-checkout-btn" data-act="checkout">🚪 퇴실 처리</button>`:'';
+    <button class="seat-pop-checkout-btn" data-act="checkout">🚪 퇴실 처리</button>`:`
+    <div class="seat-pop-sub">좌석 상태</div>
+    <div class="seat-pop-status-grid">
+      <button class="st-idle${manualStatus==='empty'?' st-current':''}" data-mst="empty">⬜ 비어있음</button>
+      <button class="st-studying${manualStatus==='studying'?' st-current':''}" data-mst="studying">📚 공부중</button>
+      <button class="st-in_class${manualStatus==='in_class'?' st-current':''}" data-mst="in_class">🏫 학원수업중</button>
+      <button class="st-away${manualStatus==='away'?' st-current':''}" data-mst="away">🚶 외출중</button>
+    </div>`);
 
   pop.innerHTML=`<div class="seat-pop-ttl">${isBlock?'제외구역':seat.seat_number+'번 좌석'}</div>
     ${statusHtml}
@@ -1199,7 +1218,6 @@ function openSeatPop(e,seat){
       <input type="text" id="seat-pop-label-input" placeholder="${isBlock?'구역 이름 (예: 통로)':'이름표 (예: 창가석)'}" value="${(seat.label||'').replace(/"/g,'&quot;')}">
       <button class="seat-pop-save-btn" id="seat-pop-save-btn">저장</button>
     </div>
-    ${(occAtt||isBlock)?'':'<button data-act="empty">비어있음으로 표시</button>'}
     <button class="danger" data-act="delete">${isBlock?'구역 삭제':'좌석 삭제'}</button>`;
   document.body.appendChild(pop);
   pop.addEventListener('click',ev=>ev.stopPropagation());
@@ -1217,7 +1235,9 @@ function openSeatPop(e,seat){
     });
     pop.querySelector('[data-act="checkout"]').onclick=()=>{closeSeatPop();forceCheckout(occAtt.id,occAtt.planner_students?.name||'학생');};
   }else if(!isBlock){
-    pop.querySelector('[data-act="empty"]').onclick=()=>{closeSeatPop();setSeatStatus(seat.id,'empty');};
+    pop.querySelectorAll('.seat-pop-status-grid button').forEach(b=>{
+      b.onclick=()=>{closeSeatPop();setSeatStatus(seat.id,b.dataset.mst);};
+    });
   }
   pop.querySelector('[data-act="delete"]').onclick=()=>{closeSeatPop();deleteSeat(seat.id);};
   setTimeout(()=>document.addEventListener('click',closeSeatPop,{once:true}),0);
@@ -1355,9 +1375,12 @@ async function deleteAllSeats(){
 async function addZone(){
   if(!curSeatRoomId){showToast('독서실을 먼저 선택하세요');return;}
   const maxNum=SEATS.reduce((m,s)=>Math.max(m,s.seat_number),0);
-  await sb('seats',{method:'POST',body:JSON.stringify({room_id:curSeatRoomId,seat_number:maxNum+1,kind:'block',label:'제외구역',x:35,y:35,width:22,height:16,status:'empty'})});
-  seatEditMode=true;
+  const result=await sb('seats',{method:'POST',body:JSON.stringify({room_id:curSeatRoomId,seat_number:maxNum+1,kind:'block',label:'제외구역',x:35,y:35,width:22,height:16,status:'empty'})});
+  if(!Array.isArray(result)||!result.length){showToast('제외구역 추가에 실패했어요 — Supabase에 최신 SQL을 실행했는지 확인해주세요');return;}
+  seatEditMode=true;selectMode=true;
+  selectedSeats=new Set([result[0].id]);
   refreshSeatData();
+  showToast('제외구역을 추가했어요 — 드래그로 위치·크기를 조정해보세요');
 }
 
 /* ── 격자로 좌석 일괄 생성 ── */
