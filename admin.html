@@ -383,7 +383,6 @@ body{font-family:'Noto Sans KR',sans-serif;background:#F6F5F2;color:#18170F;min-
     <span><i style="background:#22B573"></i>공부중</span>
     <span><i style="background:#4C8DFF"></i>학원수업중</span>
     <span><i style="background:#A78BFA"></i>외출중</span>
-    <span><i style="background:#FFB648"></i>예약</span>
   </div>
 </div>
 
@@ -1200,7 +1199,7 @@ function openSeatPop(e,seat){
       <input type="text" id="seat-pop-label-input" placeholder="${isBlock?'구역 이름 (예: 통로)':'이름표 (예: 창가석)'}" value="${(seat.label||'').replace(/"/g,'&quot;')}">
       <button class="seat-pop-save-btn" id="seat-pop-save-btn">저장</button>
     </div>
-    ${(occAtt||isBlock)?'':'<button data-act="empty">비어있음으로 표시</button><button data-act="reserved">예약으로 표시</button>'}
+    ${(occAtt||isBlock)?'':'<button data-act="empty">비어있음으로 표시</button>'}
     <button class="danger" data-act="delete">${isBlock?'구역 삭제':'좌석 삭제'}</button>`;
   document.body.appendChild(pop);
   pop.addEventListener('click',ev=>ev.stopPropagation());
@@ -1219,7 +1218,6 @@ function openSeatPop(e,seat){
     pop.querySelector('[data-act="checkout"]').onclick=()=>{closeSeatPop();forceCheckout(occAtt.id,occAtt.planner_students?.name||'학생');};
   }else if(!isBlock){
     pop.querySelector('[data-act="empty"]').onclick=()=>{closeSeatPop();setSeatStatus(seat.id,'empty');};
-    pop.querySelector('[data-act="reserved"]').onclick=()=>{closeSeatPop();setSeatStatus(seat.id,'reserved');};
   }
   pop.querySelector('[data-act="delete"]').onclick=()=>{closeSeatPop();deleteSeat(seat.id);};
   setTimeout(()=>document.addEventListener('click',closeSeatPop,{once:true}),0);
@@ -1336,8 +1334,10 @@ async function detectSeatsFromImage(silent){
     const inserted=await sb('seats',{method:'POST',body:JSON.stringify(batch)});
     selectedSeats=new Set((inserted||[]).map(row=>row.id));
     seatEditMode=true;selectMode=true;
+    await sb(`study_rooms?id=eq.${curSeatRoomId}`,{method:'PATCH',body:JSON.stringify({floor_image_url:null})});
+    room.floor_image_url=null;
     refreshSeatData();
-    showToast(`좌석 ${batch.length}개를 자동으로 배치했어요 — 어긋난 자리는 드래그로 조정해주세요`);
+    showToast(`좌석 ${batch.length}개를 자동으로 배치하고 도면 이미지는 지웠어요 — 어긋난 자리는 드래그로 조정해주세요`);
   }catch(e){
     showToast('자동 배치 중 오류가 발생했어요');
   }finally{
