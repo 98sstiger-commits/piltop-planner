@@ -215,7 +215,6 @@ body{font-family:'Pretendard','Noto Sans KR',sans-serif;background:var(--bg);col
 .seat-pop-status-grid button.st-idle{background:var(--bg2,#F1F0EC);color:var(--ink2)}
 .seat-pop-status-grid button.st-current{border-color:currentColor}
 .seat-pop-checkout-btn{width:100%;text-align:center;background:#FBEAEA;color:#B91C1C;font-weight:700;padding:8px;border-radius:7px;margin-bottom:6px}
-.seat-pop-undo-btn{width:100%;text-align:center;background:var(--gs);color:var(--green);font-weight:700;padding:8px;border-radius:7px;margin-bottom:6px;font-size:12px}
 .seat-pop-checkout-btn:hover{background:#F6D5D5}
 .seat-pop-field{display:flex;gap:6px;padding:0 2px 8px}
 .seat-pop-field input{flex:1;padding:8px 10px;border:1px solid var(--line2);border-radius:7px;font-size:12px;font-family:inherit;color:var(--ink)}
@@ -1262,8 +1261,7 @@ function openSeatPop(e,seat){
       <button class="st-studying${manualStatus==='studying'?' st-current':''}" data-mst="studying">📚 공부중</button>
       <button class="st-in_class${manualStatus==='in_class'?' st-current':''}" data-mst="in_class">🏫 학원수업중</button>
       <button class="st-away${manualStatus==='away'?' st-current':''}" data-mst="away">🚶 외출중</button>
-    </div>
-    <div id="seat-pop-undo-slot"></div>`);
+    </div>`);
 
   const roomStudents=assignedMode&&!isBlock?ALL_STUDENTS.filter(st=>st.room_id===curSeatRoomId):[];
   const assignedElsewhere=new Set(SEATS.filter(sx=>sx.id!==seat.id&&sx.assigned_student_id).map(sx=>sx.assigned_student_id));
@@ -1310,19 +1308,6 @@ function openSeatPop(e,seat){
   pop.querySelector('[data-act="delete"]').onclick=()=>{closeSeatPop();deleteSeat(seat.id);};
   const assignSel=pop.querySelector('#seat-pop-assign-select');
   if(assignSel)assignSel.onchange=()=>{closeSeatPop();assignSeatStudent(seat.id,assignSel.value);};
-  if(!isBlock&&!occAtt){
-    const todayStart=dk(new Date())+'T00:00:00';
-    sb(`attendance?seat_id=eq.${seat.id}&checkout_at=gte.${todayStart}&select=id,status,planner_students(name)&order=checkout_at.desc&limit=1`).then(rows=>{
-      const slot=document.getElementById('seat-pop-undo-slot');
-      if(!slot||!rows||!rows.length)return;
-      const last=rows[0],name=last.planner_students?.name||'학생';
-      const btn=document.createElement('button');
-      btn.className='seat-pop-undo-btn';
-      btn.textContent=`↩️ ${name} 학생 퇴실 취소 (다시 입실)`;
-      btn.onclick=()=>{closeSeatPop();undoCheckout(last.id,name);};
-      slot.appendChild(btn);
-    });
-  }
   setTimeout(()=>document.addEventListener('click',closeSeatPop,{once:true}),0);
 }
 async function assignSeatStudent(seatId,studentId){
@@ -1348,13 +1333,6 @@ async function forceCheckout(attId,name){
   if(!confirm(name+' 학생을 퇴실 처리할까요?'))return;
   await sb(`attendance?id=eq.${attId}`,{method:'PATCH',body:JSON.stringify({checkout_at:new Date().toISOString(),status:'checked_out'})});
   showToast(name+' 학생을 퇴실 처리했어요');
-  refreshSeatData();
-}
-async function undoCheckout(attId,name){
-  if(!confirm(name+' 학생의 퇴실을 취소하고 다시 입실 처리할까요? (학생이 실수로 퇴실 버튼을 누른 경우 등에 사용)'))return;
-  const result=await sb(`attendance?id=eq.${attId}`,{method:'PATCH',body:JSON.stringify({checkout_at:null,status:'studying'})});
-  if(!Array.isArray(result)||!result.length){showToast('되돌리기에 실패했어요');return;}
-  showToast(name+' 학생을 다시 입실 처리했어요');
   refreshSeatData();
 }
 async function deleteSeat(id){
@@ -1733,15 +1711,19 @@ const rtClient = createClient(
   'https://zmtldohklivkzpfdyflc.supabase.co',
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InptdGxkb2hrbGl2a3pwZmR5ZmxjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI5NjgxMDQsImV4cCI6MjA4ODU0NDEwNH0.cv1WrvDzNedVZABWyRCS9ARRxf4Si9qgeUqEvhpHWlo'
 );
+function refreshVisiblePanels(){
+  if(document.getElementById('panel-seats')?.classList.contains('on')&&typeof window.refreshSeatData==='function')window.refreshSeatData();
+  if(document.getElementById('panel-attendance')?.classList.contains('on')&&typeof window.loadAttendanceTab==='function')window.loadAttendanceTab();
+}
 rtClient.channel('admin-live')
-  .on('postgres_changes',{event:'*',schema:'public',table:'attendance'},()=>{
-    if(document.getElementById('panel-seats')?.classList.contains('on')&&typeof window.refreshSeatData==='function')window.refreshSeatData();
-    if(document.getElementById('panel-attendance')?.classList.contains('on')&&typeof window.loadAttendanceTab==='function')window.loadAttendanceTab();
-  })
+  .on('postgres_changes',{event:'*',schema:'public',table:'attendance'},refreshVisiblePanels)
   .on('postgres_changes',{event:'*',schema:'public',table:'seats'},()=>{
     if(document.getElementById('panel-seats')?.classList.contains('on')&&typeof window.refreshSeatData==='function')window.refreshSeatData();
   })
   .subscribe();
+
+// 실시간 웹소켓이 조용히 끊겼을 때를 대비한 30초 안전장치 (평소엔 realtime이 이미 즉시 반영함)
+setInterval(refreshVisiblePanels,30000);
 </script>
 </body>
 </html>
