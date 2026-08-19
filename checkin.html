@@ -23,7 +23,7 @@ button{cursor:pointer;border:none;background:none;font-family:inherit}
   --busy:#2E9E5B;--wait:#F4A442;--danger:#D14343;
 }
 
-.screen{position:fixed;inset:0;display:flex;flex-direction:column;background:var(--bg)}
+.screen{position:fixed;inset:0;display:flex;flex-direction:column;background:var(--bg);overflow-y:auto}
 .hide{display:none !important}
 
 /* ── 상단 헤더 ── */
@@ -63,6 +63,33 @@ button{cursor:pointer;border:none;background:none;font-family:inherit}
 .kp-btn.fn{font-size:14px;font-weight:600;color:var(--ink2);background:transparent;box-shadow:none;border:none}
 .kp-btn.fn:active{color:var(--danger)}
 .kp-foot{padding:18px 0 26px;font-size:12px;color:var(--ink3);text-align:center}
+@media (max-width:480px){
+  .hd{padding:16px 20px 14px}
+  .hd-title{font-size:19px}
+  .kp-wrap{padding:0 20px}
+  .kp-lead{font-size:13px;margin-bottom:4px}
+  .kp-title{font-size:20px;margin-bottom:14px}
+  .kp-dots{gap:12px;margin-bottom:18px}
+  .kp-dot{width:16px;height:16px}
+  .kp-grid{max-width:280px;gap:10px}
+  .kp-btn{font-size:24px}
+  .kp-foot{padding:10px 0 16px;font-size:11px}
+}
+/* 실제 보이는 화면 높이가 짧은 경우(임베디드 브라우저 등)를 위한 추가 압축 */
+@media (max-width:480px) and (max-height:700px){
+  .hd{padding:10px 18px 8px}
+  .hd-title{font-size:16px}
+  .hd-sub{font-size:11px;margin-top:2px}
+  .hd-time{font-size:20px}
+  .hd-date{font-size:10px}
+  .kp-lead{font-size:11px;margin-bottom:2px}
+  .kp-title{font-size:17px;margin-bottom:8px}
+  .kp-dots{gap:10px;margin-bottom:10px}
+  .kp-dot{width:13px;height:13px}
+  .kp-grid{max-width:230px;gap:7px}
+  .kp-btn{font-size:19px}
+  .kp-foot{padding:6px 0 10px;font-size:10px}
+}
 
 /* ── 로딩 ── */
 .kp-loading{display:none;align-items:center;gap:8px;color:var(--ink2);font-size:13px;margin-bottom:18px}
