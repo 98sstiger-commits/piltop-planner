@@ -26,11 +26,11 @@ button{cursor:pointer;border:none;background:none;font-family:inherit}
 .hide{display:none !important}
 
 /* ── 상단 헤더 ── */
-.hd{background:var(--g);padding:22px 28px 20px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
-.hd-brand{color:#fff}
-.hd-title{font-family:'Playfair Display',serif;font-size:22px;letter-spacing:-.3px}
-.hd-sub{font-size:12px;color:rgba(255,255,255,.55);margin-top:2px}
-.hd-clock{text-align:right;color:#fff}
+.hd{background:var(--g);padding:22px 28px 20px;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:4px 16px;flex-shrink:0}
+.hd-brand{color:#fff;min-width:0}
+.hd-title{font-family:'Playfair Display',serif;font-size:22px;letter-spacing:-.3px;word-break:keep-all}
+.hd-sub{font-size:12px;color:rgba(255,255,255,.55);margin-top:2px;word-break:keep-all}
+.hd-clock{text-align:right;color:#fff;margin-left:auto}
 .hd-time{font-size:26px;font-weight:700;letter-spacing:-.5px;font-variant-numeric:tabular-nums}
 .hd-date{font-size:11px;color:rgba(255,255,255,.55);margin-top:2px}
 .hd-room-btn{position:absolute;top:18px;right:18px;font-size:10px;color:rgba(255,255,255,.4);padding:4px 8px}
