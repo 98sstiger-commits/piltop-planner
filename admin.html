@@ -19,7 +19,7 @@ body{font-family:'Pretendard','Noto Sans KR',sans-serif;color:var(--ink);min-hei
 }
 :root{
   --green:#123A2E;--green2:#0D2B22;--gs:#E5EFE9;--line:#E6E3DC;--line2:#CCC9C1;--surf:#fff;--ink:#18170F;--ink2:#69675E;--ink3:#A8A49C;
-  --bg:#0E2C22;--cream:#F4EFE2;--gold:#E3BE6D;--gold2:#C9A24F;--mint:#3ED9A0;
+  --bg:#0E2C22;--cream:#F4EFE2;--gold:#C6A664;--gold2:#A9884E;--mint:#3ED9A0;
 }
 
 /* nav */
@@ -141,9 +141,17 @@ body{font-family:'Pretendard','Noto Sans KR',sans-serif;color:var(--ink);min-hei
 .tabbar{background:var(--surf);border-bottom:1px solid var(--line);display:flex;padding:0 20px;overflow-x:auto;position:sticky;top:0;z-index:30}
 .tabbtn{padding:14px 16px;font-size:13px;font-weight:700;color:var(--ink2);border-bottom:2px solid transparent;white-space:nowrap;transition:all .12s}
 .tabbtn.on{color:var(--green);border-color:var(--gold2)}
+.kiosk-tab-label-short{display:none}
 .panel{display:none}
 .panel.on{display:block}
 .kiosk-tab{margin-left:auto;color:var(--green)}
+@media (max-width:480px){
+  .tabbar{padding:0 8px}
+  .tabbtn{padding:12px 9px;font-size:12px}
+  .kiosk-tab{margin-left:0}
+  .kiosk-tab-label-full{display:none}
+  .kiosk-tab-label-short{display:inline}
+}
 .panel-checkin{position:fixed;inset:0;z-index:200;background:#fff;display:none}
 .panel-checkin.on{display:block}
 .panel-checkin iframe{width:100%;height:100%;border:none;display:block}
@@ -288,7 +296,7 @@ body{font-family:'Pretendard','Noto Sans KR',sans-serif;color:var(--ink);min-hei
   <button class="tabbtn" data-tab="seats" onclick="switchTab('seats')">좌석현황</button>
   <button class="tabbtn" data-tab="attendance" onclick="switchTab('attendance')">출석기록</button>
   <button class="tabbtn" data-tab="settings" onclick="switchTab('settings')">설정</button>
-  <button class="tabbtn kiosk-tab" data-tab="checkin" onclick="switchTab('checkin')">🖥️ 학생 입출입</button>
+  <button class="tabbtn kiosk-tab" data-tab="checkin" onclick="switchTab('checkin')">🖥️ <span class="kiosk-tab-label-full">학생 입출입</span><span class="kiosk-tab-label-short">입출입</span></button>
 </div>
 
 <div class="wrap panel on" id="panel-students">
