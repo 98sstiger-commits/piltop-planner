@@ -67,6 +67,16 @@ body{font-family:'Noto Sans KR',sans-serif;background:#F6F5F2;color:#18170F;min-
 .list-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
 .list-hd h2{font-size:14px;font-weight:700;letter-spacing:-.2px}
 .list-badge{font-size:11px;font-weight:600;color:var(--ink2);background:var(--surf);border:1px solid var(--line);border-radius:10px;padding:3px 10px}
+.stu-filter-row{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px;flex-wrap:wrap}
+.stu-filter-tabs{display:flex;gap:6px}
+.stu-filter-tab{padding:6px 12px;border-radius:8px;font-size:12px;font-weight:600;color:var(--ink2);background:var(--surf);border:1px solid var(--line)}
+.stu-filter-tab:hover{border-color:var(--line2)}
+.stu-filter-tab.on{background:var(--green);color:#fff;border-color:var(--green)}
+.stu-pagination{display:flex;justify-content:center;gap:6px;margin-top:16px;flex-wrap:wrap}
+.stu-page-btn{min-width:30px;height:30px;padding:0 6px;border-radius:8px;font-size:12px;font-weight:600;color:var(--ink2);background:var(--surf);border:1px solid var(--line)}
+.stu-page-btn:hover:not(:disabled){border-color:var(--line2)}
+.stu-page-btn.on{background:var(--green);color:#fff;border-color:var(--green)}
+.stu-page-btn:disabled{opacity:.35;cursor:default}
 
 .student-list{display:flex;flex-direction:column;gap:8px}
 .stu-card{background:var(--surf);border:1px solid var(--line);border-radius:10px;padding:14px 16px;display:flex;align-items:center;gap:12px;cursor:pointer;transition:all .15s}
@@ -112,6 +122,138 @@ body{font-family:'Noto Sans KR',sans-serif;background:#F6F5F2;color:#18170F;min-
 /* toast */
 .toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%) translateY(6px);background:#18170F;color:#fff;padding:10px 22px;border-radius:20px;font-size:12px;font-weight:500;opacity:0;transition:all .2s;pointer-events:none;z-index:999;white-space:nowrap}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+/* ══ 탭바 ══ */
+.tabbar{background:var(--surf);border-bottom:1px solid var(--line);display:flex;padding:0 20px;overflow-x:auto;position:sticky;top:0;z-index:30}
+.tabbtn{padding:14px 16px;font-size:13px;font-weight:700;color:var(--ink2);border-bottom:2px solid transparent;white-space:nowrap;transition:all .12s}
+.tabbtn.on{color:var(--green);border-color:var(--green)}
+.panel{display:none}
+.panel.on{display:block}
+.kiosk-tab{margin-left:auto;color:var(--green)}
+.panel-checkin{position:fixed;inset:0;z-index:200;background:#fff;display:none}
+.panel-checkin.on{display:block}
+.panel-checkin iframe{width:100%;height:100%;border:none;display:block}
+.kiosk-back-btn{position:fixed;top:14px;left:14px;z-index:201;width:38px;height:38px;border-radius:50%;background:rgba(0,0,0,.5);color:#fff;font-size:18px;line-height:1;display:flex;align-items:center;justify-content:center;border:none;cursor:pointer}
+.kiosk-back-btn:hover{background:rgba(0,0,0,.72)}
+.wrap-wide{max-width:960px;margin:0 auto;padding:24px 16px 60px}
+
+/* ══ 공용 소형 컴포넌트 ══ */
+.room-select-row{display:flex;align-items:center;gap:10px;margin-bottom:18px;flex-wrap:wrap}
+.room-select-row .f-select{width:auto;min-width:180px;flex:none}
+.mini-btn{padding:9px 14px;border-radius:9px;font-size:12px;font-weight:700;background:var(--surf);border:1px solid var(--line2);color:var(--ink2);transition:border-color .12s,color .12s,background .12s}
+.mini-btn:hover{border-color:var(--green);color:var(--green);background:var(--gs)}
+.mini-btn.pri{background:var(--green);color:#fff;border-color:var(--green);box-shadow:0 1px 2px rgba(26,71,49,.2)}
+.mini-btn.pri:hover{opacity:.88;color:#fff;background:var(--green)}
+.mini-btn.danger{color:#B91C1C;border-color:#F3D0D0}
+.mini-btn.danger:hover{background:#FEE8E8;border-color:#F3B0B0;color:#B91C1C}
+
+.pin-badge{font-size:10px;font-weight:700;letter-spacing:.5px;background:#FEF5E8;color:#7A4710;padding:3px 8px;border-radius:8px;flex-shrink:0;font-variant-numeric:tabular-nums}
+.pin-badge.muted{background:var(--bg2,#F1F0EC);color:var(--ink3)}
+.stu-extra-row{display:flex;align-items:center;gap:6px;margin-top:8px;flex-wrap:wrap}
+.stu-extra-row .f-select{width:auto;padding:6px 10px;font-size:11px;border-radius:7px}
+
+/* 수강 과목 */
+.subj-check-row{display:flex;flex-wrap:wrap;gap:6px}
+.subj-chk{padding:7px 12px;border-radius:8px;font-size:12px;font-weight:600;background:var(--bg);color:var(--ink2);border:1px solid var(--line2)}
+.subj-chk.on{background:var(--green);color:#fff;border-color:var(--green)}
+.subj-badges{display:flex;flex-wrap:wrap;gap:4px}
+.subj-badge{font-size:9px;font-weight:700;padding:2px 7px;border-radius:7px;background:var(--gs);color:var(--green)}
+.subj-badge.muted{background:var(--bg2,#F1F0EC);color:var(--ink3)}
+.subj-pop{position:fixed;background:#fff;border:1px solid var(--line2);border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,.15);padding:12px;z-index:60;min-width:220px}
+.subj-pop-ttl{font-size:12px;font-weight:700;padding:0 2px 8px;border-bottom:1px solid var(--line);margin-bottom:10px}
+.subj-pop-grid{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
+.subj-pop-save{width:100%;background:var(--green);color:#fff;font-weight:700;padding:9px;border-radius:8px}
+
+/* ══ 좌석현황 ══ */
+.seat-toolbar{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-bottom:14px;flex-wrap:wrap;background:var(--surf);border:1px solid var(--line);border-radius:16px;padding:14px 16px;box-shadow:0 1px 3px rgba(24,23,15,.04)}
+.seat-toolbar-right{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.seat-toolbar-divider{width:1px;align-self:stretch;background:var(--line);margin:0 2px}
+.seat-edit-tools-card{background:var(--gs);border:1px solid #D3E5DA;border-radius:14px;padding:12px 14px;margin-bottom:14px}
+.seat-edit-hint{display:flex;align-items:flex-start;gap:8px;font-size:11.5px;color:var(--green);line-height:1.6;margin-top:10px}
+.seat-edit-hint::before{content:'💡';flex-shrink:0;font-size:13px;line-height:1.5}
+.seat-map-wrap{position:relative;background:#F9F8F5;border:1px solid var(--line);border-radius:14px;height:420px;overflow:hidden}
+.seat-map-wrap.editing{cursor:crosshair}
+.seat-map-img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;pointer-events:none;user-select:none}
+.seat-node{position:absolute;border-radius:10px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-weight:700;font-size:12px;cursor:pointer;border:2px solid transparent;box-shadow:0 1px 3px rgba(0,0,0,.08);transition:box-shadow .12s,transform .08s;user-select:none}
+.seat-node.st-empty{background:#EFEDE8;border-color:var(--line2);color:var(--ink2)}
+.seat-node.st-empty:hover{border-color:var(--green)}
+.seat-node.unassigned{background:#fff;border-color:var(--line2);color:var(--ink3)}
+.seat-node.unassigned:hover{border-color:var(--green)}
+.seat-node.studying{background:#22B573;color:#fff;border-color:#1C9962}
+.seat-node.in_class{background:#4C8DFF;color:#fff;border-color:#3A6FDB}
+.seat-node.away{background:#A78BFA;color:#fff;border-color:#8B6BE8}
+.seat-node.reserved{background:#FFB648;color:#5A3A00;border-color:#E89F2E}
+.seat-node.dragging{box-shadow:0 8px 22px rgba(0,0,0,.28);z-index:6;transform:scale(1.04)}
+.seat-node.selected{outline:2px dashed var(--green);outline-offset:2px}
+.seat-node.zone-block{background:repeating-linear-gradient(45deg,#EAE8E1,#EAE8E1 6px,#DEDBD2 6px,#DEDBD2 12px);color:var(--ink3);border-color:var(--line2)}
+.seat-node.zone-block .sn-num{font-size:10px;font-weight:600}
+.marquee-box{position:absolute;border:1.5px dashed var(--green);background:rgba(26,71,49,.08);pointer-events:none;z-index:8}
+.seat-node .sn-num{font-size:13px;line-height:1.2}
+.seat-node .sn-name{font-size:9px;font-weight:600;opacity:.9;max-width:90%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.seat-resize-handle{position:absolute;right:1px;bottom:1px;width:12px;height:12px;border-radius:3px;background:var(--green);border:2px solid #fff;cursor:nwse-resize;z-index:3;box-shadow:0 1px 3px rgba(0,0,0,.3)}
+.canvas-resize-handle{position:absolute;right:10px;bottom:10px;width:26px;height:26px;border-radius:8px;background:var(--green);color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;cursor:ns-resize;z-index:10;box-shadow:0 2px 8px rgba(0,0,0,.25)}
+.seat-empty-hint{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;text-align:center;color:var(--ink3);font-size:13px;line-height:1.8;padding:24px}
+.seat-empty-hint.overlay{background:rgba(255,255,255,.82)}
+.seat-legend{display:flex;gap:16px;flex-wrap:wrap;margin-top:12px;padding:10px 14px;background:var(--surf);border:1px solid var(--line);border-radius:12px;font-size:11.5px;font-weight:600;color:var(--ink2)}
+.seat-legend span{display:inline-flex;align-items:center;gap:6px}
+.seat-legend i{width:9px;height:9px;border-radius:50%;display:inline-block}
+.seat-pop{position:fixed;background:#fff;border:1px solid var(--line2);border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,.15);padding:10px;z-index:60;min-width:220px}
+.seat-pop-ttl{font-size:12px;font-weight:700;padding:4px 8px 8px;border-bottom:1px solid var(--line);margin-bottom:8px}
+.seat-pop-sub{font-size:10px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--ink3);padding:6px 8px 4px}
+.seat-pop button{display:block;width:100%;text-align:left;padding:8px;font-size:12px;border-radius:7px;color:var(--ink)}
+.seat-pop button:hover{background:var(--gs)}
+.seat-pop button.danger{color:#B91C1C}
+.seat-pop-status-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;padding:0 2px 6px}
+.seat-pop-status-grid button{width:auto;text-align:center;padding:8px 6px;font-size:11px;font-weight:700;border:1.5px solid transparent}
+.seat-pop-status-grid button.st-studying{background:#E7F8EE;color:#1C9962}
+.seat-pop-status-grid button.st-in_class{background:#EAF1FF;color:#2B5FD9}
+.seat-pop-status-grid button.st-away{background:#F3EEFF;color:#7C4DE0}
+.seat-pop-status-grid button.st-idle{background:var(--bg2,#F1F0EC);color:var(--ink2)}
+.seat-pop-status-grid button.st-current{border-color:currentColor}
+.seat-pop-checkout-btn{width:100%;text-align:center;background:#FBEAEA;color:#B91C1C;font-weight:700;padding:8px;border-radius:7px;margin-bottom:6px}
+.seat-pop-undo-btn{width:100%;text-align:center;background:var(--gs);color:var(--green);font-weight:700;padding:8px;border-radius:7px;margin-bottom:6px;font-size:12px}
+.seat-pop-checkout-btn:hover{background:#F6D5D5}
+.seat-pop-field{display:flex;gap:6px;padding:0 2px 8px}
+.seat-pop-field input{flex:1;padding:8px 10px;border:1px solid var(--line2);border-radius:7px;font-size:12px;font-family:inherit;color:var(--ink)}
+.seat-pop-field input:focus{outline:none;border-color:var(--green)}
+.seat-pop-field button.seat-pop-save-btn{width:auto;flex-shrink:0;background:var(--green);color:#fff;font-weight:700;padding:8px 12px;text-align:center}
+.seat-pop-field button.seat-pop-save-btn:hover{background:var(--green);opacity:.88}
+.grid-modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:70;display:flex;align-items:center;justify-content:center;padding:20px}
+.grid-modal{background:#fff;border-radius:16px;padding:22px;width:100%;max-width:340px}
+.grid-modal-ttl{font-size:15px;font-weight:700;margin-bottom:6px}
+.grid-modal-sub{font-size:11px;color:var(--ink2);line-height:1.6;margin-bottom:16px}
+.gm-row{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}
+.gm-row label{font-size:12px;color:var(--ink2);font-weight:600}
+.gm-row input{width:80px;padding:8px 10px;border:1px solid var(--line2);border-radius:8px;font-size:13px;text-align:right;font-family:inherit}
+.gm-row input:focus{outline:none;border-color:var(--green)}
+.gm-btns{display:flex;gap:8px;margin-top:16px}
+.gm-btns .mini-btn{flex:1;text-align:center}
+
+/* ══ 출석기록 ══ */
+.att-stat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:18px}
+.att-stat-cell{background:var(--surf);border:1px solid var(--line);border-radius:14px;padding:18px 14px;text-align:center}
+.att-stat-num{font-size:24px;font-weight:800;color:var(--green);letter-spacing:-.5px}
+.att-stat-lbl{font-size:11px;color:var(--ink2);margin-top:4px}
+.rank-list{display:flex;flex-direction:column;gap:8px}
+.rank-row{display:flex;align-items:center;gap:12px;padding:10px 12px;background:var(--surf);border:1px solid var(--line);border-radius:10px}
+.rank-no{width:22px;height:22px;border-radius:50%;background:var(--bg);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:var(--ink2);flex-shrink:0}
+.rank-no.top{background:var(--green);color:#fff}
+.rank-name{flex:1;font-size:13px;font-weight:600}
+.rank-time{font-size:12px;font-weight:700;color:var(--green)}
+.alert-list{display:flex;flex-direction:column;gap:6px}
+.alert-row{display:flex;align-items:center;gap:8px;padding:9px 12px;background:#FEF5E8;border:1px solid #F5DDA8;border-radius:9px;font-size:12px;color:#7A4710}
+.date-table{width:100%;border-collapse:collapse;font-size:12px}
+.date-table th{text-align:left;padding:8px 10px;color:var(--ink3);font-weight:700;font-size:10px;text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid var(--line)}
+.date-table td{padding:9px 10px;border-bottom:1px solid var(--line)}
+
+/* ══ 설정 ══ */
+.settings-section{margin-bottom:10px}
+.settings-hint{font-size:11px;color:var(--ink3);margin-top:4px;line-height:1.6}
+.toggle-row{display:flex;align-items:center;justify-content:space-between;padding:4px 0}
+.toggle{width:42px;height:24px;border-radius:12px;background:var(--line2);position:relative;transition:background .15s;flex-shrink:0}
+.toggle.on{background:var(--green)}
+.toggle::after{content:'';position:absolute;top:2px;left:2px;width:20px;height:20px;border-radius:50%;background:#fff;transition:transform .15s}
+.toggle.on::after{transform:translateX(18px)}
 </style>
 </head>
 <body>
@@ -119,11 +261,19 @@ body{font-family:'Noto Sans KR',sans-serif;background:#F6F5F2;color:#18170F;min-
 <div class="nav">
   <div>
     <div class="nav-title">필탑학원 플래너 관리</div>
-    <div class="nav-sub">학생 링크 생성 · 현황 조회</div>
+    <div class="nav-sub">학생 링크 생성 · 독서실 관리</div>
   </div>
 </div>
 
-<div class="wrap">
+<div class="tabbar">
+  <button class="tabbtn on" data-tab="students" onclick="switchTab('students')">학생관리</button>
+  <button class="tabbtn" data-tab="seats" onclick="switchTab('seats')">좌석현황</button>
+  <button class="tabbtn" data-tab="attendance" onclick="switchTab('attendance')">출석기록</button>
+  <button class="tabbtn" data-tab="settings" onclick="switchTab('settings')">설정</button>
+  <button class="tabbtn kiosk-tab" data-tab="checkin" onclick="switchTab('checkin')">🖥️ 학생 입출입</button>
+</div>
+
+<div class="wrap panel on" id="panel-students">
 
   <!-- 링크 생성 카드 -->
   <div class="card">
@@ -166,6 +316,26 @@ body{font-family:'Noto Sans KR',sans-serif;background:#F6F5F2;color:#18170F;min-
         </select>
       </div>
 
+      <div class="field">
+        <label class="field-label">학생 휴대폰번호 (선택 · 뒷자리 4개로 출석 PIN 자동생성)</label>
+        <input class="f-input" id="s-stu-phone" placeholder="010-1234-5678" maxlength="13">
+      </div>
+
+      <div class="field">
+        <label class="field-label">학부모 연락처 (독서실 알림용, 선택)</label>
+        <input class="f-input" id="s-phone" placeholder="010-1234-5678" maxlength="13">
+      </div>
+
+      <div class="field">
+        <label class="field-label">배정 독서실 (선택)</label>
+        <select class="f-select" id="s-room"><option value="">미배정</option></select>
+      </div>
+
+      <div class="field">
+        <label class="field-label">수강 과목 (선택)</label>
+        <div class="subj-check-row" id="s-subjects"></div>
+      </div>
+
       <button class="gen-btn" onclick="generateLink()">링크 생성</button>
 
       <div class="link-result" id="link-result" style="display:none"></div>
@@ -178,10 +348,188 @@ body{font-family:'Noto Sans KR',sans-serif;background:#F6F5F2;color:#18170F;min-
     <h2>전체 학생</h2>
     <span class="list-badge" id="list-badge">0명</span>
   </div>
+  <div class="stu-filter-row">
+    <div class="stu-filter-tabs">
+      <button class="stu-filter-tab on" data-f="all" onclick="setStudentFilter('all')">전체</button>
+      <button class="stu-filter-tab" data-f="assigned" onclick="setStudentFilter('assigned')">배정</button>
+      <button class="stu-filter-tab" data-f="unassigned" onclick="setStudentFilter('unassigned')">미배정</button>
+    </div>
+    <button class="mini-btn" onclick="bulkGeneratePins()">PIN 일괄발급</button>
+  </div>
   <div class="student-list" id="student-list">
     <div class="empty">아직 생성된 학생이 없어요</div>
   </div>
+  <div class="stu-pagination" id="stu-pagination"></div>
 
+</div>
+
+<!-- 좌석현황 -->
+<div class="wrap-wide panel" id="panel-seats">
+  <div class="seat-toolbar">
+    <div class="room-select-row" style="margin-bottom:0">
+      <select class="f-select" id="seat-room-select" onchange="onSeatRoomChange()"></select>
+      <button class="mini-btn pri" onclick="openRoomModal()">+ 독서실 추가</button>
+    </div>
+    <div class="seat-toolbar-right">
+      <button class="mini-btn" id="seat-upload-btn" onclick="document.getElementById('floor-img-input').click()">🖼️ 도면 업로드</button>
+      <input type="file" id="floor-img-input" accept="image/*" style="display:none" onchange="uploadFloorImage(this.files[0])">
+      <button class="mini-btn danger" id="seat-remove-img-btn" onclick="removeFloorImage()" style="display:none">🗑️ 도면 삭제</button>
+      <button class="mini-btn pri" id="seat-detect-btn" onclick="detectSeatsFromImage()" style="display:none">🪄 도면에서 자동 배치</button>
+      <div class="seat-toolbar-divider"></div>
+      <button class="mini-btn" id="seat-add-btn" onclick="addSeat()">+ 좌석 추가</button>
+      <button class="mini-btn" id="seat-grid-btn" onclick="openGridModal()">▦ 격자로 여러 개 생성</button>
+      <div class="seat-toolbar-divider"></div>
+      <button class="mini-btn" id="seat-edit-toggle" onclick="toggleSeatEdit()">✏️ 배치 편집</button>
+    </div>
+  </div>
+  <div id="seat-edit-tools" style="display:none">
+    <div class="seat-edit-tools-card">
+      <div class="seat-toolbar-right">
+        <button class="mini-btn" id="seat-select-toggle" onclick="toggleSelectMode()">🖱️ 선택 모드</button>
+        <button class="mini-btn" id="seat-select-clear" onclick="clearSelection()" style="display:none">선택 해제</button>
+        <button class="mini-btn danger" id="seat-select-delete" onclick="deleteSelectedSeats()" style="display:none">선택 삭제</button>
+        <div class="seat-toolbar-divider"></div>
+        <button class="mini-btn" onclick="addZone()">🚫 제외구역 추가</button>
+        <button class="mini-btn danger" onclick="deleteAllSeats()">좌석 전체 삭제</button>
+      </div>
+      <div class="seat-edit-hint" id="seat-edit-hint"></div>
+    </div>
+  </div>
+  <div class="seat-map-wrap" id="seat-map-wrap">
+    <div class="seat-empty-hint">독서실을 먼저 추가해주세요</div>
+  </div>
+  <div class="seat-legend">
+    <span><i style="background:#EFEDE8;border:1px solid var(--line2)"></i>퇴실</span>
+    <span><i style="background:#22B573"></i>공부중</span>
+    <span><i style="background:#4C8DFF"></i>학원수업중</span>
+    <span><i style="background:#A78BFA"></i>외출중</span>
+    <span id="legend-unassigned" style="display:none"><i style="background:#fff;border:1px solid var(--line2)"></i>미등록</span>
+  </div>
+</div>
+
+<!-- 출석기록 -->
+<div class="wrap-wide panel" id="panel-attendance">
+  <div class="room-select-row">
+    <select class="f-select" id="att-room-select" onchange="loadAttendanceTab()"><option value="">전체 독서실</option></select>
+    <input class="f-input" type="date" id="att-date-picker" style="width:auto" onchange="loadDateRecord()">
+  </div>
+
+  <div class="card" style="margin-bottom:16px">
+    <div class="card-hd"><div class="card-title">오늘 출석 현황</div></div>
+    <div class="card-bd">
+      <div class="att-stat-grid" style="grid-template-columns:repeat(4,1fr)">
+        <div class="att-stat-cell"><div class="att-stat-num" id="att-total">0</div><div class="att-stat-lbl">총 입실</div></div>
+        <div class="att-stat-cell"><div class="att-stat-num" id="att-studying">0</div><div class="att-stat-lbl">공부중</div></div>
+        <div class="att-stat-cell"><div class="att-stat-num" id="att-elsewhere">0</div><div class="att-stat-lbl">수업·외출중</div></div>
+        <div class="att-stat-cell"><div class="att-stat-num" id="att-out">0</div><div class="att-stat-lbl">퇴실</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-bottom:16px">
+    <div class="card-hd"><div class="card-title">이번 주 공부시간 랭킹</div></div>
+    <div class="card-bd"><div class="rank-list" id="rank-list"><div class="empty">데이터가 없어요</div></div></div>
+  </div>
+
+  <div class="card" style="margin-bottom:16px">
+    <div class="card-hd"><div class="card-title">오늘 결석 알림</div><div class="card-sub">평소 자주 오던 학생인데 오늘 출석하지 않았어요</div></div>
+    <div class="card-bd"><div class="alert-list" id="alert-list"><div class="empty">해당 학생이 없어요</div></div></div>
+  </div>
+
+  <div class="card">
+    <div class="card-hd"><div class="card-title">날짜별 출석 기록</div></div>
+    <div class="card-bd" style="overflow-x:auto">
+      <table class="date-table" id="date-record-table">
+        <thead><tr><th>학생</th><th>좌석</th><th>상태</th><th>입실</th><th>퇴실</th><th>시간</th></tr></thead>
+        <tbody id="date-record-body"><tr><td colspan="6" class="empty">기록이 없어요</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- 설정 -->
+<div class="wrap panel" id="panel-settings">
+  <div class="room-select-row">
+    <select class="f-select" id="set-room-select" onchange="loadSettingsTab()"></select>
+  </div>
+
+  <div class="card">
+    <div class="card-hd">
+      <div class="card-title">독서실 정보</div>
+    </div>
+    <div class="card-bd">
+      <div class="field"><label class="field-label">학원 이름 (리포트 상단 표시)</label><input class="f-input" id="set-academy"></div>
+      <div class="field"><label class="field-label">독서실 이름</label><input class="f-input" id="set-room-name"></div>
+      <div class="field"><label class="field-label">설명</label><input class="f-input" id="set-room-desc"></div>
+      <button class="gen-btn" onclick="saveRoomInfo()">저장</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-hd"><div class="card-title">학부모 알림</div><div class="card-sub">입실/퇴실 시 학부모에게 자동으로 알려요</div></div>
+    <div class="card-bd">
+      <div class="toggle-row">
+        <span class="field-label" style="margin:0">알림 사용</span>
+        <div class="toggle" id="notify-toggle" onclick="toggleNotify()"></div>
+      </div>
+      <div class="field" style="margin-top:12px">
+        <label class="field-label">알림 채널</label>
+        <select class="f-select" id="set-channel">
+          <option value="sms">문자 (SMS/LMS)</option>
+          <option value="kakao">카카오 알림톡</option>
+        </select>
+      </div>
+      <div class="settings-section">
+        <div class="field-label" style="margin-bottom:8px">알리고(Aligo) 문자 발송 키</div>
+        <input class="f-input" id="set-aligo-key" placeholder="API Key" style="margin-bottom:8px">
+        <input class="f-input" id="set-aligo-user" placeholder="User ID" style="margin-bottom:8px">
+        <input class="f-input" id="set-aligo-sender" placeholder="발신번호 (예: 0212345678)">
+        <div class="settings-hint">알리고(aligo.in) 가입 후 발급받은 키를 입력하면 실제 문자 발송이 동작해요. 비워두면 발송이 건너뛰어져요.</div>
+      </div>
+      <div class="settings-section" style="margin-top:14px">
+        <div class="field-label" style="margin-bottom:8px">카카오톡 공유 JS 키</div>
+        <input class="f-input" id="set-kakao-key" placeholder="Kakao JavaScript 키">
+        <div class="settings-hint">Kakao Developers에서 발급받은 JavaScript 키를 입력하면 report.html의 카카오톡 공유 버튼이 동작해요.</div>
+      </div>
+      <div class="toggle-row" style="margin-top:14px">
+        <span class="field-label" style="margin:0">주간 리포트 자동 발송 (매주 금 18:00)</span>
+        <div class="toggle" id="auto-report-toggle" onclick="toggleAutoReport()"></div>
+      </div>
+      <button class="gen-btn" style="margin-top:14px" onclick="saveNotifySettings()">알림 설정 저장</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-hd"><div class="card-title">좌석 배정 방식</div><div class="card-sub">자유석은 아무 빈자리나 골라 앉고, 지정자석은 학생마다 정해둔 자리로 자동 입실돼요</div></div>
+    <div class="card-bd">
+      <div style="display:flex;gap:8px">
+        <button class="mini-btn pri" id="seating-mode-free" style="flex:1" onclick="setSeatingMode('free')">🔓 자유석</button>
+        <button class="mini-btn" id="seating-mode-assigned" style="flex:1" onclick="setSeatingMode('assigned')">📌 지정자석</button>
+      </div>
+      <div class="settings-hint" style="margin-top:10px">지정자석으로 바꾸면 [좌석현황] 탭에서 좌석을 클릭해 학생을 배정할 수 있어요. 배정 안 된 학생이 체크인하면 안내 메시지가 떠요.</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-hd"><div class="card-title">학생 입출입 화면 잠금</div><div class="card-sub">태블릿을 [학생 입출입] 탭으로 켜둘 때, 관리 화면으로 돌아가려면 필요한 4자리 비밀번호예요</div></div>
+    <div class="card-bd">
+      <div class="field"><label class="field-label">잠금 비밀번호 (4자리)</label><input class="f-input" id="set-kiosk-pin" maxlength="4" inputmode="numeric" placeholder="예: 1234"></div>
+      <button class="gen-btn" onclick="saveKioskPin()">저장</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-hd"><div class="card-title">좌석 배치 편집</div></div>
+    <div class="card-bd">
+      <button class="mini-btn pri" onclick="switchTab('seats')">좌석현황 탭에서 편집하기 →</button>
+    </div>
+  </div>
+</div>
+
+<!-- 학생 입출입 (태블릿 키오스크 모드) -->
+<div class="panel-checkin" id="panel-checkin">
+  <button class="kiosk-back-btn" onclick="requestKioskExit()">←</button>
+  <iframe id="checkin-iframe" title="학생 입출입"></iframe>
 </div>
 
 <!-- 염탐 시트 -->
@@ -205,16 +553,33 @@ const SB_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZ
 const BASE=location.origin;
 
 async function sb(path,opts={}){
-  const r=await fetch(SB_URL+'/rest/v1/'+path,{
-    headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Content-Type':'application/json','Prefer':'return=representation',...(opts.headers||{})},
-    ...opts
-  });
-  try{return await r.json();}catch{return null;}
+  try{
+    const r=await fetch(SB_URL+'/rest/v1/'+path,{
+      headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Content-Type':'application/json','Prefer':'return=representation',...(opts.headers||{})},
+      ...opts
+    });
+    if(r.status===204)return [];
+    return await r.json();
+  }catch(e){console.error('SB err',e);return null;}
 }
 
 let selSchool=null;
 let genLink='';
 let schoolTimer=null;
+let ROOMS=[];
+const SUBJECT_LIST=[{k:'kor',l:'국어'},{k:'math',l:'수학'},{k:'eng',l:'영어'},{k:'sci',l:'과학'},{k:'soc',l:'사회'}];
+function subjLabel(k){return SUBJECT_LIST.find(s=>s.k===k)?.l||k;}
+function buildSubjectChecks(){
+  const wrap=document.getElementById('s-subjects');
+  wrap.innerHTML='';
+  SUBJECT_LIST.forEach(s=>{
+    const b=document.createElement('button');
+    b.type='button';b.className='subj-chk';b.dataset.k=s.k;b.textContent=s.l;
+    b.onclick=()=>b.classList.toggle('on');
+    wrap.appendChild(b);
+  });
+}
+buildSubjectChecks();
 
 /* 학교 검색 — NEIS API (demo key) + 실패시 직접입력 허용 */
 async function searchSchool(q){
@@ -287,15 +652,21 @@ function clearSchool(){
 async function generateLink(){
   const name=document.getElementById('s-name').value.trim();
   const grade=document.getElementById('s-grade').value;
+  const phone=document.getElementById('s-phone').value.trim();
+  const stuPhone=document.getElementById('s-stu-phone').value.trim();
+  const roomId=document.getElementById('s-room').value;
+  const subjects=[...document.querySelectorAll('#s-subjects .subj-chk.on')].map(b=>b.dataset.k);
   if(!name){showToast('이름을 입력해주세요');return;}
   if(!selSchool){showToast('학교를 검색해서 선택해주세요');return;}
   if(!grade){showToast('학년을 선택해주세요');return;}
 
   const id=crypto.randomUUID();
+  const pin=await getPinForPhone(stuPhone);
   await sb('planner_students',{
     method:'POST',
-    body:JSON.stringify({id,name,grade,school_name:selSchool.name,school_code:selSchool.code,school_org:selSchool.orgCode,created_at:new Date().toISOString()})
+    body:JSON.stringify({id,name,grade,school_name:selSchool.name,school_code:selSchool.code,school_org:selSchool.orgCode,created_at:new Date().toISOString(),student_pin:pin,student_phone:stuPhone||null,parent_phone:phone||null,room_id:roomId||null,subjects})
   });
+  buildSubjectChecks();
 
   const year=document.getElementById('s-year').value;
   const params=new URLSearchParams({id,name,school:selSchool.name,grade,year});
@@ -304,20 +675,9 @@ async function generateLink(){
   genLink=`${BASE}/index.html?${params}`;
 
   document.getElementById('link-result').style.display='block';
+  document.getElementById('s-phone').value='';
+  document.getElementById('s-stu-phone').value='';
   loadStudents();
-
-// 연도 선택 초기화 (현재~2035)
-(function(){
-  const sel = document.getElementById('s-year');
-  const cur = new Date().getFullYear();
-  for(let y = cur; y <= 2035; y++){
-    const opt = document.createElement('option');
-    opt.value = y;
-    opt.textContent = y + '년';
-    if(y === cur) opt.selected = true;
-    sel.appendChild(opt);
-  }
-})();
   showToast('링크가 생성됐어요!');
 }
 
@@ -325,14 +685,43 @@ function copyLink(){navigator.clipboard.writeText(genLink).then(()=>showToast('�
 function shareKakao(){window.open(`kakaotalk://msg/send?text=${encodeURIComponent(genLink)}`);}
 
 /* 학생 목록 */
+let ALL_STUDENTS=[],STU_FILTER='all',STU_PAGE=1;
+const STU_PAGE_SIZE=10;
+
 async function loadStudents(){
-  const data=await sb('planner_students?select=*&order=created_at.desc');
+  ALL_STUDENTS=await sb('planner_students?select=*&order=created_at.desc')||[];
+  document.getElementById('list-badge').textContent=ALL_STUDENTS.length+'명';
+  renderStudentList();
+}
+
+function setStudentFilter(f){
+  STU_FILTER=f;STU_PAGE=1;
+  document.querySelectorAll('.stu-filter-tab').forEach(b=>b.classList.toggle('on',b.dataset.f===f));
+  renderStudentList();
+}
+
+function goStudentPage(p){STU_PAGE=p;renderStudentList();}
+
+function renderStudentList(){
   const list=document.getElementById('student-list');
-  const cnt=data?.length||0;
-  document.getElementById('list-badge').textContent=cnt+'명';
-  if(!cnt){list.innerHTML='<div class="empty">아직 생성된 학생이 없어요</div>';return;}
+  const pager=document.getElementById('stu-pagination');
+  let data=ALL_STUDENTS;
+  if(STU_FILTER==='assigned')data=data.filter(s=>s.room_id);
+  else if(STU_FILTER==='unassigned')data=data.filter(s=>!s.room_id);
+
+  if(!data.length){
+    list.innerHTML=`<div class="empty">${ALL_STUDENTS.length?'해당하는 학생이 없어요':'아직 생성된 학생이 없어요'}</div>`;
+    pager.innerHTML='';
+    return;
+  }
+
+  const totalPages=Math.max(1,Math.ceil(data.length/STU_PAGE_SIZE));
+  if(STU_PAGE>totalPages)STU_PAGE=totalPages;
+  const start=(STU_PAGE-1)*STU_PAGE_SIZE;
+  const pageData=data.slice(start,start+STU_PAGE_SIZE);
+
   list.innerHTML='';
-  data.forEach(s=>{
+  pageData.forEach(s=>{
     const hasPlan=(s.yearly_plan&&Object.keys(s.yearly_plan||{}).length>0)||s.career||s.career_field;
     const card=document.createElement('div');
     card.className='stu-card';
@@ -340,11 +729,27 @@ async function loadStudents(){
     if(s.school_code)sparams.set('sc',s.school_code);
     if(s.school_org)sparams.set('so',s.school_org);
     const slink=`${BASE}/index.html?${sparams}`;
+    const roomOpts=`<option value="">독서실 미배정</option>`+ROOMS.map(r=>`<option value="${r.id}" ${s.room_id===r.id?'selected':''}>${r.name}</option>`).join('');
+    const subjects=Array.isArray(s.subjects)?s.subjects:[];
+    const subjBadges=subjects.length
+      ? subjects.map(k=>`<span class="subj-badge">${subjLabel(k)}</span>`).join('')
+      : `<span class="subj-badge muted">과목 미설정</span>`;
     card.innerHTML=`
       <div class="stu-avatar">${s.name[0]}</div>
       <div class="stu-info">
         <div class="stu-name">${s.name}</div>
-        <div class="stu-sub">${s.school_name||'학교 미정'} · ${s.grade||'?'}학년</div>
+        <div class="stu-sub">${s.school_name||'학교 미정'} · ${s.grade||'?'}학년${s.student_phone?' · 학생 '+s.student_phone:''}${s.parent_phone?' · 학부모 '+s.parent_phone:''}</div>
+        <div class="stu-extra-row" onclick="event.stopPropagation()">
+          <span class="pin-badge ${s.student_pin?'':'muted'}">${s.student_pin?'PIN '+s.student_pin:'PIN 없음'}</span>
+          <button class="mini-btn" style="padding:3px 8px;font-size:10px" onclick="openPhonePop(event,'${s.id}')">📱 번호수정</button>
+          <button class="mini-btn" style="padding:3px 8px;font-size:10px" onclick="regenPin('${s.id}','${s.name}')">재발급</button>
+          <select class="f-select" onchange="assignRoom('${s.id}',this.value)">${roomOpts}</select>
+          <button class="mini-btn" style="padding:3px 8px;font-size:10px" onclick="window.open('${BASE}/report.html?id=${s.id}&type=weekly','_blank')">📊 리포트</button>
+        </div>
+        <div class="stu-extra-row" onclick="event.stopPropagation();openSubjPop(event,'${s.id}')" style="cursor:pointer">
+          <div class="subj-badges">${subjBadges}</div>
+          <span style="font-size:10px;color:var(--ink3)">✏️ 과목수정</span>
+        </div>
       </div>
       ${hasPlan
         ? '<span class="stu-using">사용중 👀</span>'
@@ -354,6 +759,38 @@ async function loadStudents(){
     card.onclick=()=>openSpy(s);
     list.appendChild(card);
   });
+
+  pager.innerHTML='';
+  if(totalPages>1){
+    const prev=document.createElement('button');
+    prev.className='stu-page-btn';prev.textContent='‹';prev.disabled=STU_PAGE===1;
+    prev.onclick=()=>goStudentPage(STU_PAGE-1);
+    pager.appendChild(prev);
+    for(let p=1;p<=totalPages;p++){
+      const b=document.createElement('button');
+      b.className='stu-page-btn'+(p===STU_PAGE?' on':'');
+      b.textContent=p;
+      b.onclick=()=>goStudentPage(p);
+      pager.appendChild(b);
+    }
+    const next=document.createElement('button');
+    next.className='stu-page-btn';next.textContent='›';next.disabled=STU_PAGE===totalPages;
+    next.onclick=()=>goStudentPage(STU_PAGE+1);
+    pager.appendChild(next);
+  }
+}
+
+async function bulkGeneratePins(){
+  const targets=ALL_STUDENTS.filter(s=>!s.student_pin);
+  if(!targets.length){showToast('PIN이 없는 학생이 없어요');return;}
+  if(!confirm(`PIN이 없는 학생 ${targets.length}명에게 고유번호를 발급할까요?`))return;
+  showToast(`${targets.length}명 발급 중...`);
+  for(const s of targets){
+    const pin=await genUniquePin();
+    await sb(`planner_students?id=eq.${s.id}`,{method:'PATCH',body:JSON.stringify({student_pin:pin})});
+  }
+  showToast('일괄 발급이 완료됐어요');
+  loadStudents();
 }
 
 /* 염탐 */
@@ -367,7 +804,7 @@ function openSpy(s){
     <div class="info-cell"><div class="info-cell-lbl">희망 대학/학과</div><div class="info-cell-val">${[s.univ1,s.dept1].filter(Boolean).join(' / ')||'미정'}</div></div>
   </div>`;
   if(Object.keys(plan).length){
-    html+=`<div class="sec-lbl" style="margin-bottom:10px">AI 연간 플래너</div><div class="month-grid">`;
+    html+=`<div class="sec-lbl" style="margin-bottom:10px">연간 플래너</div><div class="month-grid">`;
     Object.values(plan).forEach(m=>{
       html+=`<div class="month-cell">
         <div class="month-num">${m.month}<span style="font-size:9px;font-weight:400;color:#A8A49C;margin-left:2px">${MON_EN[(m.month||1)-1]}</span></div>
@@ -392,25 +829,884 @@ async function deleteStudent(id, name){
   if(!confirm(name+' 학생을 삭제할까요?'))return;
   await sb('planner_students?id=eq.'+id,{method:'DELETE'});
   loadStudents();
-
-// 연도 선택 초기화 (현재~2035)
-(function(){
-  const sel = document.getElementById('s-year');
-  const cur = new Date().getFullYear();
-  for(let y = cur; y <= 2035; y++){
-    const opt = document.createElement('option');
-    opt.value = y;
-    opt.textContent = y + '년';
-    if(y === cur) opt.selected = true;
-    sel.appendChild(opt);
-  }
-})();
   showToast(name+' 학생이 삭제됐어요');
 }
 
 function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2200);}
 
-loadStudents();
+/* ══════════════════════ 독서실 관리 시스템 ══════════════════════ */
+
+/* ── 유틸 ── */
+function dk(d){return`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;}
+function parseDkA(s){const[y,m,dd]=s.split('-').map(Number);return new Date(y,m-1,dd);}
+function addDaysA(d,n){const x=new Date(d);x.setDate(x.getDate()+n);return x;}
+function mondayOfA(d){const x=new Date(d);const day=x.getDay();x.setDate(x.getDate()-(day===0?6:day-1));x.setHours(0,0,0,0);return x;}
+function fmtMinA(mins){mins=Math.max(0,Math.round(mins));const h=Math.floor(mins/60),m=mins%60;return h?`${h}시간 ${m}분`:`${m}분`;}
+
+/* ── 탭 전환 ── */
+let lastMainTab='students';
+function switchTab(name){
+  if(name==='checkin'){
+    const iframe=document.getElementById('checkin-iframe');
+    if(!iframe.src)iframe.src='checkin.html';
+    document.getElementById('panel-checkin').classList.add('on');
+    return;
+  }
+  document.getElementById('panel-checkin').classList.remove('on');
+  document.querySelectorAll('.tabbtn').forEach(b=>b.classList.toggle('on',b.dataset.tab===name));
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('on'));
+  document.getElementById('panel-'+name).classList.add('on');
+  lastMainTab=name;
+  if(name==='seats')loadSeatsTab();
+  if(name==='attendance')loadAttendanceTab();
+  if(name==='settings')loadSettingsTab();
+}
+function requestKioskExit(){
+  const room=(ROOMS.find(r=>r.id===curSeatRoomId))||ROOMS[0];
+  const pin=room&&room.kiosk_pin;
+  if(!pin){
+    switchTab(lastMainTab);
+    showToast('잠금 비밀번호가 설정되지 않았어요 — 설정 탭에서 만들어보세요');
+    return;
+  }
+  const input=prompt('관리 화면으로 돌아가려면 비밀번호 4자리를 입력하세요');
+  if(input===null)return;
+  if(input!==pin){showToast('비밀번호가 틀렸어요');return;}
+  switchTab(lastMainTab);
+}
+
+/* ── 독서실 목록 (셀렉트 공용) ── */
+let curSeatRoomId=null;
+async function loadRoomsForSelects(){
+  ROOMS=await sb(`study_rooms?owner_id=eq.piltop&select=*&order=created_at.asc`)||[];
+  const opts=ROOMS.map(r=>`<option value="${r.id}">${r.name}</option>`).join('');
+  document.getElementById('s-room').innerHTML=`<option value="">미배정</option>`+opts;
+  document.getElementById('seat-room-select').innerHTML=opts||'<option value="">독서실 없음</option>';
+  document.getElementById('att-room-select').innerHTML=`<option value="">전체 독서실</option>`+opts;
+  document.getElementById('set-room-select').innerHTML=opts||'<option value="">독서실 없음</option>';
+  if(ROOMS.length){
+    if(!curSeatRoomId||!ROOMS.find(r=>r.id===curSeatRoomId))curSeatRoomId=ROOMS[0].id;
+    document.getElementById('seat-room-select').value=curSeatRoomId;
+    document.getElementById('set-room-select').value=curSeatRoomId;
+  }
+}
+function openRoomModal(){
+  const name=prompt('새 독서실 이름을 입력하세요','예: 본관 1층 독서실');
+  if(!name)return;
+  const desc=prompt('설명 (선택, 취소해도 괜찮아요)','')||'';
+  createRoom(name,desc);
+}
+async function createRoom(name,desc){
+  await sb('study_rooms',{method:'POST',body:JSON.stringify({owner_id:'piltop',name,description:desc})});
+  showToast('독서실이 추가됐어요');
+  await loadRoomsForSelects();
+  curSeatRoomId=ROOMS[ROOMS.length-1].id;
+  document.getElementById('seat-room-select').value=curSeatRoomId;
+  loadSeatsTab();
+}
+
+/* ── 학생 고유번호(PIN) ── */
+function randPin(){return String(Math.floor(Math.random()*10000)).padStart(4,'0');}
+async function genUniquePin(){
+  for(let i=0;i<25;i++){
+    const p=randPin();
+    const exist=await sb(`planner_students?student_pin=eq.${p}&select=id`);
+    if(!exist||!exist.length)return p;
+  }
+  return randPin();
+}
+function derivePinFromPhone(phone){
+  const digits=(phone||'').replace(/\D/g,'');
+  return digits.length>=4?digits.slice(-4):null;
+}
+async function getPinForPhone(phone,excludeId){
+  const derived=derivePinFromPhone(phone);
+  if(derived){
+    const exist=await sb(`planner_students?student_pin=eq.${derived}&select=id`);
+    const taken=(exist||[]).some(s=>s.id!==excludeId);
+    if(!taken)return derived;
+  }
+  return await genUniquePin();
+}
+async function regenPin(id,name){
+  if(!confirm(name+' 학생의 고유번호를 재발급할까요?'))return;
+  const pin=await genUniquePin();
+  await sb(`planner_students?id=eq.${id}`,{method:'PATCH',body:JSON.stringify({student_pin:pin})});
+  showToast('새 고유번호: '+pin);
+  loadStudents();
+}
+async function assignRoom(id,roomId){
+  await sb(`planner_students?id=eq.${id}`,{method:'PATCH',body:JSON.stringify({room_id:roomId||null})});
+  showToast('배정 독서실이 변경됐어요');
+  loadStudents();
+}
+
+/* ── 수강 과목 수정 ── */
+function closeSubjPop(){document.querySelectorAll('.subj-pop').forEach(p=>p.remove());}
+function openSubjPop(e,id){
+  closeSubjPop();
+  const s=ALL_STUDENTS.find(x=>x.id===id);
+  if(!s)return;
+  const cur=new Set(Array.isArray(s.subjects)?s.subjects:[]);
+  const pop=document.createElement('div');
+  pop.className='subj-pop';
+  const cx=e.clientX||window.innerWidth/2,cy=e.clientY||window.innerHeight/2;
+  pop.style.left=Math.min(cx,window.innerWidth-240)+'px';
+  pop.style.top=Math.min(cy,window.innerHeight-220)+'px';
+  pop.innerHTML=`<div class="subj-pop-ttl">${s.name} 학생 수강 과목</div>
+    <div class="subj-pop-grid">${SUBJECT_LIST.map(sub=>`<button type="button" class="subj-chk${cur.has(sub.k)?' on':''}" data-k="${sub.k}">${sub.l}</button>`).join('')}</div>
+    <button class="subj-pop-save">저장</button>`;
+  document.body.appendChild(pop);
+  pop.addEventListener('click',ev=>ev.stopPropagation());
+  pop.querySelectorAll('.subj-chk').forEach(b=>b.onclick=()=>b.classList.toggle('on'));
+  pop.querySelector('.subj-pop-save').onclick=async()=>{
+    const subjects=[...pop.querySelectorAll('.subj-chk.on')].map(b=>b.dataset.k);
+    await sb(`planner_students?id=eq.${id}`,{method:'PATCH',body:JSON.stringify({subjects})});
+    closeSubjPop();
+    loadStudents();
+  };
+  setTimeout(()=>document.addEventListener('click',closeSubjPop,{once:true}),0);
+}
+
+/* ── 연락처(학생/학부모 번호) 수정 ── */
+function closePhonePop(){document.querySelectorAll('.phone-pop').forEach(p=>p.remove());}
+function openPhonePop(e,id){
+  closePhonePop();
+  const s=ALL_STUDENTS.find(x=>x.id===id);
+  if(!s)return;
+  const pop=document.createElement('div');
+  pop.className='subj-pop phone-pop';
+  const cx=e.clientX||window.innerWidth/2,cy=e.clientY||window.innerHeight/2;
+  pop.style.left=Math.min(cx,window.innerWidth-260)+'px';
+  pop.style.top=Math.min(cy,window.innerHeight-220)+'px';
+  pop.innerHTML=`<div class="subj-pop-ttl">${s.name} 학생 연락처</div>
+    <div class="field" style="margin-bottom:10px">
+      <label class="field-label">학생 휴대폰 (뒷자리 4개로 PIN 설정)</label>
+      <div class="seat-pop-field"><input type="text" id="phone-pop-stu" placeholder="010-1234-5678" value="${(s.student_phone||'').replace(/"/g,'&quot;')}"></div>
+    </div>
+    <div class="field" style="margin-bottom:6px">
+      <label class="field-label">학부모 연락처</label>
+      <div class="seat-pop-field"><input type="text" id="phone-pop-parent" placeholder="010-1234-5678" value="${(s.parent_phone||'').replace(/"/g,'&quot;')}"></div>
+    </div>
+    <button class="subj-pop-save">저장</button>`;
+  document.body.appendChild(pop);
+  pop.addEventListener('click',ev=>ev.stopPropagation());
+  pop.querySelector('.subj-pop-save').onclick=async()=>{
+    const stuPhone=document.getElementById('phone-pop-stu').value.trim();
+    const parentPhone=document.getElementById('phone-pop-parent').value.trim();
+    const patch={student_phone:stuPhone||null,parent_phone:parentPhone||null};
+    const derived=derivePinFromPhone(stuPhone);
+    if(derived)patch.student_pin=await getPinForPhone(stuPhone,id);
+    await sb(`planner_students?id=eq.${id}`,{method:'PATCH',body:JSON.stringify(patch)});
+    closePhonePop();
+    showToast('연락처가 저장됐어요'+(patch.student_pin?` (PIN ${patch.student_pin})`:''));
+    loadStudents();
+  };
+  setTimeout(()=>document.addEventListener('click',closePhonePop,{once:true}),0);
+}
+
+/* ══ 좌석현황 탭 ══ */
+let SEATS=[],ACTIVE_ATT=[],seatEditMode=false,dragMoved=false,selectMode=false;
+let selectedSeats=new Set();
+
+function onSeatRoomChange(){
+  curSeatRoomId=document.getElementById('seat-room-select').value;
+  selectedSeats.clear();selectMode=false;
+  loadSeatsTab();
+}
+async function loadSeatsTab(){
+  if(!ROOMS.length){document.getElementById('seat-map-wrap').innerHTML='<div class="seat-empty-hint">독서실이 없어요.<br>"+ 독서실 추가" 버튼으로 먼저 만들어주세요.</div>';return;}
+  curSeatRoomId=document.getElementById('seat-room-select').value||curSeatRoomId||ROOMS[0].id;
+  document.getElementById('seat-room-select').value=curSeatRoomId;
+  await refreshSeatData();
+}
+async function refreshSeatData(){
+  if(!curSeatRoomId)return;
+  const [s,a]=await Promise.all([
+    sb(`seats?room_id=eq.${curSeatRoomId}&select=*&order=seat_number.asc`),
+    sb(`attendance?room_id=eq.${curSeatRoomId}&checkout_at=is.null&select=id,seat_id,status,checkin_at,planner_students(name)`)
+  ]);
+  SEATS=s||[];ACTIVE_ATT=a||[];
+  renderSeatMap();
+}
+const OCC_STATUS_LABEL={studying:'공부중',in_class:'학원수업중',away:'외출중'};
+window.refreshSeatData=refreshSeatData;
+
+const DRAG_THRESHOLD=4;
+
+function renderSeatMap(){
+  const room=ROOMS.find(r=>r.id===curSeatRoomId);
+  const wrap=document.getElementById('seat-map-wrap');
+  wrap.classList.toggle('editing',seatEditMode);
+  document.getElementById('seat-edit-toggle').classList.toggle('pri',seatEditMode);
+  document.getElementById('seat-edit-toggle').textContent=seatEditMode?'✓ 편집 종료':'✏️ 배치 편집';
+  document.getElementById('seat-edit-tools').style.display=seatEditMode?'block':'none';
+  document.getElementById('seat-edit-hint').textContent=selectMode
+    ?'좌석을 클릭해서 선택하거나, 빈 공간을 드래그해서 여러 개를 한 번에 선택하세요. 선택된 좌석 중 하나를 드래그하면 전체가 같이 움직여요.'
+    :'좌석을 드래그하면 위치를 옮기고, 클릭하면 이름표·상태를 수정할 수 있어요. 여러 개를 한 번에 옮기려면 "선택 모드"를 켜보세요.';
+  document.getElementById('seat-remove-img-btn').style.display=(room&&room.floor_image_url)?'':'none';
+  document.getElementById('seat-detect-btn').style.display=(room&&room.floor_image_url)?'':'none';
+  document.getElementById('seat-select-toggle').classList.toggle('pri',selectMode);
+  document.getElementById('seat-select-toggle').textContent=selectMode?'✓ 선택 모드 끄기':'🖱️ 선택 모드';
+  document.getElementById('seat-select-clear').style.display=selectedSeats.size?'':'none';
+  document.getElementById('seat-select-delete').style.display=selectedSeats.size?'':'none';
+  document.getElementById('seat-select-delete').textContent=`선택 삭제 (${selectedSeats.size})`;
+  const occ={};ACTIVE_ATT.forEach(a=>{if(a.seat_id)occ[a.seat_id]={name:a.planner_students?.name||'학생',status:a.status||'studying'};});
+  wrap.innerHTML='';
+  wrap.onmousedown=handleWrapMouseDown;
+  wrap.ontouchstart=handleWrapMouseDown;
+
+  if(room&&room.floor_image_url){
+    // 도면 이미지는 원본 비율 그대로 채워야 좌석 % 좌표가 그림과 어긋나지 않아요.
+    wrap.style.height=(room.canvas_height||420)+'px';
+    const img=document.createElement('img');
+    img.src=room.floor_image_url;img.className='seat-map-img';
+    img.onload=()=>{ wrap.style.height=(wrap.clientWidth*img.naturalHeight/img.naturalWidth)+'px'; };
+    wrap.appendChild(img);
+  }else{
+    wrap.style.height=(room&&room.canvas_height?room.canvas_height:420)+'px';
+  }
+  if(!SEATS.length){
+    const hint=document.createElement('div');
+    hint.className='seat-empty-hint'+(room&&room.floor_image_url?' overlay':'');
+    hint.innerHTML='등록된 좌석이 없어요.<br>"+ 좌석 추가" 버튼으로 좌석을 만들어보세요.';
+    wrap.appendChild(hint);
+  }
+  const assignedMode=room&&room.seating_mode==='assigned';
+  document.getElementById('legend-unassigned').style.display=assignedMode?'':'none';
+  SEATS.forEach(s=>{
+    const isBlock=s.kind==='block';
+    const occStu=!isBlock&&occ[s.id];
+    const assignedStu=(assignedMode&&!isBlock&&s.assigned_student_id)?ALL_STUDENTS.find(st=>st.id===s.assigned_student_id):null;
+    const node=document.createElement('div');
+    const manualStatus=s.status&&s.status!=='empty'?s.status:'st-empty';
+    let seatCls;
+    if(isBlock)seatCls='zone-block';
+    else if(occStu)seatCls=occStu.status;
+    else if(manualStatus!=='st-empty')seatCls=manualStatus;
+    else if(assignedMode&&!assignedStu)seatCls='unassigned';
+    else seatCls='st-empty';
+    node.className='seat-node '+seatCls;
+    if(selectedSeats.has(s.id))node.classList.add('selected');
+    node.dataset.seatId=s.id;
+    node.style.left=s.x+'%';node.style.top=s.y+'%';node.style.width=s.width+'%';node.style.height=s.height+'%';
+    const nameHtml=occStu?`<span class="sn-name">${occStu.name}</span>`
+      :assignedStu?(manualStatus!=='st-empty'?`<span class="sn-name">${assignedStu.name}</span>`:`<span class="sn-name">📌 ${assignedStu.name}</span>`)
+      :(s.label?`<span class="sn-name">${s.label}</span>`:'');
+    node.innerHTML=isBlock
+      ?`<span class="sn-num">${s.label||'제외구역'}</span>`
+      :`<span class="sn-num">${s.seat_number}</span>${nameHtml}`;
+    if(seatEditMode){
+      if(selectMode){
+        node.onmousedown=(e)=>startDrag(e,node,s);
+        node.ontouchstart=(e)=>startDrag(e,node,s);
+        node.onclick=(e)=>{
+          e.stopPropagation();
+          if(dragMoved){dragMoved=false;return;}
+          if(selectedSeats.has(s.id))selectedSeats.delete(s.id);else selectedSeats.add(s.id);
+          renderSeatMap();
+        };
+      }else{
+        node.onmousedown=(e)=>startDrag(e,node,s);
+        node.ontouchstart=(e)=>startDrag(e,node,s);
+        node.onclick=(e)=>{e.stopPropagation();if(dragMoved){dragMoved=false;return;}openSeatPop(e,s);};
+        const handle=document.createElement('div');
+        handle.className='seat-resize-handle';
+        handle.onmousedown=(e)=>startSeatResize(e,node,s);
+        handle.ontouchstart=(e)=>startSeatResize(e,node,s);
+        handle.addEventListener('click',e=>e.stopPropagation());
+        node.appendChild(handle);
+      }
+    }else{
+      node.style.cursor='pointer';
+      node.onclick=(e)=>{e.stopPropagation();openSeatPop(e,s);};
+    }
+    wrap.appendChild(node);
+  });
+
+  if(seatEditMode&&!(room&&room.floor_image_url)){
+    const chandle=document.createElement('div');
+    chandle.className='canvas-resize-handle';
+    chandle.textContent='↕';
+    chandle.title='강의실 크기 조절';
+    chandle.onmousedown=startCanvasResize;
+    chandle.ontouchstart=startCanvasResize;
+    chandle.addEventListener('click',e=>e.stopPropagation());
+    wrap.appendChild(chandle);
+  }
+}
+
+function startDrag(e,node,seat){
+  e.preventDefault();
+  dragMoved=false;
+  const wrap=document.getElementById('seat-map-wrap');
+  const rect=wrap.getBoundingClientRect();
+  const startPt=e.touches?e.touches[0]:e;
+  const startX=startPt.clientX,startY=startPt.clientY;
+  const isGroup=selectMode&&selectedSeats.has(seat.id)&&selectedSeats.size>1;
+  const groupSeats=isGroup?SEATS.filter(s=>selectedSeats.has(s.id)):[seat];
+  const startPositions=groupSeats.map(s=>({seat:s,x:s.x,y:s.y}));
+  function move(ev){
+    const pt=ev.touches?ev.touches[0]:ev;
+    if(!dragMoved){
+      if(Math.abs(pt.clientX-startX)<DRAG_THRESHOLD&&Math.abs(pt.clientY-startY)<DRAG_THRESHOLD)return;
+      dragMoved=true;
+      node.classList.add('dragging');
+    }
+    const dxPct=(pt.clientX-startX)/rect.width*100;
+    const dyPct=(pt.clientY-startY)/rect.height*100;
+    startPositions.forEach(sp=>{
+      const w=sp.seat.width,h=sp.seat.height;
+      const x=Math.max(0,Math.min(100-w,sp.x+dxPct));
+      const y=Math.max(0,Math.min(100-h,sp.y+dyPct));
+      const n=wrap.querySelector(`[data-seat-id="${sp.seat.id}"]`);
+      if(n){n.style.left=x+'%';n.style.top=y+'%';}
+    });
+  }
+  function up(){
+    document.removeEventListener('mousemove',move);document.removeEventListener('mouseup',up);
+    document.removeEventListener('touchmove',move);document.removeEventListener('touchend',up);
+    node.classList.remove('dragging');
+    if(dragMoved){
+      startPositions.forEach(sp=>{
+        const n=wrap.querySelector(`[data-seat-id="${sp.seat.id}"]`);
+        if(!n)return;
+        const x=parseFloat(n.style.left),y=parseFloat(n.style.top);
+        sp.seat.x=x;sp.seat.y=y;
+        sb(`seats?id=eq.${sp.seat.id}`,{method:'PATCH',body:JSON.stringify({x,y})});
+      });
+    }
+  }
+  document.addEventListener('mousemove',move);document.addEventListener('mouseup',up);
+  document.addEventListener('touchmove',move,{passive:false});document.addEventListener('touchend',up);
+}
+
+function startSeatResize(e,node,seat){
+  e.preventDefault();e.stopPropagation();
+  const wrap=document.getElementById('seat-map-wrap');
+  const rect=wrap.getBoundingClientRect();
+  const startPt=e.touches?e.touches[0]:e;
+  const startX=startPt.clientX,startY=startPt.clientY;
+  const startW=parseFloat(node.style.width)||9,startH=parseFloat(node.style.height)||9;
+  const maxSize=seat.kind==='block'?96:40;
+  function move(ev){
+    const pt=ev.touches?ev.touches[0]:ev;
+    let w=startW+(pt.clientX-startX)/rect.width*100;
+    let h=startH+(pt.clientY-startY)/rect.height*100;
+    w=Math.max(4,Math.min(maxSize,w));h=Math.max(4,Math.min(maxSize,h));
+    node.style.width=w+'%';node.style.height=h+'%';
+  }
+  function up(){
+    document.removeEventListener('mousemove',move);document.removeEventListener('mouseup',up);
+    document.removeEventListener('touchmove',move);document.removeEventListener('touchend',up);
+    const w=parseFloat(node.style.width),h=parseFloat(node.style.height);
+    seat.width=w;seat.height=h;
+    sb(`seats?id=eq.${seat.id}`,{method:'PATCH',body:JSON.stringify({width:w,height:h})});
+  }
+  document.addEventListener('mousemove',move);document.addEventListener('mouseup',up);
+  document.addEventListener('touchmove',move,{passive:false});document.addEventListener('touchend',up);
+}
+
+function startCanvasResize(e){
+  e.preventDefault();e.stopPropagation();
+  const wrap=document.getElementById('seat-map-wrap');
+  const startPt=e.touches?e.touches[0]:e;
+  const startY=startPt.clientY;
+  const startH=wrap.offsetHeight;
+  function move(ev){
+    const pt=ev.touches?ev.touches[0]:ev;
+    const h=Math.max(240,Math.min(1000,startH+(pt.clientY-startY)));
+    wrap.style.height=h+'px';
+  }
+  function up(){
+    document.removeEventListener('mousemove',move);document.removeEventListener('mouseup',up);
+    document.removeEventListener('touchmove',move);document.removeEventListener('touchend',up);
+    const h=wrap.offsetHeight;
+    const room=ROOMS.find(r=>r.id===curSeatRoomId);if(room)room.canvas_height=h;
+    if(curSeatRoomId)sb(`study_rooms?id=eq.${curSeatRoomId}`,{method:'PATCH',body:JSON.stringify({canvas_height:h})});
+  }
+  document.addEventListener('mousemove',move);document.addEventListener('mouseup',up);
+  document.addEventListener('touchmove',move,{passive:false});document.addEventListener('touchend',up);
+}
+
+function closeSeatPop(){document.querySelectorAll('.seat-pop').forEach(p=>p.remove());}
+
+function openSeatPop(e,seat){
+  closeSeatPop();
+  const isBlock=seat.kind==='block';
+  const occAtt=!isBlock&&ACTIVE_ATT.find(a=>a.seat_id===seat.id);
+  const room=ROOMS.find(r=>r.id===curSeatRoomId);
+  const assignedMode=room&&room.seating_mode==='assigned';
+  const pop=document.createElement('div');
+  pop.className='seat-pop';
+  const cx=e.clientX||window.innerWidth/2,cy=e.clientY||window.innerHeight/2;
+  pop.style.left=Math.min(cx,window.innerWidth-220)+'px';
+  pop.style.top=Math.min(cy,window.innerHeight-(isBlock?170:(occAtt?290:240)+(assignedMode?60:0)))+'px';
+
+  const manualStatus=seat.status&&seat.status!=='empty'?seat.status:'empty';
+  const statusHtml=isBlock?'':(occAtt?`
+    <div class="seat-pop-sub">${occAtt.planner_students?.name||'학생'} 상태 변경</div>
+    <div class="seat-pop-status-grid">
+      <button class="st-studying${occAtt.status==='studying'?' st-current':''}" data-st="studying">📚 공부중</button>
+      <button class="st-in_class${occAtt.status==='in_class'?' st-current':''}" data-st="in_class">🏫 학원수업중</button>
+      <button class="st-away${occAtt.status==='away'?' st-current':''}" data-st="away" style="grid-column:span 2">🚶 외출중</button>
+    </div>
+    <button class="seat-pop-checkout-btn" data-act="checkout">🚪 퇴실 처리</button>`:`
+    <div class="seat-pop-sub">좌석 상태</div>
+    <div class="seat-pop-status-grid">
+      <button class="st-idle${manualStatus==='empty'?' st-current':''}" data-mst="empty">🚪 퇴실</button>
+      <button class="st-studying${manualStatus==='studying'?' st-current':''}" data-mst="studying">📚 공부중</button>
+      <button class="st-in_class${manualStatus==='in_class'?' st-current':''}" data-mst="in_class">🏫 학원수업중</button>
+      <button class="st-away${manualStatus==='away'?' st-current':''}" data-mst="away">🚶 외출중</button>
+    </div>
+    <div id="seat-pop-undo-slot"></div>`);
+
+  const roomStudents=assignedMode&&!isBlock?ALL_STUDENTS.filter(st=>st.room_id===curSeatRoomId):[];
+  const assignedElsewhere=new Set(SEATS.filter(sx=>sx.id!==seat.id&&sx.assigned_student_id).map(sx=>sx.assigned_student_id));
+  const assignHtml=(assignedMode&&!isBlock)?`
+    <div class="seat-pop-sub">이 좌석 배정</div>
+    <select id="seat-pop-assign-select" class="f-select" style="margin-bottom:8px;font-size:12px">
+      <option value="">배정 안 함</option>
+      ${roomStudents.map(st=>`<option value="${st.id}"${st.id===seat.assigned_student_id?' selected':''}>${st.name}${assignedElsewhere.has(st.id)?' (다른 자리 배정됨)':''}</option>`).join('')}
+    </select>`:'';
+
+  const labelHtml=isBlock?`
+    <div class="seat-pop-field">
+      <input type="text" id="seat-pop-label-input" placeholder="구역 이름 (예: 통로)" value="${(seat.label||'').replace(/"/g,'&quot;')}">
+      <button class="seat-pop-save-btn" id="seat-pop-save-btn">저장</button>
+    </div>`:'';
+
+  pop.innerHTML=`<div class="seat-pop-ttl">${isBlock?'제외구역':seat.seat_number+'번 좌석'}</div>
+    ${statusHtml}
+    ${assignHtml}
+    ${labelHtml}
+    <button class="danger" data-act="delete">${isBlock?'구역 삭제':'좌석 삭제'}</button>`;
+  document.body.appendChild(pop);
+  pop.addEventListener('click',ev=>ev.stopPropagation());
+  const input=pop.querySelector('#seat-pop-label-input');
+  if(input){
+    input.focus();input.select();
+    const saveLabel=()=>{
+      const v=input.value.trim();
+      sb(`seats?id=eq.${seat.id}`,{method:'PATCH',body:JSON.stringify({label:v})}).then(()=>{closeSeatPop();refreshSeatData();});
+    };
+    pop.querySelector('#seat-pop-save-btn').onclick=saveLabel;
+    input.onkeydown=(ev)=>{if(ev.key==='Enter')saveLabel();};
+  }
+  if(occAtt){
+    pop.querySelectorAll('.seat-pop-status-grid button').forEach(b=>{
+      b.onclick=()=>{closeSeatPop();setOccupantStatus(occAtt.id,b.dataset.st);};
+    });
+    pop.querySelector('[data-act="checkout"]').onclick=()=>{closeSeatPop();forceCheckout(occAtt.id,occAtt.planner_students?.name||'학생');};
+  }else if(!isBlock){
+    pop.querySelectorAll('.seat-pop-status-grid button').forEach(b=>{
+      b.onclick=()=>{closeSeatPop();setSeatStatus(seat.id,b.dataset.mst);};
+    });
+  }
+  pop.querySelector('[data-act="delete"]').onclick=()=>{closeSeatPop();deleteSeat(seat.id);};
+  const assignSel=pop.querySelector('#seat-pop-assign-select');
+  if(assignSel)assignSel.onchange=()=>{closeSeatPop();assignSeatStudent(seat.id,assignSel.value);};
+  if(!isBlock&&!occAtt){
+    const todayStart=dk(new Date())+'T00:00:00';
+    sb(`attendance?seat_id=eq.${seat.id}&checkout_at=gte.${todayStart}&select=id,status,planner_students(name)&order=checkout_at.desc&limit=1`).then(rows=>{
+      const slot=document.getElementById('seat-pop-undo-slot');
+      if(!slot||!rows||!rows.length)return;
+      const last=rows[0],name=last.planner_students?.name||'학생';
+      const btn=document.createElement('button');
+      btn.className='seat-pop-undo-btn';
+      btn.textContent=`↩️ ${name} 학생 퇴실 취소 (다시 입실)`;
+      btn.onclick=()=>{closeSeatPop();undoCheckout(last.id,name);};
+      slot.appendChild(btn);
+    });
+  }
+  setTimeout(()=>document.addEventListener('click',closeSeatPop,{once:true}),0);
+}
+async function assignSeatStudent(seatId,studentId){
+  if(studentId){
+    await sb(`seats?room_id=eq.${curSeatRoomId}&assigned_student_id=eq.${studentId}&id=neq.${seatId}`,{method:'PATCH',body:JSON.stringify({assigned_student_id:null})});
+  }
+  const result=await sb(`seats?id=eq.${seatId}`,{method:'PATCH',body:JSON.stringify({assigned_student_id:studentId||null})});
+  if(!Array.isArray(result)||!result.length){showToast('배정 저장에 실패했어요 — Supabase에 최신 SQL을 실행했는지 확인해주세요');return;}
+  showToast(studentId?'좌석을 배정했어요':'배정을 해제했어요');
+  refreshSeatData();
+}
+async function setSeatStatus(id,status){
+  const result=await sb(`seats?id=eq.${id}`,{method:'PATCH',body:JSON.stringify({status})});
+  if(!Array.isArray(result)||!result.length){showToast('상태 변경에 실패했어요 — Supabase에 최신 SQL을 실행했는지 확인해주세요');return;}
+  refreshSeatData();
+}
+async function setOccupantStatus(attId,status){
+  const result=await sb(`attendance?id=eq.${attId}`,{method:'PATCH',body:JSON.stringify({status})});
+  if(!Array.isArray(result)||!result.length){showToast('상태 변경에 실패했어요');return;}
+  refreshSeatData();
+}
+async function forceCheckout(attId,name){
+  if(!confirm(name+' 학생을 퇴실 처리할까요?'))return;
+  await sb(`attendance?id=eq.${attId}`,{method:'PATCH',body:JSON.stringify({checkout_at:new Date().toISOString(),status:'checked_out'})});
+  showToast(name+' 학생을 퇴실 처리했어요');
+  refreshSeatData();
+}
+async function undoCheckout(attId,name){
+  if(!confirm(name+' 학생의 퇴실을 취소하고 다시 입실 처리할까요? (학생이 실수로 퇴실 버튼을 누른 경우 등에 사용)'))return;
+  const result=await sb(`attendance?id=eq.${attId}`,{method:'PATCH',body:JSON.stringify({checkout_at:null,status:'studying'})});
+  if(!Array.isArray(result)||!result.length){showToast('되돌리기에 실패했어요');return;}
+  showToast(name+' 학생을 다시 입실 처리했어요');
+  refreshSeatData();
+}
+async function deleteSeat(id){
+  if(!confirm('이 좌석을 삭제할까요?'))return;
+  await sb(`seats?id=eq.${id}`,{method:'DELETE'});
+  refreshSeatData();
+}
+async function addSeat(){
+  if(!curSeatRoomId){showToast('독서실을 먼저 선택하세요');return;}
+  const maxNum=SEATS.reduce((m,s)=>Math.max(m,s.seat_number),0);
+  await sb('seats',{method:'POST',body:JSON.stringify({room_id:curSeatRoomId,seat_number:maxNum+1,x:8+Math.random()*15,y:8+Math.random()*15,width:9,height:9,status:'empty'})});
+  if(!seatEditMode){seatEditMode=true;}
+  refreshSeatData();
+}
+function toggleSeatEdit(){
+  seatEditMode=!seatEditMode;
+  if(!seatEditMode){selectMode=false;selectedSeats.clear();}
+  renderSeatMap();
+}
+
+/* ── 다중 선택 (드래그로 영역 선택 + 묶음 이동/삭제) ── */
+function toggleSelectMode(){
+  selectMode=!selectMode;
+  if(!selectMode)selectedSeats.clear();
+  renderSeatMap();
+}
+function clearSelection(){selectedSeats.clear();renderSeatMap();}
+async function deleteSelectedSeats(){
+  if(!selectedSeats.size)return;
+  const ids=[...selectedSeats];
+  if(!confirm(`선택한 ${ids.length}개를 삭제할까요?`))return;
+  await sb(`seats?id=in.(${ids.join(',')})`,{method:'DELETE'});
+  selectedSeats.clear();
+  refreshSeatData();
+}
+function handleWrapMouseDown(e){
+  if(!selectMode||!seatEditMode)return;
+  if(e.target.closest('.seat-node')||e.target.closest('.canvas-resize-handle'))return;
+  e.preventDefault();
+  const wrap=document.getElementById('seat-map-wrap');
+  const rect=wrap.getBoundingClientRect();
+  const startPt=e.touches?e.touches[0]:e;
+  const startX=startPt.clientX,startY=startPt.clientY;
+  const box=document.createElement('div');
+  box.className='marquee-box';
+  wrap.appendChild(box);
+  function move(ev){
+    const pt=ev.touches?ev.touches[0]:ev;
+    const x1=Math.min(startX,pt.clientX),x2=Math.max(startX,pt.clientX);
+    const y1=Math.min(startY,pt.clientY),y2=Math.max(startY,pt.clientY);
+    box.style.left=(x1-rect.left)+'px';box.style.top=(y1-rect.top)+'px';
+    box.style.width=(x2-x1)+'px';box.style.height=(y2-y1)+'px';
+  }
+  function up(ev){
+    document.removeEventListener('mousemove',move);document.removeEventListener('mouseup',up);
+    document.removeEventListener('touchmove',move);document.removeEventListener('touchend',up);
+    const pt=ev.changedTouches?ev.changedTouches[0]:ev;
+    box.remove();
+    if(Math.abs(pt.clientX-startX)<6&&Math.abs(pt.clientY-startY)<6)return;
+    const xMinPct=(Math.min(startX,pt.clientX)-rect.left)/rect.width*100;
+    const xMaxPct=(Math.max(startX,pt.clientX)-rect.left)/rect.width*100;
+    const yMinPct=(Math.min(startY,pt.clientY)-rect.top)/rect.height*100;
+    const yMaxPct=(Math.max(startY,pt.clientY)-rect.top)/rect.height*100;
+    SEATS.forEach(s=>{
+      const cx=s.x+s.width/2,cy=s.y+s.height/2;
+      if(cx>=xMinPct&&cx<=xMaxPct&&cy>=yMinPct&&cy<=yMaxPct)selectedSeats.add(s.id);
+    });
+    renderSeatMap();
+  }
+  document.addEventListener('mousemove',move);document.addEventListener('mouseup',up);
+  document.addEventListener('touchmove',move,{passive:false});document.addEventListener('touchend',up);
+}
+
+/* ── 도면 삭제 / 좌석 전체 삭제 / 제외구역 ── */
+async function removeFloorImage(){
+  if(!curSeatRoomId)return;
+  if(!confirm('업로드된 도면을 삭제할까요?'))return;
+  await sb(`study_rooms?id=eq.${curSeatRoomId}`,{method:'PATCH',body:JSON.stringify({floor_image_url:null})});
+  const room=ROOMS.find(r=>r.id===curSeatRoomId);if(room)room.floor_image_url=null;
+  refreshSeatData();
+}
+async function detectSeatsFromImage(silent){
+  const room=ROOMS.find(r=>r.id===curSeatRoomId);
+  if(!room||!room.floor_image_url){showToast('먼저 도면을 업로드하세요');return;}
+  if(!silent&&!confirm('도면 이미지를 다시 분석해서 좌석을 추가로 만들어요.\n완벽하지 않을 수 있어 생성 후 드래그로 조정이 필요해요. 계속할까요?'))return;
+  const btn=document.getElementById('seat-detect-btn');
+  btn.disabled=true;btn.textContent='🪄 분석 중...';
+  if(!silent)showToast('도면을 분석하는 중이에요 (몇 초 걸릴 수 있어요)');
+  try{
+    const r=await fetch('/api/detect-seats',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({imageUrl:room.floor_image_url})});
+    const data=await r.json();
+    if(!data.success){showToast('자동 배치 실패: '+(data.error||'알 수 없는 오류'));return;}
+    let maxNum=SEATS.reduce((m,s)=>Math.max(m,s.seat_number),0);
+    const batch=data.seats.map(s=>{
+      maxNum++;
+      return {room_id:curSeatRoomId,seat_number:maxNum,x:s.x,y:s.y,width:s.width,height:s.height,status:'empty'};
+    });
+    const inserted=await sb('seats',{method:'POST',body:JSON.stringify(batch)});
+    selectedSeats=new Set((inserted||[]).map(row=>row.id));
+    seatEditMode=true;selectMode=true;
+    await sb(`study_rooms?id=eq.${curSeatRoomId}`,{method:'PATCH',body:JSON.stringify({floor_image_url:null})});
+    room.floor_image_url=null;
+    refreshSeatData();
+    showToast(`좌석 ${batch.length}개를 자동으로 배치하고 도면 이미지는 지웠어요 — 어긋난 자리는 드래그로 조정해주세요`);
+  }catch(e){
+    showToast('자동 배치 중 오류가 발생했어요');
+  }finally{
+    btn.disabled=false;btn.textContent='🪄 도면에서 자동 배치';
+  }
+}
+async function deleteAllSeats(){
+  const count=SEATS.length;
+  if(!count){showToast('삭제할 좌석/구역이 없어요');return;}
+  if(!confirm(`이 독서실의 좌석·구역 ${count}개를 전부 삭제할까요? 되돌릴 수 없어요.`))return;
+  await sb(`seats?room_id=eq.${curSeatRoomId}`,{method:'DELETE'});
+  selectedSeats.clear();
+  refreshSeatData();
+}
+async function addZone(){
+  if(!curSeatRoomId){showToast('독서실을 먼저 선택하세요');return;}
+  const maxNum=SEATS.reduce((m,s)=>Math.max(m,s.seat_number),0);
+  const result=await sb('seats',{method:'POST',body:JSON.stringify({room_id:curSeatRoomId,seat_number:maxNum+1,kind:'block',label:'제외구역',x:35,y:35,width:22,height:16,status:'empty'})});
+  if(!Array.isArray(result)||!result.length){showToast('제외구역 추가에 실패했어요 — Supabase에 최신 SQL을 실행했는지 확인해주세요');return;}
+  seatEditMode=true;selectMode=false;
+  selectedSeats=new Set([result[0].id]);
+  refreshSeatData();
+  showToast('제외구역을 추가했어요 — 드래그로 위치를, 우측 하단 손잡이로 크기를 조정해보세요');
+}
+
+/* ── 격자로 좌석 일괄 생성 ── */
+let gmMode='single';
+function setGmMode(m){
+  gmMode=m;
+  document.getElementById('gm-mode-single').classList.toggle('pri',m==='single');
+  document.getElementById('gm-mode-paired').classList.toggle('pri',m==='paired');
+  document.getElementById('gm-divider-row').style.display=m==='paired'?'flex':'none';
+  document.getElementById('gm-cols-label').textContent=m==='paired'?'열 (마주보기 다발 개수)':'열 (가로)';
+  document.getElementById('gm-rows-label').textContent=m==='paired'?'행 (다발당 마주보기 쌍 개수)':'행 (세로)';
+}
+function openGridModal(){
+  if(!curSeatRoomId){showToast('독서실을 먼저 선택하세요');return;}
+  closeGridModal();
+  gmMode='single';
+  const bg=document.createElement('div');
+  bg.className='grid-modal-bg';
+  bg.id='grid-modal-bg';
+  bg.innerHTML=`<div class="grid-modal">
+    <div class="grid-modal-ttl">격자로 좌석 여러 개 만들기</div>
+    <div class="grid-modal-sub">행×열을 입력하면 한 번에 생성돼요. 생성된 덩어리를 드래그해서 도면 위 원하는 자리로 옮기세요.</div>
+    <div class="gm-row">
+      <label>배치 방식</label>
+      <div style="display:flex;gap:6px">
+        <button type="button" class="mini-btn pri" id="gm-mode-single" onclick="setGmMode('single')">낱개</button>
+        <button type="button" class="mini-btn" id="gm-mode-paired" onclick="setGmMode('paired')">마주보기 2인1조</button>
+      </div>
+    </div>
+    <div class="gm-row"><label id="gm-rows-label">행 (세로)</label><input type="number" id="gm-rows" value="3" min="1" max="20"></div>
+    <div class="gm-row"><label id="gm-cols-label">열 (가로)</label><input type="number" id="gm-cols" value="3" min="1" max="20"></div>
+    <div class="gm-row"><label>좌석 크기(%)</label><input type="number" id="gm-size" value="7" min="3" max="30" step="0.5"></div>
+    <div class="gm-row"><label>줄 간격(%)</label><input type="number" id="gm-gap" value="1.5" min="0" max="10" step="0.5"></div>
+    <div class="gm-row" id="gm-divider-row" style="display:none"><label>마주보기 칸막이 간격(%)</label><input type="number" id="gm-divider" value="1" min="0" max="5" step="0.5"></div>
+    <div class="gm-btns">
+      <button class="mini-btn" onclick="closeGridModal()">취소</button>
+      <button class="mini-btn pri" id="gm-generate-btn" onclick="generateSeatGrid()">생성</button>
+    </div>
+  </div>`;
+  document.body.appendChild(bg);
+  bg.onclick=(e)=>{if(e.target===bg)closeGridModal();};
+}
+function closeGridModal(){document.getElementById('grid-modal-bg')?.remove();}
+
+async function generateSeatGrid(){
+  const rows=Math.max(1,Math.min(20,parseInt(document.getElementById('gm-rows').value)||1));
+  const cols=Math.max(1,Math.min(20,parseInt(document.getElementById('gm-cols').value)||1));
+  const size=Math.max(3,Math.min(30,parseFloat(document.getElementById('gm-size').value)||7));
+  const gap=Math.max(0,Math.min(10,parseFloat(document.getElementById('gm-gap').value)||1.5));
+  const divider=Math.max(0,Math.min(5,parseFloat(document.getElementById('gm-divider')?.value)||1));
+  closeGridModal();
+  const paired=gmMode==='paired';
+  const perCell=paired?2:1;
+  if(rows*cols*perCell>200){showToast('한 번에 200개까지만 생성할 수 있어요');return;}
+  let maxNum=SEATS.reduce((m,s)=>Math.max(m,s.seat_number),0);
+  const batch=[];
+  const cellW=paired?size*2+divider:size;
+  for(let r=0;r<rows;r++){
+    for(let c=0;c<cols;c++){
+      const baseX=Math.max(0,Math.min(100-cellW,4+c*(cellW+gap)));
+      const y=Math.max(0,Math.min(100-size,6+r*(size+gap)));
+      maxNum++;
+      batch.push({room_id:curSeatRoomId,seat_number:maxNum,x:baseX,y,width:size,height:size,status:'empty'});
+      if(paired){
+        maxNum++;
+        batch.push({room_id:curSeatRoomId,seat_number:maxNum,x:baseX+size+divider,y,width:size,height:size,status:'empty'});
+      }
+    }
+  }
+  showToast(`${batch.length}개 좌석 생성 중...`);
+  const inserted=await sb('seats',{method:'POST',body:JSON.stringify(batch)});
+  selectedSeats=new Set((inserted||[]).map(r=>r.id));
+  seatEditMode=true;
+  selectMode=selectedSeats.size>1;
+  refreshSeatData();
+  if(selectedSeats.size>1)showToast('생성된 좌석이 선택된 상태예요 — 아무 곳이나 드래그하면 묶음 전체가 같이 움직여요');
+}
+
+async function uploadFloorImage(file){
+  if(!file||!curSeatRoomId)return;
+  showToast('업로드 중...');
+  const path=`${curSeatRoomId}/${Date.now()}-${file.name}`.replace(/\s+/g,'_');
+  try{
+    const r=await fetch(`${SB_URL}/storage/v1/object/floorplans/${path}`,{
+      method:'POST',
+      headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Content-Type':file.type||'image/png'},
+      body:file
+    });
+    if(!r.ok)throw new Error('upload failed');
+    const url=`${SB_URL}/storage/v1/object/public/floorplans/${path}`;
+    await sb(`study_rooms?id=eq.${curSeatRoomId}`,{method:'PATCH',body:JSON.stringify({floor_image_url:url})});
+    const room=ROOMS.find(r=>r.id===curSeatRoomId);if(room)room.floor_image_url=url;
+    showToast('도면이 업로드됐어요 — 좌석을 자동으로 분석할게요');
+    seatEditMode=true;
+    refreshSeatData();
+    await detectSeatsFromImage(true);
+  }catch(e){showToast('업로드 실패 — Supabase Storage의 floorplans 버킷을 확인하세요');}
+}
+
+/* ══ 출석기록 탭 ══ */
+async function loadAttendanceTab(){
+  if(!ROOMS.length)return;
+  const roomId=document.getElementById('att-room-select').value;
+  const filter=roomId?`&room_id=eq.${roomId}`:'';
+  const todayStr=dk(new Date());
+  const start=`${todayStr}T00:00:00`,end=`${dk(addDaysA(new Date(),1))}T00:00:00`;
+  const today=await sb(`attendance?checkin_at=gte.${start}&checkin_at=lt.${end}${filter}&select=*`)||[];
+  document.getElementById('att-total').textContent=today.length;
+  document.getElementById('att-studying').textContent=today.filter(a=>a.status==='studying').length;
+  document.getElementById('att-elsewhere').textContent=today.filter(a=>a.status==='in_class'||a.status==='away').length;
+  document.getElementById('att-out').textContent=today.filter(a=>a.checkout_at).length;
+
+  const mon=mondayOfA(new Date());
+  const wStart=`${dk(mon)}T00:00:00`,wEnd=`${dk(addDaysA(mon,7))}T00:00:00`;
+  const week=await sb(`attendance?checkin_at=gte.${wStart}&checkin_at=lt.${wEnd}${filter}&select=student_id,checkin_at,checkout_at,planner_students(name)`)||[];
+  const byStu={};
+  week.forEach(a=>{
+    const mins=((a.checkout_at?new Date(a.checkout_at):new Date())-new Date(a.checkin_at))/60000;
+    if(!byStu[a.student_id])byStu[a.student_id]={name:a.planner_students?.name||'?',min:0};
+    byStu[a.student_id].min+=mins;
+  });
+  const ranked=Object.values(byStu).sort((a,b)=>b.min-a.min).slice(0,10);
+  document.getElementById('rank-list').innerHTML=ranked.length?ranked.map((r,i)=>`<div class="rank-row"><div class="rank-no ${i<3?'top':''}">${i+1}</div><div class="rank-name">${r.name}</div><div class="rank-time">${fmtMinA(r.min)}</div></div>`).join(''):'<div class="empty">데이터가 없어요</div>';
+
+  const d7Start=`${dk(addDaysA(new Date(),-7))}T00:00:00`;
+  const recent=await sb(`attendance?checkin_at=gte.${d7Start}&checkin_at=lt.${end}${filter}&select=student_id,checkin_at,planner_students(name)`)||[];
+  const byStu2={};
+  recent.forEach(a=>{
+    if(!byStu2[a.student_id])byStu2[a.student_id]={name:a.planner_students?.name||'?',days:new Set()};
+    byStu2[a.student_id].days.add(dk(new Date(a.checkin_at)));
+  });
+  const todaySet=new Set(today.map(a=>a.student_id));
+  const alerts=Object.entries(byStu2).filter(([id,v])=>v.days.size>=4&&!todaySet.has(id)).map(([id,v])=>v.name);
+  document.getElementById('alert-list').innerHTML=alerts.length?alerts.map(n=>`<div class="alert-row">⚠️ ${n} 학생이 평소와 달리 오늘 출석하지 않았어요</div>`).join(''):'<div class="empty">해당 학생이 없어요</div>';
+
+  if(!document.getElementById('att-date-picker').value)document.getElementById('att-date-picker').value=todayStr;
+  loadDateRecord();
+}
+window.loadAttendanceTab=loadAttendanceTab;
+
+async function loadDateRecord(){
+  if(!ROOMS.length)return;
+  const roomId=document.getElementById('att-room-select').value;
+  const date=document.getElementById('att-date-picker').value||dk(new Date());
+  const filter=roomId?`&room_id=eq.${roomId}`:'';
+  const start=`${date}T00:00:00`,end=`${dk(addDaysA(parseDkA(date),1))}T00:00:00`;
+  const rows=await sb(`attendance?checkin_at=gte.${start}&checkin_at=lt.${end}${filter}&select=*,planner_students(name),seats(seat_number)&order=checkin_at.asc`)||[];
+  const body=document.getElementById('date-record-body');
+  if(!rows.length){body.innerHTML='<tr><td colspan="6" class="empty">기록이 없어요</td></tr>';return;}
+  body.innerHTML=rows.map(a=>{
+    const inT=new Date(a.checkin_at),outT=a.checkout_at?new Date(a.checkout_at):null;
+    const dur=fmtMinA(((outT||new Date())-inT)/60000);
+    const statusText=outT?'퇴실':(OCC_STATUS_LABEL[a.status]||'공부중');
+    return `<tr><td>${a.planner_students?.name||'?'}</td><td>${a.seats?.seat_number?a.seats.seat_number+'번':'-'}</td><td>${statusText}</td><td>${String(inT.getHours()).padStart(2,'0')}:${String(inT.getMinutes()).padStart(2,'0')}</td><td>${outT?String(outT.getHours()).padStart(2,'0')+':'+String(outT.getMinutes()).padStart(2,'0'):'-'}</td><td>${dur}</td></tr>`;
+  }).join('');
+}
+
+/* ══ 설정 탭 ══ */
+function loadSettingsTab(){
+  if(!ROOMS.length)return;
+  const roomId=document.getElementById('set-room-select').value||ROOMS[0].id;
+  document.getElementById('set-room-select').value=roomId;
+  const room=ROOMS.find(r=>r.id===roomId);
+  if(!room)return;
+  document.getElementById('set-academy').value=room.academy_name||'';
+  document.getElementById('set-room-name').value=room.name||'';
+  document.getElementById('set-room-desc').value=room.description||'';
+  document.getElementById('set-channel').value=room.notify_channel||'sms';
+  document.getElementById('set-aligo-key').value=room.aligo_api_key||'';
+  document.getElementById('set-aligo-user').value=room.aligo_user_id||'';
+  document.getElementById('set-aligo-sender').value=room.aligo_sender||'';
+  document.getElementById('set-kakao-key').value=room.kakao_js_key||'';
+  document.getElementById('notify-toggle').classList.toggle('on',!!room.notify_enabled);
+  document.getElementById('auto-report-toggle').classList.toggle('on',!!room.auto_report_enabled);
+  const mode=room.seating_mode||'free';
+  document.getElementById('seating-mode-free').classList.toggle('pri',mode==='free');
+  document.getElementById('seating-mode-assigned').classList.toggle('pri',mode==='assigned');
+  document.getElementById('set-kiosk-pin').value=room.kiosk_pin||'';
+}
+async function saveKioskPin(){
+  const roomId=document.getElementById('set-room-select').value;
+  if(!roomId){showToast('독서실을 먼저 추가하세요');return;}
+  const v=document.getElementById('set-kiosk-pin').value.trim();
+  if(v&&!/^\d{4}$/.test(v)){showToast('숫자 4자리로 입력해주세요');return;}
+  const result=await sb(`study_rooms?id=eq.${roomId}`,{method:'PATCH',body:JSON.stringify({kiosk_pin:v||null})});
+  if(!Array.isArray(result)||!result.length){showToast('저장 실패 — Supabase에 최신 SQL을 실행했는지 확인해주세요');return;}
+  const room=ROOMS.find(r=>r.id===roomId);if(room)room.kiosk_pin=v||null;
+  showToast('저장됐어요');
+}
+function toggleNotify(){document.getElementById('notify-toggle').classList.toggle('on');}
+function toggleAutoReport(){document.getElementById('auto-report-toggle').classList.toggle('on');}
+async function setSeatingMode(mode){
+  const roomId=document.getElementById('set-room-select').value;
+  if(!roomId){showToast('독서실을 먼저 추가하세요');return;}
+  document.getElementById('seating-mode-free').classList.toggle('pri',mode==='free');
+  document.getElementById('seating-mode-assigned').classList.toggle('pri',mode==='assigned');
+  const result=await sb(`study_rooms?id=eq.${roomId}`,{method:'PATCH',body:JSON.stringify({seating_mode:mode})});
+  if(!Array.isArray(result)||!result.length){showToast('저장 실패 — Supabase에 최신 SQL을 실행했는지 확인해주세요');return;}
+  const room=ROOMS.find(r=>r.id===roomId);if(room)room.seating_mode=mode;
+  showToast(mode==='assigned'?'지정자석으로 바뀌었어요':'자유석으로 바뀌었어요');
+}
+async function saveRoomInfo(){
+  const roomId=document.getElementById('set-room-select').value;
+  if(!roomId){showToast('독서실을 먼저 추가하세요');return;}
+  await sb(`study_rooms?id=eq.${roomId}`,{method:'PATCH',body:JSON.stringify({
+    academy_name:document.getElementById('set-academy').value.trim()||'필탑학원',
+    name:document.getElementById('set-room-name').value.trim(),
+    description:document.getElementById('set-room-desc').value.trim()
+  })});
+  showToast('저장됐어요');
+  loadRoomsForSelects();
+}
+async function saveNotifySettings(){
+  const roomId=document.getElementById('set-room-select').value;
+  if(!roomId){showToast('독서실을 먼저 추가하세요');return;}
+  await sb(`study_rooms?id=eq.${roomId}`,{method:'PATCH',body:JSON.stringify({
+    notify_enabled:document.getElementById('notify-toggle').classList.contains('on'),
+    notify_channel:document.getElementById('set-channel').value,
+    aligo_api_key:document.getElementById('set-aligo-key').value.trim()||null,
+    aligo_user_id:document.getElementById('set-aligo-user').value.trim()||null,
+    aligo_sender:document.getElementById('set-aligo-sender').value.trim()||null,
+    kakao_js_key:document.getElementById('set-kakao-key').value.trim()||null,
+    auto_report_enabled:document.getElementById('auto-report-toggle').classList.contains('on')
+  })});
+  showToast('알림 설정이 저장됐어요');
+  loadRoomsForSelects();
+}
+
+(async()=>{ await loadRoomsForSelects(); loadStudents(); })();
 
 // 연도 선택 초기화 (현재~2035)
 (function(){
@@ -424,6 +1720,24 @@ loadStudents();
     sel.appendChild(opt);
   }
 })();
+</script>
+
+<!-- 좌석/출석 실시간 업데이트 (Supabase Realtime) -->
+<script type="module">
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+const rtClient = createClient(
+  'https://zmtldohklivkzpfdyflc.supabase.co',
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InptdGxkb2hrbGl2a3pwZmR5ZmxjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI5NjgxMDQsImV4cCI6MjA4ODU0NDEwNH0.cv1WrvDzNedVZABWyRCS9ARRxf4Si9qgeUqEvhpHWlo'
+);
+rtClient.channel('admin-live')
+  .on('postgres_changes',{event:'*',schema:'public',table:'attendance'},()=>{
+    if(document.getElementById('panel-seats')?.classList.contains('on')&&typeof window.refreshSeatData==='function')window.refreshSeatData();
+    if(document.getElementById('panel-attendance')?.classList.contains('on')&&typeof window.loadAttendanceTab==='function')window.loadAttendanceTab();
+  })
+  .on('postgres_changes',{event:'*',schema:'public',table:'seats'},()=>{
+    if(document.getElementById('panel-seats')?.classList.contains('on')&&typeof window.refreshSeatData==='function')window.refreshSeatData();
+  })
+  .subscribe();
 </script>
 </body>
 </html>

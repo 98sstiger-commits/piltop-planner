@@ -1,0 +1,163 @@
+-- ============================================================
+-- 필탑 플래너 · 독서실 관리 시스템 — Supabase 스키마
+-- Supabase SQL Editor에서 그대로 실행하세요.
+-- (기존 planner_students 테이블은 이미 존재한다고 가정합니다)
+-- ============================================================
+
+-- 확장 (gen_random_uuid 사용)
+create extension if not exists pgcrypto;
+
+-- ── 1. study_rooms : 독서실 정보 ──────────────────────────────
+create table if not exists study_rooms (
+  id uuid primary key default gen_random_uuid(),
+  owner_id text not null default 'piltop',
+  name text not null,
+  description text,
+  floor_image_url text,
+  canvas_height integer not null default 420,
+  academy_name text not null default '필탑학원',
+  notify_enabled boolean not null default false,
+  notify_channel text not null default 'sms' check (notify_channel in ('sms','kakao')),
+  aligo_api_key text,
+  aligo_user_id text,
+  aligo_sender text,
+  kakao_js_key text,
+  auto_report_enabled boolean not null default false,
+  created_at timestamptz not null default now()
+);
+-- 좌석 배정 방식: free(자유석, 아무 자리나) / assigned(지정자석, 학생마다 정해진 자리)
+alter table study_rooms add column if not exists seating_mode text not null default 'free' check (seating_mode in ('free','assigned'));
+-- 관리자가 admin.html [학생 입출입] 탭(키오스크 모드)에서 관리 화면으로 되돌아갈 때 필요한 4자리 비밀번호
+alter table study_rooms add column if not exists kiosk_pin text;
+
+-- ── 2. seats : 좌석 정보 ───────────────────────────────────────
+-- kind='block'인 행은 실제 좌석이 아니라 배치도에서 "이 공간은 제외"
+-- 표시용으로 쓰는 사각형입니다 (벽/기둥/통로 등).
+create table if not exists seats (
+  id uuid primary key default gen_random_uuid(),
+  room_id uuid not null references study_rooms(id) on delete cascade,
+  seat_number int not null,
+  label text,
+  x numeric not null default 10,
+  y numeric not null default 10,
+  width numeric not null default 9,
+  height numeric not null default 9,
+  status text not null default 'empty' check (status in ('empty','studying','in_class','away')),
+  kind text not null default 'seat' check (kind in ('seat','block')),
+  created_at timestamptz not null default now(),
+  unique (room_id, seat_number)
+);
+alter table seats add column if not exists kind text not null default 'seat' check (kind in ('seat','block'));
+
+-- 지정자석용: 이 좌석이 어느 학생 전용인지 (자유석 모드에서는 무시됨)
+alter table seats add column if not exists assigned_student_id uuid references planner_students(id) on delete set null;
+create unique index if not exists idx_seats_assigned_student on seats(assigned_student_id) where assigned_student_id is not null;
+
+-- 좌석 상태를 비어있음/공부중/학원수업중/외출중으로 확장 — 실제 체크인 기록이
+-- 없는 좌석도 관리자가 직접 클릭해서 상태를 표시할 수 있도록 함 ('예약'은 제거)
+update seats set status='empty' where status not in ('empty','studying','in_class','away');
+do $$
+begin
+  alter table seats drop constraint if exists seats_status_check;
+  alter table seats add constraint seats_status_check
+    check (status in ('empty','studying','in_class','away'));
+exception when others then null;
+end $$;
+
+-- ── 3. attendance : 출석 기록 ──────────────────────────────────
+-- status: studying(공부중) / in_class(학원수업중) / away(외출중) / checked_out(퇴실)
+-- 체크인~체크아웃 사이에는 세션이 유지된 채로 status만 바뀝니다 (좌석은 계속 그 학생 것).
+create table if not exists attendance (
+  id uuid primary key default gen_random_uuid(),
+  student_id uuid not null references planner_students(id) on delete cascade,
+  room_id uuid not null references study_rooms(id) on delete cascade,
+  seat_id uuid references seats(id) on delete set null,
+  checkin_at timestamptz not null default now(),
+  checkout_at timestamptz,
+  status text not null default 'studying' check (status in ('studying','in_class','away','checked_out')),
+  created_at timestamptz not null default now()
+);
+
+create index if not exists idx_attendance_student on attendance(student_id);
+create index if not exists idx_attendance_room_date on attendance(room_id, checkin_at);
+create index if not exists idx_attendance_active on attendance(room_id) where checkout_at is null;
+
+-- ── 4. planner_students 컬럼 추가 ─────────────────────────────
+alter table planner_students add column if not exists student_pin varchar(4) unique;
+alter table planner_students add column if not exists room_id uuid references study_rooms(id) on delete set null;
+alter table planner_students add column if not exists parent_phone text;
+-- 학생 본인 휴대폰번호 (뒷자리 4개를 PIN으로 자동 사용)
+alter table planner_students add column if not exists student_phone text;
+-- 시험 성적(등수/수강자수) + 학습전략 — 플래니(index.html)에서 학생이 직접 입력
+alter table planner_students add column if not exists exam_scores jsonb not null default '[]'::jsonb;
+
+-- 이미 위 SQL을 한 번 실행한 적이 있다면(테이블이 이미 존재하면) 아래 줄들이
+-- 새로 추가된 컬럼/상태값을 기존 테이블에 안전하게 반영해줍니다.
+alter table study_rooms add column if not exists canvas_height integer not null default 420;
+
+-- 수강 과목: ["kor","math","eng","sci","soc","hist"] 형태의 JSON 배열로 저장
+alter table planner_students add column if not exists subjects jsonb not null default '[]'::jsonb;
+
+-- attendance.status를 공부중/학원수업중/외출중/퇴실 4단계로 확장
+-- (기존에 'checked_in'/'checked_out' 2단계로 실행했던 경우를 위한 마이그레이션)
+update attendance set status='studying' where status='checked_in';
+alter table attendance alter column status set default 'studying';
+do $$
+begin
+  alter table attendance drop constraint if exists attendance_status_check;
+  alter table attendance add constraint attendance_status_check
+    check (status in ('studying','in_class','away','checked_out'));
+exception when others then null;
+end $$;
+
+-- ── 5. Realtime 활성화 (좌석 실시간 업데이트용) ────────────────
+-- 이미 등록돼 있으면 조용히 건너뜁니다 (여러 번 실행해도 안전).
+do $$
+begin
+  alter publication supabase_realtime add table attendance;
+exception when duplicate_object then null;
+end $$;
+do $$
+begin
+  alter publication supabase_realtime add table seats;
+exception when duplicate_object then null;
+end $$;
+
+-- ── 6. RLS — 기존 planner_students와 동일하게 anon key로 전체
+--      CRUD가 가능하도록 개방형 정책을 둡니다 (별도 로그인 없이
+--      admin.html / checkin.html이 anon key만으로 동작하는 구조).
+alter table study_rooms enable row level security;
+alter table seats enable row level security;
+alter table attendance enable row level security;
+
+drop policy if exists "public full access" on study_rooms;
+create policy "public full access" on study_rooms for all using (true) with check (true);
+drop policy if exists "public full access" on seats;
+create policy "public full access" on seats for all using (true) with check (true);
+drop policy if exists "public full access" on attendance;
+create policy "public full access" on attendance for all using (true) with check (true);
+
+-- ── 7. Storage — 도면 이미지 업로드용 버킷 ─────────────────────
+insert into storage.buckets (id, name, public)
+values ('floorplans', 'floorplans', true)
+on conflict (id) do nothing;
+
+drop policy if exists "floorplans public read" on storage.objects;
+create policy "floorplans public read"
+on storage.objects for select
+using (bucket_id = 'floorplans');
+
+drop policy if exists "floorplans public write" on storage.objects;
+create policy "floorplans public write"
+on storage.objects for insert
+with check (bucket_id = 'floorplans');
+
+drop policy if exists "floorplans public update" on storage.objects;
+create policy "floorplans public update"
+on storage.objects for update
+using (bucket_id = 'floorplans');
+
+drop policy if exists "floorplans public delete" on storage.objects;
+create policy "floorplans public delete"
+on storage.objects for delete
+using (bucket_id = 'floorplans');

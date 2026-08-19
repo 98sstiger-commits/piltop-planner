@@ -432,6 +432,36 @@ textarea{resize:none}
 .sticker-btn:active,.sticker-btn.sel{background:var(--gs);border-color:var(--g)}
 .sticker-rm{width:100%;padding:9px;font-size:12px;font-weight:600;color:#8A1A1A;background:#FEE8E8;border-radius:7px;margin-bottom:6px;cursor:pointer}
 
+/* 시험 성적 · 학습전략 */
+.exam-chips{display:flex;gap:6px;overflow-x:auto;padding-bottom:6px;margin-bottom:12px}
+.exam-chip{flex-shrink:0;padding:8px 14px;border-radius:20px;font-size:12px;font-weight:600;background:var(--bg);color:var(--ink2);border:1.5px solid var(--line2);cursor:pointer;white-space:nowrap}
+.exam-chip.on{background:var(--g);color:#fff;border-color:var(--g)}
+.exam-chip.add{background:none;border:1.5px dashed var(--line2);color:var(--ink3)}
+.subj-hd-row{display:grid;grid-template-columns:1fr 62px 62px 22px;gap:6px;font-size:9px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--ink3);margin-bottom:6px;padding:0 2px}
+.subj-row{display:grid;grid-template-columns:1fr 62px 62px 22px;gap:6px;align-items:center;margin-bottom:4px}
+.subj-row input{width:100%;min-width:0;padding:9px 8px;border:1px solid var(--line2);border-radius:7px;font-size:13px;color:var(--ink);background:var(--bg);text-align:center;font-family:inherit}
+.subj-row input.subj-name{text-align:left}
+.subj-row input:focus{border-color:var(--g);background:#fff;outline:none}
+.subj-del{width:22px;height:22px;border-radius:50%;background:var(--line);color:var(--ink2);font-size:13px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.subj-badge-row{margin:0 0 10px 2px;font-size:11px;color:var(--ink2)}
+.add-subj-btn{width:100%;padding:10px;border:1.5px dashed var(--line2);border-radius:8px;color:var(--ink3);font-size:12px;font-weight:600;margin:6px 0 14px;background:none;cursor:pointer}
+.grade-badge{display:inline-block;font-size:10px;font-weight:800;padding:2px 7px;border-radius:6px}
+.grade-badge.g1{background:#E6F4EA;color:#0F7B3F}
+.grade-badge.g2{background:#E8F4EE;color:#1A5C3A}
+.grade-badge.g3{background:#FEF5E8;color:#7A4710}
+.grade-badge.g4{background:#FEEDE0;color:#9A4A0F}
+.grade-badge.g5{background:#FEE8E8;color:#8A1A1A}
+.strategy-summary{background:linear-gradient(135deg,var(--g),#245C40);color:#fff;border-radius:12px;padding:16px;margin-bottom:14px;font-size:13px;line-height:1.7}
+.strategy-summary-lbl{font-size:10px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:rgba(255,255,255,.6);margin-bottom:8px}
+.strategy-card{border-radius:10px;padding:12px 14px;margin-bottom:8px;background:var(--bg);border-left:3px solid var(--line2)}
+.strategy-card.cat-전략{background:#FFF4E0;border-left-color:#D97706}
+.strategy-card.cat-위험{background:#FEE8E8;border-left-color:#B91C1C}
+.strategy-card.cat-안정{background:#E6F4EA;border-left-color:#0F7B3F}
+.strategy-card.cat-유지{background:var(--gs);border-left-color:var(--g)}
+.strategy-card-hd{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:4px}
+.strategy-card-name{font-size:13px;font-weight:700}
+.strategy-card-txt{font-size:12px;color:var(--ink2);line-height:1.6}
+
 /* 타임라인 상세 액션 */
 .tl-detail-actions{display:flex;gap:7px;margin-top:10px}
 .tl-act-btn{flex:1;padding:10px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;border:none;transition:opacity .1s}
@@ -562,9 +592,11 @@ textarea{resize:none}
       <button class="pl-tab on" onclick="goView(3)"><span class="pl-tab-icon">✏️</span>일간</button>
     </div>
     <div class="pl-nav-bottom">
+      <button class="pl-edit-btn" onclick="openScoreSheet()"><span>🎯</span>성적·전략</button>
       <button class="pl-edit-btn" onclick="openProf()"><span>✎</span>정보 수정</button>
       <button class="pl-edit-btn" id="pwa-nav-btn" onclick="triggerInstall()" style="display:none"><span>⬇</span>앱 설치</button>
     </div>
+    <button class="pl-edit-btn" onclick="openScoreSheet()" style="display:none" id="mob-score">🎯</button>
     <button class="pl-edit-btn" onclick="openProf()" style="display:none" id="mob-edit">✎</button>
   </div>
 
@@ -656,7 +688,7 @@ textarea{resize:none}
             <div class="dy-quote-en" id="dy-quote-en"></div>
             <div class="dy-quote-author" id="dy-quote-author"></div>
           </div>
-          <!-- AI 플래너 한마디 -->
+          <!-- 맞춤 플래너 한마디 -->
           <div class="dy-ai" id="dy-ai" style="display:none">
             <div class="dy-ai-ico">✦</div>
             <div>
@@ -834,6 +866,32 @@ textarea{resize:none}
   </div>
 </div>
 
+<!-- 시험 성적 · 학습전략 -->
+<div class="sheet-bg" id="score-bg" onclick="if(event.target===this)closeScoreSheet()">
+  <div class="sheet">
+    <div class="sheet-grip"></div>
+    <div class="sheet-hd">
+      <div><div class="sheet-ttl">🎯 시험 성적 · 학습전략</div><div class="sheet-sub">등수 · 수강인원만 넣으면 등급이랑 전략을 알려드려요</div></div>
+      <button class="sheet-x" onclick="closeScoreSheet()">×</button>
+    </div>
+    <div class="sheet-bd">
+      <div class="exam-chips" id="exam-chips"></div>
+      <input class="t-input" id="exam-label-inp" placeholder="예: 2학년 1학기 중간고사" oninput="renameCurExam(this.value)">
+      <div class="sec-lbl">과목별 성적</div>
+      <div class="subj-hd-row"><span>과목</span><span>내 등수</span><span>수강인원</span><span></span></div>
+      <div id="subj-rows"></div>
+      <div class="subj-badge-row" id="subj-badge-row"></div>
+      <button class="add-subj-btn" onclick="addSubjRow()">+ 과목 추가</button>
+      <button class="s-btn pri" style="width:100%;margin-bottom:14px" onclick="runStrategyAnalysis()" id="strategy-btn">✦ 학습전략 분석하기</button>
+      <div id="strategy-results"></div>
+    </div>
+    <div class="sheet-ft">
+      <button class="s-btn del" onclick="deleteCurExam()">이 시험 삭제</button>
+      <button class="s-btn pri" onclick="closeScoreSheet()">닫기</button>
+    </div>
+  </div>
+</div>
+
 
 <!-- PWA 설치 배너 -->
 <div class="install-banner" id="install-banner">
@@ -930,7 +988,7 @@ let S={
   career:'',careerField:'',u1:'',d1:'',u2:'',d2:'',
   yearlyPlan:{},schoolSched:[],monthGoals:{},monthMemos:{},
   dayMemos:{},dayChecks:{},dayTl:{},dayStickers:{},dayColors:{},dayNotes:{},
-  weekGoals:{},weekMemos:{},
+  weekGoals:{},weekMemos:{},examScores:[],
   calYear:YEAR,calMonth:TODAY.getMonth(),
   weekStart:getMonday(TODAY),curDay:new Date(TODAY),
 };
@@ -973,6 +1031,7 @@ async function loadDB(){
   if(r.time_slots)S.dayNotes=r.time_slots;
   if(r.week_goals)S.weekGoals=r.week_goals;
   if(r.week_memos)S.weekMemos=r.week_memos;
+  if(Array.isArray(r.exam_scores))S.examScores=r.exam_scores;
   // career 입력했거나 yearly_plan 있으면 온보딩 완료로 간주
   return !!(S.career || S.careerField || Object.keys(S.yearlyPlan).length > 0);
 }
@@ -998,6 +1057,7 @@ async function saveDB(){
         day_tl:S.dayTl,day_stickers:S.dayStickers,day_colors:S.dayColors,
         time_slots:S.dayNotes,
         week_goals:S.weekGoals,week_memos:S.weekMemos,
+        exam_scores:S.examScores,
       })
     });
   }catch(e){console.error('save err',e);}
@@ -1150,7 +1210,7 @@ function fallback(){
          :[...base,{date:`${y}-04-09`,name:'1학기 중간고사',type:'school-exam'},{date:`${y}-07-02`,name:'1학기 기말고사',type:'school-exam'},{date:`${y}-10-15`,name:'2학기 중간고사',type:'school-exam'},{date:`${y}-12-10`,name:'2학기 기말고사',type:'school-exam'}];
 }
 
-/* ── AI 생성 (서버리스 함수 경유) ── */
+/* ── 맞춤 계획 생성 (서버리스 함수 경유) ── */
 async function genPlan(){
   const res=await fetch('/api/generate-plan',{
     method:'POST',
@@ -1190,7 +1250,8 @@ async function startPlanner(){
   document.getElementById('pl').classList.add('on');
   // 모바일 편집 버튼
   const mobEdit=document.getElementById('mob-edit');
-  if(window.innerWidth<768){mobEdit.style.display='flex';}
+  const mobScore=document.getElementById('mob-score');
+  if(window.innerWidth<768){mobEdit.style.display='flex';mobScore.style.display='flex';}
 
   // 먼저 현재 데이터로 즉시 렌더링 (빈 화면 방지)
   document.getElementById('pl-student').textContent=`${S.name} · ${S.school} · ${S.grade}학년`;
@@ -1261,7 +1322,7 @@ function renderYr(){
 }
 
 async function regenYearly(){
-  toast('AI가 다시 생성 중...');
+  toast('다시 생성하는 중...');
   if(!S.schoolSched.length)S.schoolSched=await fetchNeis();
   try{S.yearlyPlan=await genPlan();}catch{S.yearlyPlan=fallbackPlan();}
   await saveDB();renderYr();toast('연간 플래너 업데이트 완료!');
@@ -1386,7 +1447,7 @@ function renderWk(){
   const plan=S.yearlyPlan[ws.getMonth()+1];
   const aiW=document.getElementById('wk-ai-wrap');
   if(plan?.weeklyHint){
-    aiW.innerHTML=`<div class="wk-ai"><div class="wk-ai-lbl">AI · 이번 주 포인트</div><div class="wk-ai-txt">${plan.weeklyHint}${plan.careerTip?'  ·  진로: '+plan.careerTip:''}</div></div>`;
+    aiW.innerHTML=`<div class="wk-ai"><div class="wk-ai-lbl">이번 주 포인트</div><div class="wk-ai-txt">${plan.weeklyHint}${plan.careerTip?'  ·  진로: '+plan.careerTip:''}</div></div>`;
   }else aiW.innerHTML='';
   let evHtml='';
   for(let d=0;d<7;d++){const date=new Date(ws);date.setDate(ws.getDate()+d);getEvs(dk(date)).forEach(e=>{const tm={'school-exam':'exam',suneung:'suneung',school:'school'};evHtml+=`<div class="wk-ev ${tm[e.type]||'school'}">${DOW[date.getDay()]} ${date.getDate()}일 — ${e.name}</div>`;});}
@@ -1484,7 +1545,7 @@ function renderDy(){
     document.getElementById('dy-quote-author').textContent=`— ${q.a}`;
   }
 
-  // AI 플래너 한마디
+  // 맞춤 플래너 한마디
   const plan=S.yearlyPlan[d.getMonth()+1];
   const aiEl=document.getElementById('dy-ai');
   if(plan&&plan.keyword){
@@ -1746,6 +1807,195 @@ function goToDaySheet(){if(!modalDate)return;S.curDay=new Date(modalDate);closeD
 /* ── 프로필 ── */
 function openProf(){document.getElementById('pe-career').value=S.career||S.careerField||'';document.getElementById('pe-u1').value=S.u1||'';document.getElementById('pe-d1').value=S.d1||'';document.getElementById('pe-u2').value=S.u2||'';document.getElementById('pe-d2').value=S.d2||'';document.getElementById('prof-bg').classList.add('open');}
 function closeProfSheet(){document.getElementById('prof-bg').classList.remove('open');}
+
+/* ── 시험 성적 · 학습전략 ── */
+const GRADE_CUTOFFS=[10,34,66,90,100]; // 5등급 상대평가 누적 상위 % 컷
+function calcGrade(rank,total){
+  rank=Number(rank);total=Number(total);
+  if(!rank||!total||rank<1||total<1||rank>total)return null;
+  const pct=rank/total*100;
+  for(let g=0;g<GRADE_CUTOFFS.length;g++){if(pct<=GRADE_CUTOFFS[g]+1e-9)return g+1;}
+  return 5;
+}
+function gradeAnalysis(rank,total){
+  const grade=calcGrade(rank,total);
+  if(!grade)return null;
+  rank=Number(rank);total=Number(total);
+  const closeBand=Math.max(2,Math.round(total*0.05));
+  let gapToNextGrade=null;
+  if(grade>1){
+    const betterCutPct=GRADE_CUTOFFS[grade-2];
+    const neededRank=Math.max(1,Math.floor(betterCutPct*total/100));
+    gapToNextGrade=Math.max(0,rank-neededRank);
+  }
+  const curCutPct=GRADE_CUTOFFS[grade-1];
+  const worseBoundary=Math.floor(curCutPct*total/100);
+  const gapToWorse=Math.max(0,worseBoundary-rank);
+  const nearUp=grade>1&&gapToNextGrade!==null&&gapToNextGrade<=closeBand;
+  const nearDown=gapToWorse<=closeBand;
+  let category;
+  if(nearDown)category='위험';
+  else if(nearUp)category='전략';
+  else if(grade===1||gapToWorse>closeBand*2)category='안정';
+  else category='유지';
+  return {grade,category,gapToNextGrade,gapToWorse};
+}
+let curExamId=null;
+function curExam(){return S.examScores.find(e=>e.id===curExamId)||null;}
+function openScoreSheet(){
+  if(!S.examScores.length)addExam();
+  else if(!curExam())curExamId=S.examScores[S.examScores.length-1].id;
+  renderExamChips();renderExamDetail();
+  document.getElementById('score-bg').classList.add('open');
+}
+function closeScoreSheet(){document.getElementById('score-bg').classList.remove('open');}
+function addExam(){
+  const e={id:'ex_'+Date.now(),label:'새 시험',subjects:[],results:null};
+  S.examScores.push(e);curExamId=e.id;
+  saveDB();renderExamChips();renderExamDetail();
+}
+function renameCurExam(v){
+  const e=curExam();if(!e)return;
+  e.label=v;renderExamChips();saveDB();
+}
+function deleteCurExam(){
+  const e=curExam();if(!e)return;
+  if(!confirm(`"${e.label||'이 시험'}" 성적을 삭제할까요?`))return;
+  S.examScores=S.examScores.filter(x=>x.id!==e.id);
+  saveDB();
+  if(!S.examScores.length){closeScoreSheet();return;}
+  curExamId=S.examScores[S.examScores.length-1].id;
+  renderExamChips();renderExamDetail();
+}
+function renderExamChips(){
+  const wrap=document.getElementById('exam-chips');if(!wrap)return;
+  wrap.innerHTML='';
+  S.examScores.forEach(e=>{
+    const b=document.createElement('button');
+    b.className='exam-chip'+(e.id===curExamId?' on':'');
+    b.textContent=e.label||'시험';
+    b.onclick=()=>{curExamId=e.id;renderExamDetail();};
+    wrap.appendChild(b);
+  });
+  const add=document.createElement('button');
+  add.className='exam-chip add';add.textContent='+ 새 시험';
+  add.onclick=addExam;
+  wrap.appendChild(add);
+}
+function renderExamDetail(){
+  const e=curExam();if(!e)return;
+  renderExamChips();
+  document.getElementById('exam-label-inp').value=e.label||'';
+  renderSubjRows();
+  const btn=document.getElementById('strategy-btn');
+  btn.disabled=false;btn.textContent='✦ 학습전략 분석하기';
+  const res=document.getElementById('strategy-results');
+  res.innerHTML='';
+  if(e.results)renderStrategyResults(e.results);
+}
+function addSubjRow(){
+  const e=curExam();if(!e)return;
+  e.subjects.push({name:'',myRank:'',totalStudents:''});
+  renderSubjRows();saveDB();
+}
+function delSubj(i){
+  const e=curExam();if(!e)return;
+  e.subjects.splice(i,1);
+  renderSubjRows();saveDB();
+}
+function updSubj(i,field,val){
+  const e=curExam();if(!e||!e.subjects[i])return;
+  e.subjects[i][field]=field==='name'?val:val.replace(/[^0-9]/g,'');
+}
+function renderSubjRows(){
+  const e=curExam();if(!e)return;
+  const wrap=document.getElementById('subj-rows');
+  wrap.innerHTML='';
+  e.subjects.forEach((s,i)=>{
+    const row=document.createElement('div');row.className='subj-row';
+    const nameInp=document.createElement('input');nameInp.className='subj-name';nameInp.placeholder='과목명';nameInp.value=s.name||'';
+    const rankInp=document.createElement('input');rankInp.setAttribute('inputmode','numeric');rankInp.placeholder='등수';rankInp.value=s.myRank||'';
+    const totalInp=document.createElement('input');totalInp.setAttribute('inputmode','numeric');totalInp.placeholder='인원';totalInp.value=s.totalStudents||'';
+    const del=document.createElement('div');del.className='subj-del';del.textContent='✕';
+    nameInp.oninput=()=>updSubj(i,'name',nameInp.value);
+    nameInp.onblur=()=>saveDB();
+    rankInp.oninput=()=>updSubj(i,'myRank',rankInp.value);
+    rankInp.onblur=()=>{renderSubjBadges();saveDB();};
+    totalInp.oninput=()=>updSubj(i,'totalStudents',totalInp.value);
+    totalInp.onblur=()=>{renderSubjBadges();saveDB();};
+    del.onclick=()=>delSubj(i);
+    row.appendChild(nameInp);row.appendChild(rankInp);row.appendChild(totalInp);row.appendChild(del);
+    wrap.appendChild(row);
+  });
+  renderSubjBadges();
+}
+function renderSubjBadges(){
+  const e=curExam();const wrap=document.getElementById('subj-badge-row');if(!e||!wrap)return;
+  wrap.innerHTML='';
+  e.subjects.forEach(s=>{
+    const a=gradeAnalysis(s.myRank,s.totalStudents);
+    if(!a||!s.name)return;
+    const span=document.createElement('span');
+    span.style.marginRight='8px';
+    const badge=document.createElement('span');badge.className='grade-badge g'+a.grade;badge.textContent=a.grade+'등급';
+    span.appendChild(document.createTextNode(s.name+' '));
+    span.appendChild(badge);
+    wrap.appendChild(span);
+  });
+}
+async function runStrategyAnalysis(){
+  const e=curExam();if(!e)return;
+  const valid=e.subjects.filter(s=>s.name&&calcGrade(s.myRank,s.totalStudents));
+  if(!valid.length){toast('과목명 · 등수 · 수강인원을 입력해주세요');return;}
+  const analyzed=valid.map(s=>{const a=gradeAnalysis(s.myRank,s.totalStudents);return{name:s.name,myRank:Number(s.myRank),totalStudents:Number(s.totalStudents),...a};});
+  const btn=document.getElementById('strategy-btn');
+  btn.disabled=true;btn.textContent='분석 중...';
+  let result=null;
+  try{
+    const r=await fetch('/api/generate-study-strategy',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:S.name,examLabel:e.label,subjects:analyzed})});
+    const data=await r.json();
+    if(data.success)result={subjectComments:data.subjectComments||{},summary:data.summary||''};
+  }catch(err){console.error('학습전략 분석 실패:',err);}
+  if(!result)result=fallbackStrategy(analyzed);
+  e.results={analyzed,subjectComments:result.subjectComments,summary:result.summary};
+  saveDB();
+  btn.disabled=false;btn.textContent='✦ 학습전략 분석하기';
+  renderStrategyResults(e.results);
+}
+function fallbackStrategy(analyzed){
+  const comments={};
+  analyzed.forEach(s=>{
+    if(s.category==='전략')comments[s.name]=`다음 등급 컷까지 ${s.gapToNextGrade}명 차이예요. 조금만 더 올리면 ${s.grade-1}등급이 보여요.`;
+    else if(s.category==='위험')comments[s.name]=`등급 하락까지 여유가 ${s.gapToWorse}명뿐이에요. 지금 등급을 지키는 데 집중하세요.`;
+    else if(s.category==='안정')comments[s.name]=`등급 여유가 충분해요. 다른 과목에 시간을 더 배분해도 좋아요.`;
+    else comments[s.name]=`지금 페이스를 꾸준히 유지하면 되는 과목이에요.`;
+  });
+  const priority=[...analyzed].filter(s=>s.category==='위험').concat(analyzed.filter(s=>s.category==='전략'));
+  const names=priority.slice(0,2).map(s=>s.name);
+  const summary=names.length?`다음 시험까지는 ${names.join(', ')} 과목에 시간을 가장 먼저 투자해보세요. 나머지 과목은 지금 페이스를 유지하면서 꾸준히 챙기면 좋은 결과가 있을 거예요.`:`전 과목이 안정적인 편이에요. 지금처럼 꾸준히 유지해보세요.`;
+  return{subjectComments:comments,summary};
+}
+function renderStrategyResults(results){
+  const wrap=document.getElementById('strategy-results');if(!wrap)return;
+  wrap.innerHTML='';
+  if(results.summary){
+    const box=document.createElement('div');box.className='strategy-summary';
+    const lbl=document.createElement('div');lbl.className='strategy-summary-lbl';lbl.textContent='✦ 총평';
+    const txt=document.createElement('div');txt.textContent=results.summary;
+    box.appendChild(lbl);box.appendChild(txt);wrap.appendChild(box);
+  }
+  (results.analyzed||[]).forEach(s=>{
+    const card=document.createElement('div');card.className='strategy-card cat-'+s.category;
+    const hd=document.createElement('div');hd.className='strategy-card-hd';
+    const name=document.createElement('span');name.className='strategy-card-name';name.textContent=s.name;
+    const badge=document.createElement('span');badge.className='grade-badge g'+s.grade;badge.textContent=s.grade+'등급 · '+s.category;
+    hd.appendChild(name);hd.appendChild(badge);
+    const txt=document.createElement('div');txt.className='strategy-card-txt';
+    txt.textContent=(results.subjectComments||{})[s.name]||'';
+    card.appendChild(hd);card.appendChild(txt);
+    wrap.appendChild(card);
+  });
+}
 async function saveProfSheet(){
   S.career=document.getElementById('pe-career').value.trim();
   S.u1=document.getElementById('pe-u1').value.trim();
@@ -1753,7 +2003,7 @@ async function saveProfSheet(){
   S.u2=document.getElementById('pe-u2').value.trim();
   S.d2=document.getElementById('pe-d2').value.trim();
   closeProfSheet();
-  toast('AI가 진로 맞춤 계획 생성 중...');
+  toast('진로 맞춤 계획 생성 중...');
   let ok=false;
   const prevPlan=S.yearlyPlan;
   try{S.yearlyPlan=await genPlan();ok=true;}
@@ -1761,7 +2011,7 @@ async function saveProfSheet(){
   await saveDB();
   document.getElementById('yr-info').textContent=`${S.name} · ${S.career||S.careerField||'진로 탐색 중'}`;
   renderYr();renderMon();renderWk();renderDy();
-  toast(ok?`진로 맞춤 플랜 완성! (${S.career||S.careerField||''})`:'저장 완료 (AI 생성 실패 — 나중에 ↺ 재생성 버튼을 눌러보세요)',ok?2400:4000);
+  toast(ok?`진로 맞춤 플랜 완성! (${S.career||S.careerField||''})`:'저장 완료 (생성 실패 — 나중에 ↺ 재생성 버튼을 눌러보세요)',ok?2400:4000);
 }
 
 /* ── Supabase month_goals/month_memos 컬럼 추가 확인 ── */
