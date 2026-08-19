@@ -7,7 +7,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&family=Playfair+Display:ital,wght@0,700;1,400&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--ink);min-height:100vh;-webkit-font-smoothing:antialiased}
+body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--ink);min-height:100vh;-webkit-font-smoothing:antialiased;word-break:keep-all}
 button{cursor:pointer;border:none;background:none;font-family:inherit}
 
 :root{
@@ -116,6 +116,15 @@ button{cursor:pointer;border:none;background:none;font-family:inherit}
 
 .loading-screen{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;color:var(--ink3);font-size:13px;z-index:200}
 
+/* ── 공유 리포트 선택 시트 ── */
+.share-pick-bg{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:100;display:flex;align-items:flex-end;justify-content:center;opacity:0;pointer-events:none;transition:opacity .2s}
+.share-pick-bg.on{opacity:1;pointer-events:auto}
+.share-pick{background:var(--surf);width:100%;max-width:520px;border-radius:18px 18px 0 0;padding:20px 16px calc(20px + env(safe-area-inset-bottom))}
+.share-pick-ttl{font-size:14px;font-weight:800;margin-bottom:14px;text-align:center;color:var(--ink)}
+.share-pick-opt{display:block;width:100%;padding:14px;border-radius:12px;background:var(--gs);color:var(--g);font-size:14px;font-weight:700;margin-bottom:8px;text-align:center}
+.share-pick-opt.muted{background:var(--bg);color:var(--ink2);font-weight:600}
+.share-pick-cancel{display:block;width:100%;padding:12px;text-align:center;color:var(--ink3);font-size:13px;font-weight:600;margin-top:2px}
+
 @media print{
   .tabs,.datenav,.sharebar,.toast{display:none !important}
   body{background:#fff}
@@ -159,10 +168,20 @@ button{cursor:pointer;border:none;background:none;font-family:inherit}
   </div>
 
   <div class="sharebar">
-    <button class="share-btn kakao" onclick="shareKakao()"><span class="ico">💬</span>카카오톡</button>
-    <button class="share-btn sms" onclick="shareSms()"><span class="ico">📱</span>문자발송</button>
-    <button class="share-btn" onclick="copyLink()"><span class="ico">🔗</span>링크복사</button>
+    <button class="share-btn kakao" onclick="openSharePicker('kakao')"><span class="ico">💬</span>카카오톡</button>
+    <button class="share-btn sms" onclick="openSharePicker('sms')"><span class="ico">📱</span>문자발송</button>
+    <button class="share-btn" onclick="openSharePicker('copy')"><span class="ico">🔗</span>링크복사</button>
     <button class="share-btn" onclick="window.print()"><span class="ico">🖨️</span>인쇄/PDF</button>
+  </div>
+</div>
+
+<div class="share-pick-bg" id="share-pick-bg" onclick="if(event.target===this)closeSharePicker()">
+  <div class="share-pick">
+    <div class="share-pick-ttl">어떤 리포트를 보낼까요?</div>
+    <button class="share-pick-opt" onclick="confirmShare('weekly')">📅 주간 리포트</button>
+    <button class="share-pick-opt" onclick="confirmShare('monthly')">🗓️ 월간 리포트</button>
+    <button class="share-pick-opt muted" onclick="confirmShare('daily')">📋 일간 리포트 (상세)</button>
+    <button class="share-pick-cancel" onclick="closeSharePicker()">취소</button>
   </div>
 </div>
 
@@ -464,13 +483,35 @@ function fallbackComment(type,stats){
 }
 
 /* ── 공유 ── */
-function copyLink(){
-  navigator.clipboard.writeText(location.href).then(()=>toast('링크가 복사됐어요'));
+const TYPE_LABEL={daily:'일간',weekly:'주간',monthly:'월간'};
+function buildShareUrl(type){
+  const params=new URLSearchParams({id:STATE.id,type,date:dk(STATE.date)});
+  return location.origin+location.pathname+'?'+params.toString();
 }
-async function shareKakao(){
+let pendingShareChannel=null;
+function openSharePicker(channel){
+  pendingShareChannel=channel;
+  document.getElementById('share-pick-bg').classList.add('on');
+}
+function closeSharePicker(){
+  document.getElementById('share-pick-bg').classList.remove('on');
+  pendingShareChannel=null;
+}
+function confirmShare(type){
+  const channel=pendingShareChannel;
+  closeSharePicker();
+  if(channel==='kakao')shareKakao(type);
+  else if(channel==='sms')shareSms(type);
+  else if(channel==='copy')copyLink(type);
+}
+function copyLink(type){
+  navigator.clipboard.writeText(buildShareUrl(type||STATE.type)).then(()=>toast('링크가 복사됐어요'));
+}
+async function shareKakao(type){
+  const url=buildShareUrl(type||STATE.type);
   if(!ROOM?.kakao_js_key){
-    if(navigator.share){navigator.share({title:'학습 리포트',text:`${STUDENT.name} 학생의 학습 리포트`,url:location.href}).catch(()=>{});}
-    else{copyLink();toast('카카오 공유를 쓰려면 admin.html [설정]에서 카카오 JS 키를 등록하세요');}
+    if(navigator.share){navigator.share({title:'학습 리포트',text:`${STUDENT.name} 학생의 학습 리포트`,url}).catch(()=>{});}
+    else{navigator.clipboard.writeText(url).then(()=>toast('링크가 복사됐어요 (카카오 공유를 쓰려면 admin.html [설정]에서 카카오 JS 키를 등록하세요)'));}
     return;
   }
   try{
@@ -480,15 +521,16 @@ async function shareKakao(){
     if(!window.Kakao.isInitialized())window.Kakao.init(ROOM.kakao_js_key);
     window.Kakao.Share.sendDefault({
       objectType:'feed',
-      content:{title:`${STUDENT.name} 학생 학습 리포트`,description:document.getElementById('dn-label').textContent,imageUrl:location.origin+'/icon.svg',link:{mobileWebUrl:location.href,webUrl:location.href}},
-      buttons:[{title:'리포트 보기',link:{mobileWebUrl:location.href,webUrl:location.href}}]
+      content:{title:`${STUDENT.name} 학생 ${TYPE_LABEL[type||STATE.type]} 리포트`,description:`필탑 플래너에서 확인해보세요`,imageUrl:location.origin+'/icon.svg',link:{mobileWebUrl:url,webUrl:url}},
+      buttons:[{title:'리포트 보기',link:{mobileWebUrl:url,webUrl:url}}]
     });
-  }catch(e){copyLink();}
+  }catch(e){navigator.clipboard.writeText(url).then(()=>toast('링크가 복사됐어요'));}
 }
-async function shareSms(){
+async function shareSms(type){
   if(!STUDENT.parent_phone){toast('학부모 연락처가 등록되지 않았어요');return;}
   if(!ROOM?.aligo_api_key){toast('admin.html [설정]에서 문자 발송 키를 먼저 등록하세요');return;}
-  const msg=`[${ROOM.academy_name||'필탑학원'}] ${STUDENT.name} 학생의 학습 리포트입니다.\n${location.href}`;
+  const url=buildShareUrl(type||STATE.type);
+  const msg=`[${ROOM.academy_name||'필탑학원'}] ${STUDENT.name} 학생의 ${TYPE_LABEL[type||STATE.type]} 학습 리포트입니다.\n${url}`;
   try{
     const r=await fetch('/api/send-notify',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({phone:STUDENT.parent_phone,message:msg,channel:'sms',aligo:{key:ROOM.aligo_api_key,user:ROOM.aligo_user_id,sender:ROOM.aligo_sender}})});
     const data=await r.json();
