@@ -187,6 +187,8 @@ body{font-family:'Pretendard','Noto Sans KR',sans-serif;color:var(--ink);min-hei
 .seat-edit-hint::before{content:'💡';flex-shrink:0;font-size:13px;line-height:1.5}
 .seat-map-wrap{position:relative;background:#F9F8F5;border:1px solid var(--line);border-radius:14px;height:420px;overflow:hidden}
 .seat-map-wrap.editing{cursor:crosshair}
+.seat-map-wrap.region-select{cursor:crosshair}
+.region-marquee{border-color:var(--gold2)!important;background:rgba(227,190,109,.14)!important}
 .seat-map-img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;pointer-events:none;user-select:none}
 .seat-node{position:absolute;border-radius:10px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-weight:700;font-size:12px;cursor:pointer;border:2px solid transparent;box-shadow:0 1px 3px rgba(0,0,0,.08);transition:box-shadow .12s,transform .08s;user-select:none}
 .seat-node.st-empty{background:#EFEDE8;border-color:var(--line2);color:var(--ink2)}
@@ -391,6 +393,7 @@ body{font-family:'Pretendard','Noto Sans KR',sans-serif;color:var(--ink);min-hei
       <input type="file" id="floor-img-input" accept="image/*" style="display:none" onchange="uploadFloorImage(this.files[0])">
       <button class="mini-btn danger" id="seat-remove-img-btn" onclick="removeFloorImage()" style="display:none">🗑️ 도면 삭제</button>
       <button class="mini-btn pri" id="seat-detect-btn" onclick="detectSeatsFromImage()" style="display:none">🪄 도면에서 자동 배치</button>
+      <button class="mini-btn" id="seat-detect-region-btn" onclick="toggleRegionDetectMode()" style="display:none">🔲 영역 선택해서 배치</button>
       <div class="seat-toolbar-divider"></div>
       <button class="mini-btn" id="seat-add-btn" onclick="addSeat()">+ 좌석 추가</button>
       <button class="mini-btn" id="seat-grid-btn" onclick="openGridModal()">▦ 격자로 여러 개 생성</button>
@@ -1053,7 +1056,7 @@ function openPhonePop(e,id){
 }
 
 /* ══ 좌석현황 탭 ══ */
-let SEATS=[],ACTIVE_ATT=[],seatEditMode=false,dragMoved=false,selectMode=false;
+let SEATS=[],ACTIVE_ATT=[],seatEditMode=false,dragMoved=false,selectMode=false,regionSelectMode=false;
 let selectedSeats=new Set();
 
 function onSeatRoomChange(){
@@ -1093,6 +1096,8 @@ function renderSeatMap(){
     :'좌석을 드래그하면 위치를 옮기고, 클릭하면 이름표·상태를 수정할 수 있어요. 여러 개를 한 번에 옮기려면 "선택 모드"를 켜보세요.';
   document.getElementById('seat-remove-img-btn').style.display=(room&&room.floor_image_url)?'':'none';
   document.getElementById('seat-detect-btn').style.display=(room&&room.floor_image_url)?'':'none';
+  document.getElementById('seat-detect-region-btn').style.display=(room&&room.floor_image_url)?'':'none';
+  wrap.classList.toggle('region-select',regionSelectMode);
   document.getElementById('seat-select-toggle').classList.toggle('pri',selectMode);
   document.getElementById('seat-select-toggle').textContent=selectMode?'✓ 선택 모드 끄기':'🖱️ 선택 모드';
   document.getElementById('seat-select-clear').style.display=selectedSeats.size?'':'none';
@@ -1415,6 +1420,7 @@ async function deleteSelectedSeats(){
   refreshSeatData();
 }
 function handleWrapMouseDown(e){
+  if(regionSelectMode){handleRegionSelectDrag(e);return;}
   if(!selectMode||!seatEditMode)return;
   if(e.target.closest('.seat-node')||e.target.closest('.canvas-resize-handle'))return;
   e.preventDefault();
@@ -1459,6 +1465,93 @@ async function removeFloorImage(){
   await sb(`study_rooms?id=eq.${curSeatRoomId}`,{method:'PATCH',body:JSON.stringify({floor_image_url:null})});
   const room=ROOMS.find(r=>r.id===curSeatRoomId);if(room)room.floor_image_url=null;
   refreshSeatData();
+}
+/* ── 영역 선택해서 자동 배치 (도면이 복잡해서 전체 분석이 시간 내에 안 끝날 때) ── */
+function toggleRegionDetectMode(){
+  const room=ROOMS.find(r=>r.id===curSeatRoomId);
+  if(!room||!room.floor_image_url){showToast('먼저 도면을 업로드하세요');return;}
+  regionSelectMode=!regionSelectMode;
+  const btn=document.getElementById('seat-detect-region-btn');
+  btn.classList.toggle('pri',regionSelectMode);
+  btn.textContent=regionSelectMode?'✓ 영역 선택 종료':'🔲 영역 선택해서 배치';
+  document.getElementById('seat-map-wrap').classList.toggle('region-select',regionSelectMode);
+  if(regionSelectMode)showToast('도면 위에서 분석할 영역을 드래그로 선택하세요 — 좌석이 많으면 나눠서 여러 번 분석하면 더 안정적이에요');
+}
+function handleRegionSelectDrag(e){
+  if(e.target.closest('.seat-node')||e.target.closest('.canvas-resize-handle'))return;
+  e.preventDefault();
+  const wrap=document.getElementById('seat-map-wrap');
+  const rect=wrap.getBoundingClientRect();
+  const startPt=e.touches?e.touches[0]:e;
+  const startX=startPt.clientX,startY=startPt.clientY;
+  const box=document.createElement('div');
+  box.className='marquee-box region-marquee';
+  wrap.appendChild(box);
+  function move(ev){
+    const pt=ev.touches?ev.touches[0]:ev;
+    const x1=Math.min(startX,pt.clientX),x2=Math.max(startX,pt.clientX);
+    const y1=Math.min(startY,pt.clientY),y2=Math.max(startY,pt.clientY);
+    box.style.left=(x1-rect.left)+'px';box.style.top=(y1-rect.top)+'px';
+    box.style.width=(x2-x1)+'px';box.style.height=(y2-y1)+'px';
+  }
+  function up(ev){
+    document.removeEventListener('mousemove',move);document.removeEventListener('mouseup',up);
+    document.removeEventListener('touchmove',move);document.removeEventListener('touchend',up);
+    const pt=ev.changedTouches?ev.changedTouches[0]:ev;
+    box.remove();
+    if(Math.abs(pt.clientX-startX)<20&&Math.abs(pt.clientY-startY)<20){showToast('영역이 너무 작아요 — 더 크게 드래그해주세요');return;}
+    const x0=Math.max(0,(Math.min(startX,pt.clientX)-rect.left)/rect.width*100);
+    const x1p=Math.min(100,(Math.max(startX,pt.clientX)-rect.left)/rect.width*100);
+    const y0=Math.max(0,(Math.min(startY,pt.clientY)-rect.top)/rect.height*100);
+    const y1p=Math.min(100,(Math.max(startY,pt.clientY)-rect.top)/rect.height*100);
+    detectSeatsInRegion(x0,y0,x1p,y1p);
+  }
+  document.addEventListener('mousemove',move);document.addEventListener('mouseup',up);
+  document.addEventListener('touchmove',move,{passive:false});document.addEventListener('touchend',up);
+}
+async function detectSeatsInRegion(x0,y0,x1,y1){
+  const imgEl=document.querySelector('#seat-map-wrap .seat-map-img');
+  if(!imgEl||!imgEl.naturalWidth){showToast('도면 이미지를 아직 불러오는 중이에요 — 잠시 후 다시 시도해주세요');return;}
+  const nw=imgEl.naturalWidth,nh=imgEl.naturalHeight;
+  const sx=Math.round(x0/100*nw),sy=Math.round(y0/100*nh);
+  const sw=Math.max(1,Math.round((x1-x0)/100*nw)),sh=Math.max(1,Math.round((y1-y0)/100*nh));
+  const canvas=document.createElement('canvas');
+  canvas.width=sw;canvas.height=sh;
+  canvas.getContext('2d').drawImage(imgEl,sx,sy,sw,sh,0,0,sw,sh);
+  const base64=canvas.toDataURL('image/png').split(',')[1];
+
+  showToast('선택 영역을 분석하는 중이에요 (최대 1분 정도 걸려요)');
+  try{
+    const r=await fetch('/api/detect-seats',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({imageBase64:base64,mediaType:'image/png'})});
+    let data;
+    try{data=await r.json();}
+    catch(parseErr){
+      console.error('detect-seats(영역): 응답이 JSON이 아니에요',r.status,parseErr);
+      showToast(`영역 분석 실패: 서버 응답 오류 (status ${r.status})`);
+      return;
+    }
+    if(!data.success){showToast('영역 분석 실패: '+(data.error||'알 수 없는 오류'));return;}
+    if(!Array.isArray(data.seats)||!data.seats.length){showToast('이 영역에서 좌석을 찾지 못했어요');return;}
+    let maxNum=SEATS.reduce((m,s)=>Math.max(m,s.seat_number),0);
+    const batch=data.seats.map(s=>{
+      maxNum++;
+      return {
+        room_id:curSeatRoomId,seat_number:maxNum,
+        x:x0+s.x/100*(x1-x0),y:y0+s.y/100*(y1-y0),
+        width:s.width/100*(x1-x0),height:s.height/100*(y1-y0),
+        status:'empty'
+      };
+    });
+    const inserted=await sb('seats',{method:'POST',body:JSON.stringify(batch)});
+    if(!Array.isArray(inserted)||!inserted.length){showToast('좌석 저장에 실패했어요 — Supabase 연결을 확인해주세요');return;}
+    selectedSeats=new Set(inserted.map(row=>row.id));
+    seatEditMode=true;selectMode=true;
+    refreshSeatData();
+    showToast(`선택 영역에서 좌석 ${batch.length}개를 배치했어요 — 이어서 다른 영역도 드래그해서 분석해보세요`);
+  }catch(e){
+    console.error('영역 분석 요청 실패:',e);
+    showToast('영역 분석 중 네트워크 오류가 발생했어요 — 잠시 후 다시 시도해주세요');
+  }
 }
 async function detectSeatsFromImage(silent){
   const room=ROOMS.find(r=>r.id===curSeatRoomId);

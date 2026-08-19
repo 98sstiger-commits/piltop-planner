@@ -6,20 +6,33 @@ export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
   try {
-    const { imageUrl } = req.body || {};
-    if (!imageUrl) throw new Error('imageUrl이 필요합니다');
+    const { imageUrl, imageBase64, mediaType: bodyMediaType } = req.body || {};
+    if (!imageUrl && !imageBase64) throw new Error('imageUrl 또는 imageBase64가 필요합니다');
     if (!process.env.ANTHROPIC_API_KEY) throw new Error('ANTHROPIC_API_KEY not configured');
 
-    const imgRes = await fetch(imageUrl);
-    if (!imgRes.ok) throw new Error('도면 이미지를 불러오지 못했어요');
-    const mediaType = (imgRes.headers.get('content-type') || 'image/png').split(';')[0];
     const allowed = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
-    if (!allowed.includes(mediaType)) {
-      throw new Error('jpg/png/gif/webp 형식의 도면 이미지만 자동 인식할 수 있어요');
+    let base64, mediaType;
+    if (imageBase64) {
+      // 관리자가 도면의 일부 영역만 잘라서 보낸 경우 (브라우저에서 canvas로 잘라 base64로 전송)
+      mediaType = bodyMediaType || 'image/png';
+      if (!allowed.includes(mediaType)) {
+        throw new Error('jpg/png/gif/webp 형식의 도면 이미지만 자동 인식할 수 있어요');
+      }
+      base64 = imageBase64;
+      if (base64.length * 3 / 4 > 5 * 1024 * 1024) {
+        throw new Error('선택한 영역의 이미지 용량이 너무 커요 (5MB 이하로 다시 시도해주세요)');
+      }
+    } else {
+      const imgRes = await fetch(imageUrl);
+      if (!imgRes.ok) throw new Error('도면 이미지를 불러오지 못했어요');
+      mediaType = (imgRes.headers.get('content-type') || 'image/png').split(';')[0];
+      if (!allowed.includes(mediaType)) {
+        throw new Error('jpg/png/gif/webp 형식의 도면 이미지만 자동 인식할 수 있어요');
+      }
+      const buf = Buffer.from(await imgRes.arrayBuffer());
+      if (buf.length > 5 * 1024 * 1024) throw new Error('도면 이미지 용량이 너무 커요 (5MB 이하로 업로드해주세요)');
+      base64 = buf.toString('base64');
     }
-    const buf = Buffer.from(await imgRes.arrayBuffer());
-    if (buf.length > 5 * 1024 * 1024) throw new Error('도면 이미지 용량이 너무 커요 (5MB 이하로 업로드해주세요)');
-    const base64 = buf.toString('base64');
     const imageBlock = { type: 'image', source: { type: 'base64', media_type: mediaType, data: base64 } };
 
     // 정밀도가 가장 중요한 1차 인식은 가장 성능이 좋은 모델로, 시간에 쫓기는
