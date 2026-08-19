@@ -175,7 +175,7 @@ body{font-family:'Noto Sans KR',sans-serif;background:#F6F5F2;color:#18170F;min-
 .seat-map-wrap.editing{cursor:crosshair}
 .seat-map-img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;pointer-events:none;user-select:none}
 .seat-node{position:absolute;border-radius:10px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-weight:700;font-size:12px;cursor:pointer;border:2px solid transparent;box-shadow:0 1px 3px rgba(0,0,0,.08);transition:box-shadow .12s,transform .08s;user-select:none}
-.seat-node.st-empty{background:#fff;border-color:var(--line2);color:var(--ink)}
+.seat-node.st-empty{background:#EFEDE8;border-color:var(--line2);color:var(--ink2)}
 .seat-node.st-empty:hover{border-color:var(--green)}
 .seat-node.studying{background:#22B573;color:#fff;border-color:#1C9962}
 .seat-node.in_class{background:#4C8DFF;color:#fff;border-color:#3A6FDB}
@@ -184,7 +184,6 @@ body{font-family:'Noto Sans KR',sans-serif;background:#F6F5F2;color:#18170F;min-
 .seat-node.dragging{box-shadow:0 8px 22px rgba(0,0,0,.28);z-index:6;transform:scale(1.04)}
 .seat-node.selected{outline:2px dashed var(--green);outline-offset:2px}
 .seat-node.zone-block{background:repeating-linear-gradient(45deg,#EAE8E1,#EAE8E1 6px,#DEDBD2 6px,#DEDBD2 12px);color:var(--ink3);border-color:var(--line2)}
-.seat-node.assigned-empty{background:#fff;border:1.5px dashed var(--green);color:var(--green)}
 .seat-node.zone-block .sn-num{font-size:10px;font-weight:600}
 .marquee-box{position:absolute;border:1.5px dashed var(--green);background:rgba(26,71,49,.08);pointer-events:none;z-index:8}
 .seat-node .sn-num{font-size:13px;line-height:1.2}
@@ -210,6 +209,7 @@ body{font-family:'Noto Sans KR',sans-serif;background:#F6F5F2;color:#18170F;min-
 .seat-pop-status-grid button.st-idle{background:var(--bg2,#F1F0EC);color:var(--ink2)}
 .seat-pop-status-grid button.st-current{border-color:currentColor}
 .seat-pop-checkout-btn{width:100%;text-align:center;background:#FBEAEA;color:#B91C1C;font-weight:700;padding:8px;border-radius:7px;margin-bottom:6px}
+.seat-pop-undo-btn{width:100%;text-align:center;background:var(--gs);color:var(--green);font-weight:700;padding:8px;border-radius:7px;margin-bottom:6px;font-size:12px}
 .seat-pop-checkout-btn:hover{background:#F6D5D5}
 .seat-pop-field{display:flex;gap:6px;padding:0 2px 8px}
 .seat-pop-field input{flex:1;padding:8px 10px;border:1px solid var(--line2);border-radius:7px;font-size:12px;font-family:inherit;color:var(--ink)}
@@ -397,11 +397,10 @@ body{font-family:'Noto Sans KR',sans-serif;background:#F6F5F2;color:#18170F;min-
     <div class="seat-empty-hint">독서실을 먼저 추가해주세요</div>
   </div>
   <div class="seat-legend">
-    <span><i style="background:var(--line2)"></i>비어있음</span>
+    <span><i style="background:#EFEDE8;border:1px solid var(--line2)"></i>퇴실</span>
     <span><i style="background:#22B573"></i>공부중</span>
     <span><i style="background:#4C8DFF"></i>학원수업중</span>
     <span><i style="background:#A78BFA"></i>외출중</span>
-    <span id="legend-assigned" style="display:none"><i style="background:#fff;border:1.5px dashed var(--green)"></i>지정석(빈 자리)</span>
   </div>
 </div>
 
@@ -1096,7 +1095,6 @@ function renderSeatMap(){
     wrap.appendChild(hint);
   }
   const assignedMode=room&&room.seating_mode==='assigned';
-  document.getElementById('legend-assigned').style.display=assignedMode?'':'none';
   SEATS.forEach(s=>{
     const isBlock=s.kind==='block';
     const occStu=!isBlock&&occ[s.id];
@@ -1107,7 +1105,6 @@ function renderSeatMap(){
     if(isBlock)seatCls='zone-block';
     else if(occStu)seatCls=occStu.status;
     else if(manualStatus!=='st-empty')seatCls=manualStatus;
-    else if(assignedStu)seatCls='assigned-empty';
     else seatCls='st-empty';
     node.className='seat-node '+seatCls;
     if(selectedSeats.has(s.id))node.classList.add('selected');
@@ -1274,11 +1271,12 @@ function openSeatPop(e,seat){
     <button class="seat-pop-checkout-btn" data-act="checkout">🚪 퇴실 처리</button>`:`
     <div class="seat-pop-sub">좌석 상태</div>
     <div class="seat-pop-status-grid">
-      <button class="st-idle${manualStatus==='empty'?' st-current':''}" data-mst="empty">⬜ 비어있음</button>
+      <button class="st-idle${manualStatus==='empty'?' st-current':''}" data-mst="empty">🚪 퇴실</button>
       <button class="st-studying${manualStatus==='studying'?' st-current':''}" data-mst="studying">📚 공부중</button>
       <button class="st-in_class${manualStatus==='in_class'?' st-current':''}" data-mst="in_class">🏫 학원수업중</button>
       <button class="st-away${manualStatus==='away'?' st-current':''}" data-mst="away">🚶 외출중</button>
-    </div>`);
+    </div>
+    <div id="seat-pop-undo-slot"></div>`);
 
   const roomStudents=assignedMode&&!isBlock?ALL_STUDENTS.filter(st=>st.room_id===curSeatRoomId):[];
   const assignedElsewhere=new Set(SEATS.filter(sx=>sx.id!==seat.id&&sx.assigned_student_id).map(sx=>sx.assigned_student_id));
@@ -1320,6 +1318,19 @@ function openSeatPop(e,seat){
   pop.querySelector('[data-act="delete"]').onclick=()=>{closeSeatPop();deleteSeat(seat.id);};
   const assignSel=pop.querySelector('#seat-pop-assign-select');
   if(assignSel)assignSel.onchange=()=>{closeSeatPop();assignSeatStudent(seat.id,assignSel.value);};
+  if(!isBlock&&!occAtt){
+    const todayStart=dk(new Date())+'T00:00:00';
+    sb(`attendance?seat_id=eq.${seat.id}&checkout_at=gte.${todayStart}&select=id,status,planner_students(name)&order=checkout_at.desc&limit=1`).then(rows=>{
+      const slot=document.getElementById('seat-pop-undo-slot');
+      if(!slot||!rows||!rows.length)return;
+      const last=rows[0],name=last.planner_students?.name||'학생';
+      const btn=document.createElement('button');
+      btn.className='seat-pop-undo-btn';
+      btn.textContent=`↩️ ${name} 학생 퇴실 취소 (다시 입실)`;
+      btn.onclick=()=>{closeSeatPop();undoCheckout(last.id,name);};
+      slot.appendChild(btn);
+    });
+  }
   setTimeout(()=>document.addEventListener('click',closeSeatPop,{once:true}),0);
 }
 async function assignSeatStudent(seatId,studentId){
@@ -1345,6 +1356,13 @@ async function forceCheckout(attId,name){
   if(!confirm(name+' 학생을 퇴실 처리할까요?'))return;
   await sb(`attendance?id=eq.${attId}`,{method:'PATCH',body:JSON.stringify({checkout_at:new Date().toISOString(),status:'checked_out'})});
   showToast(name+' 학생을 퇴실 처리했어요');
+  refreshSeatData();
+}
+async function undoCheckout(attId,name){
+  if(!confirm(name+' 학생의 퇴실을 취소하고 다시 입실 처리할까요? (학생이 실수로 퇴실 버튼을 누른 경우 등에 사용)'))return;
+  const result=await sb(`attendance?id=eq.${attId}`,{method:'PATCH',body:JSON.stringify({checkout_at:null,status:'studying'})});
+  if(!Array.isArray(result)||!result.length){showToast('되돌리기에 실패했어요');return;}
+  showToast(name+' 학생을 다시 입실 처리했어요');
   refreshSeatData();
 }
 async function deleteSeat(id){
