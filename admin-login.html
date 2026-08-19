@@ -4,20 +4,21 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>관리자 로그인 · 필탑 플래너</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'Noto Sans KR',sans-serif;background:#F6F5F2;color:#18170F;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
-:root{--green:#1A4731;--gs:#E5EFE9;--line:#E6E3DC;--line2:#CCC9C1;--surf:#fff;--ink2:#69675E;--ink3:#A8A49C}
-.card{background:var(--surf);border:1px solid var(--line);border-radius:16px;padding:32px 28px;width:100%;max-width:340px;box-shadow:0 8px 30px rgba(0,0,0,.06)}
-.logo{width:48px;height:48px;border-radius:14px;background:var(--green);color:#fff;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:800;margin:0 auto 16px}
+body{font-family:'Pretendard','Noto Sans KR',sans-serif;background:var(--green);color:#18170F;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
+:root{--green:#0E2C22;--gold:#E3BE6D;--gold2:#C9A24F;--gs:#E5EFE9;--line:#E6E3DC;--line2:#CCC9C1;--surf:#fff;--ink2:#69675E;--ink3:#A8A49C}
+.card{background:var(--surf);border:1px solid var(--line);border-radius:16px;padding:32px 28px;width:100%;max-width:340px;box-shadow:0 20px 50px rgba(0,0,0,.35)}
+.logo{width:48px;height:48px;border-radius:14px;background:var(--green);color:var(--gold);display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:800;margin:0 auto 16px}
 .ttl{font-size:16px;font-weight:800;text-align:center;letter-spacing:-.3px}
 .sub{font-size:12px;color:var(--ink2);text-align:center;margin-top:4px;margin-bottom:22px}
 .field-label{font-size:10px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:var(--ink3);margin-bottom:6px;display:block}
 input{width:100%;padding:12px 14px;border:1px solid var(--line2);border-radius:9px;font-size:14px;font-family:inherit;background:#fff;color:#18170F}
 input:focus{outline:none;border-color:var(--green)}
-.btn{width:100%;padding:13px;border-radius:9px;background:var(--green);color:#fff;font-size:14px;font-weight:700;border:none;margin-top:14px;cursor:pointer}
-.btn:hover{opacity:.9}
+.btn{width:100%;padding:13px;border-radius:9px;background:var(--gold);color:#2A2109;font-size:14px;font-weight:700;border:none;margin-top:14px;cursor:pointer;transition:background .12s}
+.btn:hover{background:var(--gold2)}
 .err{font-size:12px;color:#B91C1C;margin-top:10px;text-align:center;min-height:16px}
 </style>
 </head>

@@ -6,24 +6,25 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>플래니</title>
 <link rel="manifest" href="/manifest.json">
-<meta name="theme-color" content="#1A4731">
+<meta name="theme-color" content="#0E2C22">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="플래너">
 <meta name="mobile-web-app-capable" content="yes">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&family=Playfair+Display:ital,wght@0,700;1,400&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 html,body{height:100%;overflow:hidden;-webkit-overflow-scrolling:touch}
-body{font-family:'Noto Sans KR',sans-serif;background:#F5F4F1;color:#1A1917;-webkit-font-smoothing:antialiased}
+body{font-family:'Pretendard','Noto Sans KR',sans-serif;background:#F6F1E4;color:#1A1917;-webkit-font-smoothing:antialiased}
 button{cursor:pointer;border:none;background:none;font-family:inherit}
 input,textarea,select{font-family:inherit;outline:none}
 textarea{resize:none}
 
 :root{
-  --g:#1A4731;--gs:#E6EFE9;--gold:#C9A84C;
+  --g:#0E2C22;--g2:#0A211A;--gs:#E6EFE9;--gold:#E3BE6D;--gold2:#C9A24F;
   --ink:#1A1917;--ink2:#6B6860;--ink3:#A8A49E;
-  --surf:#FFFFFF;--bg:#F5F4F1;--line:#E8E5DF;--line2:#CCC9C1;
+  --surf:#FFFFFF;--bg:#F6F1E4;--line:#E8E5DF;--line2:#CCC9C1;
 }
 
 /* ─── 전체 레이아웃 ─── */
@@ -418,7 +419,7 @@ textarea{resize:none}
 .md-ev-dot{width:5px;height:5px;border-radius:50%;flex-shrink:0}
 .md-ev.exam .md-ev-dot{background:#B91C1C}
 .md-ev.suneung .md-ev-dot{background:#D97706}
-.md-ev.school .md-ev-dot{background:#1A4731}
+.md-ev.school .md-ev-dot{background:var(--g)}
 .md-ev.inter .md-ev-dot{background:#1D4ED8}
 .md-ev-name{flex:1;font-weight:500}
 .md-ev-type{font-size:10px;opacity:.6}
@@ -451,7 +452,7 @@ textarea{resize:none}
 .grade-badge.g3{background:#FEF5E8;color:#7A4710}
 .grade-badge.g4{background:#FEEDE0;color:#9A4A0F}
 .grade-badge.g5{background:#FEE8E8;color:#8A1A1A}
-.strategy-summary{background:linear-gradient(135deg,var(--g),#245C40);color:#fff;border-radius:12px;padding:16px;margin-bottom:14px;font-size:13px;line-height:1.7}
+.strategy-summary{background:linear-gradient(135deg,var(--g),#1B4A38);color:#fff;border-radius:12px;padding:16px;margin-bottom:14px;font-size:13px;line-height:1.7}
 .strategy-summary-lbl{font-size:10px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:rgba(255,255,255,.6);margin-bottom:8px}
 .strategy-card{border-radius:10px;padding:12px 14px;margin-bottom:8px;background:var(--bg);border-left:3px solid var(--line2)}
 .strategy-card.cat-전략{background:#FFF4E0;border-left-color:#D97706}
@@ -1305,7 +1306,7 @@ function renderYr(){
     card.className='mc'+(isCur?' cur':'')+(isPast?' past':'');
     const evs=allSched().filter(e=>{const em=parseInt(e.date.split('-')[1]),ey=parseInt(e.date.split('-')[0]);return ey===YEAR&&em===m;});
     const dots=[...new Set(evs.map(e=>e.type))];
-    const dc={'school-exam':'#B91C1C',suneung:'#D97706',inter:'#1D4ED8',school:'#1A4731',holiday:'#9CA3AF'};
+    const dc={'school-exam':'#B91C1C',suneung:'#D97706',inter:'#1D4ED8',school:'#0E2C22',holiday:'#9CA3AF'};
     let tags='';if(plan?.tags)plan.tags.slice(0,2).forEach(t=>{tags+=`<span class="mct ${t.type}">${t.label}</span>`;});
     const myGoal=S.monthGoals[m]||'';
     card.innerHTML=`
