@@ -82,6 +82,8 @@ button{cursor:pointer;border:none;background:none;font-family:inherit}
 .att-time{font-size:13px;font-weight:600}
 .att-dur{font-size:12px;color:var(--ink2);background:var(--gs);padding:3px 10px;border-radius:10px;font-weight:600}
 .att-empty{text-align:center;padding:20px 0;color:var(--ink3);font-size:12px}
+.att-sub-note{font-size:11.5px;color:var(--ink2);padding-top:10px;margin-top:2px;border-top:1px solid var(--line)}
+.flag-note{font-size:12px;color:#92400E;background:#FEF3C7;border-radius:9px;padding:9px 12px;margin-top:10px;line-height:1.5;word-break:keep-all}
 
 /* ai comment */
 .ai-card{background:linear-gradient(135deg,var(--g),#1B4A38);border-radius:16px;padding:20px;margin-bottom:14px;color:#fff}
@@ -220,6 +222,53 @@ function mondayOf(d){const x=new Date(d);const day=x.getDay();x.setDate(x.getDat
 function fmtMin(mins){mins=Math.max(0,Math.round(mins));const h=Math.floor(mins/60),m=mins%60;return h?`${h}시간 ${m}분`:`${m}분`;}
 function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2200);}
 
+/* ── 실제 순공시간 계산: attendance_status_log 로그 기반 ──
+   status='studying' 구간만 합산. 로그가 없는(예전) 기록은 체크인~체크아웃
+   전체를 공부시간으로 간주(기존 방식)해 하위호환을 유지합니다. */
+function computeAttSegments(att,logsForAtt){
+  const segs={studying:0,in_class:0,away:0};
+  const sorted=(logsForAtt||[]).slice().sort((a,b)=>new Date(a.changed_at)-new Date(b.changed_at));
+  const end=att.checkout_at?new Date(att.checkout_at):new Date();
+  if(!sorted.length){
+    segs.studying=Math.max(0,(end-new Date(att.checkin_at))/60000);
+    return segs;
+  }
+  let curStatus='studying',curTime=new Date(att.checkin_at);
+  sorted.forEach(l=>{
+    const t=new Date(l.changed_at);
+    if(t>curTime&&segs[curStatus]!==undefined)segs[curStatus]+=(t-curTime)/60000;
+    curStatus=l.status;curTime=t;
+  });
+  if(end>curTime&&segs[curStatus]!==undefined)segs[curStatus]+=(end-curTime)/60000;
+  return segs;
+}
+function groupLogsByAttendance(logs){
+  const m={};
+  (logs||[]).forEach(l=>{(m[l.attendance_id]=m[l.attendance_id]||[]).push(l);});
+  return m;
+}
+async function fetchAttWithSegments(query){
+  const att=await sb(query)||[];
+  const ids=att.map(a=>a.id);
+  const logs=ids.length?(await sb(`attendance_status_log?attendance_id=in.(${ids.join(',')})&select=attendance_id,status,changed_at`)||[]):[];
+  const logsByAtt=groupLogsByAttendance(logs);
+  att.forEach(a=>{a._seg=computeAttSegments(a,logsByAtt[a.id]);});
+  return att;
+}
+/* 외출 비중이 상대적으로 길 때 상담 참고용 안내 문구 (학원수업 시간은 제외) */
+function awayFlagNote(seg){
+  const total=seg.studying+seg.in_class+seg.away;
+  if(total<30||seg.away<30)return null;
+  const ratio=seg.away/total;
+  if(ratio<0.2)return null;
+  return `독서실 체류시간 중 외출 비중이 ${Math.round(ratio*100)}%(${fmtMin(seg.away)})로 상대적으로 길어요. 상담 시 참고해보세요.`;
+}
+function sumSeg(atts){
+  const s={studying:0,in_class:0,away:0};
+  atts.forEach(a=>{s.studying+=a._seg.studying;s.in_class+=a._seg.in_class;s.away+=a._seg.away;});
+  return s;
+}
+
 /* ── 상태 ── */
 const P=new URLSearchParams(location.search);
 const STATE={
@@ -287,16 +336,16 @@ async function renderDaily(){
   items.forEach(it=>{if(it.st&&it.et){const[sh,sm]=it.st.split(':').map(Number),[eh,em]=it.et.split(':').map(Number);totalMin+=Math.max(0,(eh*60+em)-(sh*60+sm));}});
 
   const start=`${ds}T00:00:00`,end=`${dk(addDays(d,1))}T00:00:00`;
-  const att=await sb(`attendance?student_id=eq.${STATE.id}&checkin_at=gte.${start}&checkin_at=lt.${end}&select=*,seats(seat_number,label)&order=checkin_at.asc`)||[];
-  let attMin=0;
-  att.forEach(a=>{const end2=a.checkout_at?new Date(a.checkout_at):new Date();attMin+=(end2-new Date(a.checkin_at))/60000;});
+  const att=await fetchAttWithSegments(`attendance?student_id=eq.${STATE.id}&checkin_at=gte.${start}&checkin_at=lt.${end}&select=id,checkin_at,checkout_at,status,seats(seat_number,label)&order=checkin_at.asc`);
+  const seg=sumSeg(att);
+  const flagNote=awayFlagNote(seg);
 
   let html=`<div class="card">
     <div class="card-ttl">📊 오늘 요약</div>
     <div class="stat-grid">
       <div class="stat-cell"><div class="stat-num">${fmtMin(totalMin)}</div><div class="stat-lbl">총 계획 시간</div></div>
       <div class="stat-cell"><div class="stat-num">${clRate}%</div><div class="stat-lbl">체크리스트 달성</div></div>
-      <div class="stat-cell"><div class="stat-num">${fmtMin(attMin)}</div><div class="stat-lbl">독서실 출석시간</div></div>
+      <div class="stat-cell"><div class="stat-num">${fmtMin(seg.studying)}</div><div class="stat-lbl">독서실 순공시간</div></div>
     </div>
   </div>
 
@@ -313,6 +362,8 @@ async function renderDaily(){
   <div class="card">
     <div class="card-ttl">🚪 입실 · 퇴실 기록</div>
     ${renderAttList(att)}
+    ${seg.away>=1?`<div class="att-sub-note">외출 시간 ${fmtMin(seg.away)}${seg.in_class>=1?` · 학원수업 ${fmtMin(seg.in_class)}`:''}</div>`:''}
+    ${flagNote?`<div class="flag-note">⚠️ ${flagNote}</div>`:''}
   </div>`;
   body.innerHTML=html;
 }
@@ -354,9 +405,11 @@ async function renderWeekly(){
   });
 
   const start=`${dayKeys[0]}T00:00:00`,end=`${dk(addDays(sun,1))}T00:00:00`;
-  const att=await sb(`attendance?student_id=eq.${STATE.id}&checkin_at=gte.${start}&checkin_at=lt.${end}&select=*&order=checkin_at.asc`)||[];
+  const att=await fetchAttWithSegments(`attendance?student_id=eq.${STATE.id}&checkin_at=gte.${start}&checkin_at=lt.${end}&select=id,checkin_at,checkout_at,status&order=checkin_at.asc`);
   const attDays=new Set(att.map(a=>dk(new Date(a.checkin_at))));
-  let attMin=0;att.forEach(a=>{const e=a.checkout_at?new Date(a.checkout_at):new Date();attMin+=(e-new Date(a.checkin_at))/60000;});
+  const seg=sumSeg(att);
+  const attMin=seg.studying;
+  const flagNote=awayFlagNote(seg);
 
   const maxSubj=Math.max(1,...Object.values(subjMin));
   const subjHtml=Object.keys(subjMin).length
@@ -372,16 +425,25 @@ async function renderWeekly(){
     return (e.type==='school-exam'||e.type==='suneung')&&ed>=nextWeekStart&&ed<=nextWeekEnd;
   }).sort((a,b)=>a.date.localeCompare(b.date));
 
-  const stats={attendanceDays:attDays.size,totalStudyMinutes:Math.round(attMin),timelineItems:itemCnt,timelineDone:doneCnt,topSubjects:Object.entries(subjMin).sort((a,b)=>b[1]-a[1]).slice(0,2).map(([k,m])=>({subject:CATS.find(c=>c.k===k)?.l,minutes:Math.round(m)}))};
+  const stats={attendanceDays:attDays.size,totalStudyMinutes:Math.round(attMin),awayMinutes:Math.round(seg.away),timelineItems:itemCnt,timelineDone:doneCnt,topSubjects:Object.entries(subjMin).sort((a,b)=>b[1]-a[1]).slice(0,2).map(([k,m])=>({subject:CATS.find(c=>c.k===k)?.l,minutes:Math.round(m)}))};
 
   let html=`<div class="card">
     <div class="card-ttl">📊 이번 주 요약</div>
     <div class="stat-grid">
       <div class="stat-cell"><div class="stat-num">${attDays.size}일</div><div class="stat-lbl">출석일수</div></div>
-      <div class="stat-cell"><div class="stat-num">${fmtMin(attMin)}</div><div class="stat-lbl">독서실 공부시간</div></div>
+      <div class="stat-cell"><div class="stat-num">${fmtMin(attMin)}</div><div class="stat-lbl">독서실 순공시간</div></div>
       <div class="stat-cell"><div class="stat-num">${itemCnt?Math.round(doneCnt/itemCnt*100):0}%</div><div class="stat-lbl">일정 완료율</div></div>
     </div>
   </div>
+
+  ${(seg.away>=1||seg.in_class>=1||flagNote)?`<div class="card">
+    <div class="card-ttl">🚶 외출 · 학원수업 현황</div>
+    <div class="stat-grid c2">
+      <div class="stat-cell"><div class="stat-num">${fmtMin(seg.away)}</div><div class="stat-lbl">외출 시간</div></div>
+      <div class="stat-cell"><div class="stat-num">${fmtMin(seg.in_class)}</div><div class="stat-lbl">학원수업 시간</div></div>
+    </div>
+    ${flagNote?`<div class="flag-note">⚠️ ${flagNote}</div>`:''}
+  </div>`:''}
 
   <div class="card">
     <div class="card-ttl">📚 과목별 공부시간</div>
@@ -415,34 +477,36 @@ async function renderMonthly(){
 
   const first=new Date(y,m,1),last=new Date(y,m+1,0);
   const start=`${dk(first)}T00:00:00`,end=`${dk(addDays(last,1))}T00:00:00`;
-  const att=await sb(`attendance?student_id=eq.${STATE.id}&checkin_at=gte.${start}&checkin_at=lt.${end}&select=*&order=checkin_at.asc`)||[];
+  const att=await fetchAttWithSegments(`attendance?student_id=eq.${STATE.id}&checkin_at=gte.${start}&checkin_at=lt.${end}&select=id,checkin_at,checkout_at,status&order=checkin_at.asc`);
   const attDays=new Set(att.map(a=>dk(new Date(a.checkin_at))));
-  let totalMin=0;att.forEach(a=>{const e=a.checkout_at?new Date(a.checkout_at):new Date();totalMin+=(e-new Date(a.checkin_at))/60000;});
+  const seg=sumSeg(att);
+  const totalMin=seg.studying;
+  const flagNote=awayFlagNote(seg);
 
   const isCurMonth=(y===new Date().getFullYear()&&m===new Date().getMonth());
   const daysConsidered=isCurMonth?new Date().getDate():last.getDate();
   const attRate=daysConsidered?Math.round(attDays.size/daysConsidered*100):0;
 
-  // 주차별 성장 그래프
+  // 주차별 성장 그래프 (실제 순공시간 기준)
   const weeks=[];
   let cur=mondayOf(first);
   while(cur<=last){
     const wEnd=addDays(cur,6);
     let wMin=0;
-    att.forEach(a=>{const t=new Date(a.checkin_at);if(t>=cur&&t<=addDays(wEnd,1)){const e=a.checkout_at?new Date(a.checkout_at):new Date();wMin+=(e-new Date(a.checkin_at))/60000;}});
+    att.forEach(a=>{const t=new Date(a.checkin_at);if(t>=cur&&t<=addDays(wEnd,1))wMin+=a._seg.studying;});
     weeks.push({label:`${cur.getMonth()+1}/${cur.getDate()}`,min:wMin});
     cur=addDays(cur,7);
   }
   const maxW=Math.max(1,...weeks.map(w=>w.min));
 
-  const stats={attendanceDays:attDays.size,attendanceRate:attRate,totalStudyMinutes:Math.round(totalMin),weeklyTrend:weeks.map(w=>Math.round(w.min))};
+  const stats={attendanceDays:attDays.size,attendanceRate:attRate,totalStudyMinutes:Math.round(totalMin),awayMinutes:Math.round(seg.away),weeklyTrend:weeks.map(w=>Math.round(w.min))};
 
   let html=`<div class="card">
     <div class="card-ttl">📊 이번 달 요약</div>
     <div class="stat-grid">
       <div class="stat-cell"><div class="stat-num">${attRate}%</div><div class="stat-lbl">출석률</div></div>
       <div class="stat-cell"><div class="stat-num">${attDays.size}일</div><div class="stat-lbl">출석일수</div></div>
-      <div class="stat-cell"><div class="stat-num">${fmtMin(totalMin)}</div><div class="stat-lbl">누적 공부시간</div></div>
+      <div class="stat-cell"><div class="stat-num">${fmtMin(totalMin)}</div><div class="stat-lbl">누적 순공시간</div></div>
     </div>
   </div>
 
@@ -452,6 +516,15 @@ async function renderMonthly(){
       ${weeks.map(w=>`<div class="gr-col"><div class="gr-val">${w.min>=60?Math.round(w.min/60*10)/10+'h':Math.round(w.min)+'m'}</div><div class="gr-bar" style="height:${Math.max(3,w.min/maxW*100)}%"></div><div class="gr-lbl">${w.label}</div></div>`).join('')}
     </div>
   </div>
+
+  ${(seg.away>=1||seg.in_class>=1||flagNote)?`<div class="card">
+    <div class="card-ttl">🚶 외출 · 학원수업 현황</div>
+    <div class="stat-grid c2">
+      <div class="stat-cell"><div class="stat-num">${fmtMin(seg.away)}</div><div class="stat-lbl">외출 시간</div></div>
+      <div class="stat-cell"><div class="stat-num">${fmtMin(seg.in_class)}</div><div class="stat-lbl">학원수업 시간</div></div>
+    </div>
+    ${flagNote?`<div class="flag-note">⚠️ ${flagNote}</div>`:''}
+  </div>`:''}
 
   <div id="ai-card"></div>`;
   body.innerHTML=html;
@@ -474,13 +547,14 @@ async function renderAiComment(type,stats){
 }
 function fallbackComment(type,stats){
   const name=STUDENT.name;
+  const awayNote=(stats.awayMinutes>=30&&stats.totalStudyMinutes&&stats.awayMinutes/(stats.totalStudyMinutes+stats.awayMinutes)>=0.2)?` 다만 외출 시간(${fmtMin(stats.awayMinutes)})이 다소 있었어요.`:'';
   if(type==='monthly'){
     if(!stats.attendanceDays)return `${name} 학생은 이번 달 독서실 출석 기록이 없어요. 다음 달엔 꾸준한 출석부터 함께 시작해봐요.`;
-    return `${name} 학생은 이번 달 ${stats.attendanceDays}일 출석해 출석률 ${stats.attendanceRate}%, 누적 ${fmtMin(stats.totalStudyMinutes)}를 공부했어요. 꾸준함을 유지하면서 다음 달엔 조금 더 긴 공부 세션에 도전해보면 좋겠어요.`;
+    return `${name} 학생은 이번 달 ${stats.attendanceDays}일 출석해 출석률 ${stats.attendanceRate}%, 누적 순공시간 ${fmtMin(stats.totalStudyMinutes)}를 기록했어요.${awayNote} 꾸준함을 유지하면서 다음 달엔 조금 더 긴 공부 세션에 도전해보면 좋겠어요.`;
   }
   if(!stats.attendanceDays)return `${name} 학생은 이번 주 독서실 출석 기록이 없어요. 다음 주엔 가벼운 목표부터 다시 시작해봐요.`;
   const top=stats.topSubjects?.[0];
-  return `${name} 학생은 이번 주 ${stats.attendanceDays}일 출석해 ${fmtMin(stats.totalStudyMinutes)}를 공부했어요.${top?` 특히 ${top.subject} 공부에 집중했네요.`:''} 일정 완료율 ${stats.timelineItems?Math.round(stats.timelineDone/stats.timelineItems*100):0}%를 유지하며 다음 주도 꾸준히 이어가봐요.`;
+  return `${name} 학생은 이번 주 ${stats.attendanceDays}일 출석해 순공시간 ${fmtMin(stats.totalStudyMinutes)}를 기록했어요.${top?` 특히 ${top.subject} 공부에 집중했네요.`:''}${awayNote} 일정 완료율 ${stats.timelineItems?Math.round(stats.timelineDone/stats.timelineItems*100):0}%를 유지하며 다음 주도 꾸준히 이어가봐요.`;
 }
 
 /* ── 공유 ── */

@@ -82,6 +82,27 @@ create index if not exists idx_attendance_student on attendance(student_id);
 create index if not exists idx_attendance_room_date on attendance(room_id, checkin_at);
 create index if not exists idx_attendance_active on attendance(room_id) where checkout_at is null;
 
+-- ── 3-1. attendance_status_log : 상태 변경 이력(순공시간 계산용) ──────
+-- attendance 한 건(체크인~체크아웃) 동안 상태가 바뀔 때마다 한 줄씩 기록됩니다.
+-- 실제 순공시간 = 이 로그를 기준으로 status='studying' 구간의 합.
+create table if not exists attendance_status_log (
+  id uuid primary key default gen_random_uuid(),
+  attendance_id uuid not null references attendance(id) on delete cascade,
+  status text not null check (status in ('studying','in_class','away','checked_out')),
+  changed_at timestamptz not null default now()
+);
+create index if not exists idx_status_log_attendance on attendance_status_log(attendance_id, changed_at);
+
+alter table attendance_status_log enable row level security;
+drop policy if exists "public full access" on attendance_status_log;
+create policy "public full access" on attendance_status_log for all using (true) with check (true);
+
+do $$
+begin
+  alter publication supabase_realtime add table attendance_status_log;
+exception when duplicate_object then null;
+end $$;
+
 -- ── 4. planner_students 컬럼 추가 ─────────────────────────────
 alter table planner_students add column if not exists student_pin varchar(4) unique;
 alter table planner_students add column if not exists room_id uuid references study_rooms(id) on delete set null;

@@ -846,6 +846,32 @@ function addDaysA(d,n){const x=new Date(d);x.setDate(x.getDate()+n);return x;}
 function mondayOfA(d){const x=new Date(d);const day=x.getDay();x.setDate(x.getDate()-(day===0?6:day-1));x.setHours(0,0,0,0);return x;}
 function fmtMinA(mins){mins=Math.max(0,Math.round(mins));const h=Math.floor(mins/60),m=mins%60;return h?`${h}시간 ${m}분`:`${m}분`;}
 
+/* ── 실제 순공시간 계산: attendance_status_log 로그 기반 ──
+   status='studying' 구간만 합산. 로그가 없는(예전) 기록은 체크인~체크아웃
+   전체를 공부시간으로 간주(기존 방식)해 하위호환을 유지합니다. */
+function computeAttSegments(att,logsForAtt){
+  const segs={studying:0,in_class:0,away:0};
+  const sorted=(logsForAtt||[]).slice().sort((a,b)=>new Date(a.changed_at)-new Date(b.changed_at));
+  const end=att.checkout_at?new Date(att.checkout_at):new Date();
+  if(!sorted.length){
+    segs.studying=Math.max(0,(end-new Date(att.checkin_at))/60000);
+    return segs;
+  }
+  let curStatus='studying',curTime=new Date(att.checkin_at);
+  sorted.forEach(l=>{
+    const t=new Date(l.changed_at);
+    if(t>curTime&&segs[curStatus]!==undefined)segs[curStatus]+=(t-curTime)/60000;
+    curStatus=l.status;curTime=t;
+  });
+  if(end>curTime&&segs[curStatus]!==undefined)segs[curStatus]+=(end-curTime)/60000;
+  return segs;
+}
+function groupLogsByAttendance(logs){
+  const m={};
+  (logs||[]).forEach(l=>{(m[l.attendance_id]=m[l.attendance_id]||[]).push(l);});
+  return m;
+}
+
 /* ── 탭 전환 ── */
 let lastMainTab='students';
 function switchTab(name){
@@ -1325,13 +1351,17 @@ async function setSeatStatus(id,status){
   refreshSeatData();
 }
 async function setOccupantStatus(attId,status){
+  const now=new Date().toISOString();
   const result=await sb(`attendance?id=eq.${attId}`,{method:'PATCH',body:JSON.stringify({status})});
   if(!Array.isArray(result)||!result.length){showToast('상태 변경에 실패했어요');return;}
+  sb('attendance_status_log',{method:'POST',body:JSON.stringify({attendance_id:attId,status,changed_at:now})});
   refreshSeatData();
 }
 async function forceCheckout(attId,name){
   if(!confirm(name+' 학생을 퇴실 처리할까요?'))return;
-  await sb(`attendance?id=eq.${attId}`,{method:'PATCH',body:JSON.stringify({checkout_at:new Date().toISOString(),status:'checked_out'})});
+  const now=new Date().toISOString();
+  await sb(`attendance?id=eq.${attId}`,{method:'PATCH',body:JSON.stringify({checkout_at:now,status:'checked_out'})});
+  sb('attendance_status_log',{method:'POST',body:JSON.stringify({attendance_id:attId,status:'checked_out',changed_at:now})});
   showToast(name+' 학생을 퇴실 처리했어요');
   refreshSeatData();
 }
@@ -1574,10 +1604,13 @@ async function loadAttendanceTab(){
 
   const mon=mondayOfA(new Date());
   const wStart=`${dk(mon)}T00:00:00`,wEnd=`${dk(addDaysA(mon,7))}T00:00:00`;
-  const week=await sb(`attendance?checkin_at=gte.${wStart}&checkin_at=lt.${wEnd}${filter}&select=student_id,checkin_at,checkout_at,planner_students(name)`)||[];
+  const week=await sb(`attendance?checkin_at=gte.${wStart}&checkin_at=lt.${wEnd}${filter}&select=id,student_id,checkin_at,checkout_at,planner_students(name)`)||[];
+  const weekIds=week.map(a=>a.id);
+  const weekLogs=weekIds.length?(await sb(`attendance_status_log?attendance_id=in.(${weekIds.join(',')})&select=attendance_id,status,changed_at`)||[]):[];
+  const weekLogsByAtt=groupLogsByAttendance(weekLogs);
   const byStu={};
   week.forEach(a=>{
-    const mins=((a.checkout_at?new Date(a.checkout_at):new Date())-new Date(a.checkin_at))/60000;
+    const mins=computeAttSegments(a,weekLogsByAtt[a.id]).studying;
     if(!byStu[a.student_id])byStu[a.student_id]={name:a.planner_students?.name||'?',min:0};
     byStu[a.student_id].min+=mins;
   });
