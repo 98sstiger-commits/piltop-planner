@@ -1,22 +1,21 @@
 export const config = { matcher: '/admin.html' };
 
-const REALM = 'Basic realm="필탑 플래너 관리자"';
+function parseCookies(header) {
+  const out = {};
+  (header || '').split(';').forEach((p) => {
+    const i = p.indexOf('=');
+    if (i > -1) out[p.slice(0, i).trim()] = decodeURIComponent(p.slice(i + 1).trim());
+  });
+  return out;
+}
 
 export default function middleware(request) {
-  const user = process.env.ADMIN_USER || 'piltop';
   const pass = process.env.ADMIN_PASS || '필탑admin1';
+  const cookies = parseCookies(request.headers.get('cookie'));
+  if (cookies.piltop_admin === pass) return;
 
-  const auth = request.headers.get('authorization');
-  if (auth && auth.startsWith('Basic ')) {
-    const decoded = atob(auth.slice(6));
-    const sep = decoded.indexOf(':');
-    const u = decoded.slice(0, sep);
-    const p = decoded.slice(sep + 1);
-    if (u === user && p === pass) return;
-  }
-
-  return new Response('인증이 필요해요', {
-    status: 401,
-    headers: { 'WWW-Authenticate': REALM },
-  });
+  const url = new URL(request.url);
+  const loginUrl = new URL('/admin-login.html', request.url);
+  loginUrl.searchParams.set('next', url.pathname);
+  return Response.redirect(loginUrl, 302);
 }
