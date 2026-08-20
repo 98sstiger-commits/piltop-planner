@@ -1398,7 +1398,7 @@ function openSeatPop(e,seat){
   pop.className='seat-pop';
   const cx=e.clientX||window.innerWidth/2,cy=e.clientY||window.innerHeight/2;
   pop.style.left=Math.min(cx,window.innerWidth-220)+'px';
-  pop.style.top=Math.min(cy,window.innerHeight-(isBlock?170:240+(assignedMode?60:0)))+'px';
+  pop.style.top=Math.min(cy,window.innerHeight-(isBlock?170:295+(assignedMode?60:0)))+'px';
 
   const manualStatus=seat.status&&seat.status!=='empty'?seat.status:'empty';
   const currentStatus=occAtt?occAtt.status:manualStatus;
@@ -1426,7 +1426,15 @@ function openSeatPop(e,seat){
       <button class="seat-pop-save-btn" id="seat-pop-save-btn">저장</button>
     </div>`:'';
 
+  const numberEditHtml=!isBlock?`
+    <div class="seat-pop-sub">좌석 번호</div>
+    <div class="seat-pop-field">
+      <input type="number" id="seat-pop-num-input" min="1" step="1" value="${seat.seat_number}">
+      <button class="seat-pop-save-btn" id="seat-pop-num-save-btn">저장</button>
+    </div>`:'';
+
   pop.innerHTML=`<div class="seat-pop-ttl">${isBlock?'제외구역':seat.seat_number+'번 좌석'}</div>
+    ${numberEditHtml}
     ${statusHtml}
     ${assignHtml}
     ${labelHtml}
@@ -1442,6 +1450,22 @@ function openSeatPop(e,seat){
     };
     pop.querySelector('#seat-pop-save-btn').onclick=saveLabel;
     input.onkeydown=(ev)=>{if(ev.key==='Enter')saveLabel();};
+  }
+  const numInput=pop.querySelector('#seat-pop-num-input');
+  if(numInput){
+    const saveNum=async()=>{
+      const newNum=parseInt(numInput.value,10);
+      if(!Number.isFinite(newNum)||newNum<1){showToast('올바른 좌석 번호를 입력해주세요');return;}
+      if(newNum===seat.seat_number){closeSeatPop();return;}
+      const dup=SEATS.find(sx=>sx.id!==seat.id&&sx.kind==='seat'&&sx.seat_number===newNum);
+      if(dup){showToast(`이미 ${newNum}번 좌석이 있어요 — 다른 번호를 입력해주세요`);return;}
+      const result=await sb(`seats?id=eq.${seat.id}`,{method:'PATCH',body:JSON.stringify({seat_number:newNum})});
+      if(!Array.isArray(result)||!result.length){showToast('좌석 번호 변경에 실패했어요');return;}
+      closeSeatPop();refreshSeatData();
+      showToast(`좌석 번호를 ${newNum}번으로 변경했어요`);
+    };
+    pop.querySelector('#seat-pop-num-save-btn').onclick=saveNum;
+    numInput.onkeydown=(ev)=>{if(ev.key==='Enter')saveNum();};
   }
   if(!isBlock){
     pop.querySelectorAll('.seat-pop-status-grid button').forEach(b=>{
