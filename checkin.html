@@ -373,7 +373,12 @@ async function submitPin(){
 
   const active=await sb(`attendance?student_id=eq.${student.id}&room_id=eq.${ROOM.id}&checkout_at=is.null&select=*&order=checkin_at.desc`);
   if(active&&active.length){
-    openStatusSelect(student,active[0]);
+    const att=active[0];
+    if(att.status==='away'||att.status==='in_class'){
+      autoResumeStudying(student,att);
+    }else{
+      openStatusSelect(student,att);
+    }
     return;
   }
   if(ROOM.seating_mode==='assigned'){
@@ -444,6 +449,15 @@ async function doCheckin(seat){
   if(att)sb('attendance_status_log',{method:'POST',body:JSON.stringify({attendance_id:att.id,status:'studying',changed_at:now})});
   notifyParent(curStudent,'checkin',seat.seat_number);
   showResult('in','👋',curStudent.name+' 님 반가워요!','입실이 완료됐어요','좌석 '+seat.seat_number+'번');
+}
+
+/* ── 외출중/학원수업중이던 학생이 돌아와서 번호를 다시 입력하면
+   상태 선택 화면 없이 바로 공부중으로 자동 전환합니다 ── */
+async function autoResumeStudying(student,att){
+  const now=new Date().toISOString();
+  await sb(`attendance?id=eq.${att.id}`,{method:'PATCH',body:JSON.stringify({status:'studying'})});
+  sb('attendance_status_log',{method:'POST',body:JSON.stringify({attendance_id:att.id,status:'studying',changed_at:now})});
+  showResult('in','👋',student.name+' 님 반가워요!','공부를 다시 시작할게요');
 }
 
 /* ── 상태 선택 (공부중/학원수업중/외출중/퇴실) ── */
