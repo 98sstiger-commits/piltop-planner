@@ -365,9 +365,10 @@ function kpError(msg){
 
 async function submitPin(){
   document.getElementById('kp-loading').classList.add('on');
-  const rows=await sb(`planner_students?student_pin=eq.${pin}&select=id,name,room_id,parent_phone`);
+  const rows=await sb(`planner_students?student_pin=eq.${pin}&select=id,name,room_id,parent_phone,is_paused`);
   if(!rows||!rows.length){kpError('등록되지 않은 번호예요');return;}
   const student=rows[0];
+  if(student.is_paused){kpError('일시 중단된 학생이에요. 선생님께 문의해주세요');return;}
   if(student.room_id&&student.room_id!==ROOM.id){kpError('다른 독서실 학생이에요');return;}
   document.getElementById('kp-loading').classList.remove('on');
 

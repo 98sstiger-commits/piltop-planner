@@ -119,6 +119,9 @@ alter table study_rooms add column if not exists canvas_height integer not null 
 -- 수강 과목: ["kor","math","eng","sci","soc","hist"] 형태의 JSON 배열로 저장
 alter table planner_students add column if not exists subjects jsonb not null default '[]'::jsonb;
 
+-- 잠깐 쉬는 학생을 삭제하지 않고 "중단" 처리할 수 있도록 (기록은 그대로 보존)
+alter table planner_students add column if not exists is_paused boolean not null default false;
+
 -- attendance.status를 공부중/학원수업중/외출중/퇴실 4단계로 확장
 -- (기존에 'checked_in'/'checked_out' 2단계로 실행했던 경우를 위한 마이그레이션)
 update attendance set status='studying' where status='checked_in';
