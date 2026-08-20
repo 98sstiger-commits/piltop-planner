@@ -380,7 +380,6 @@ body{font-family:'Pretendard','Noto Sans KR',sans-serif;color:var(--ink);min-hei
       <button class="stu-filter-tab" data-f="assigned" onclick="setStudentFilter('assigned')">배정</button>
       <button class="stu-filter-tab" data-f="unassigned" onclick="setStudentFilter('unassigned')">미배정</button>
     </div>
-    <button class="mini-btn" onclick="bulkGeneratePins()">PIN 일괄발급</button>
   </div>
   <div class="student-list" id="student-list">
     <div class="empty">아직 생성된 학생이 없어요</div>
@@ -805,19 +804,6 @@ function renderStudentList(){
     next.onclick=()=>goStudentPage(STU_PAGE+1);
     pager.appendChild(next);
   }
-}
-
-async function bulkGeneratePins(){
-  const targets=ALL_STUDENTS.filter(s=>!s.student_pin);
-  if(!targets.length){showToast('PIN이 없는 학생이 없어요');return;}
-  if(!confirm(`PIN이 없는 학생 ${targets.length}명에게 고유번호를 발급할까요?`))return;
-  showToast(`${targets.length}명 발급 중...`);
-  for(const s of targets){
-    const pin=await genUniquePin();
-    await sb(`planner_students?id=eq.${s.id}`,{method:'PATCH',body:JSON.stringify({student_pin:pin})});
-  }
-  showToast('일괄 발급이 완료됐어요');
-  loadStudents();
 }
 
 /* 염탐 */
