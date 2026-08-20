@@ -182,3 +182,17 @@ drop policy if exists "floorplans public delete" on storage.objects;
 create policy "floorplans public delete"
 on storage.objects for delete
 using (bucket_id = 'floorplans');
+
+-- ── 8. student_notes : 학생 상담 메모 (날짜별로 쌓이는 기록) ──────
+create table if not exists student_notes (
+  id uuid primary key default gen_random_uuid(),
+  student_id uuid not null references planner_students(id) on delete cascade,
+  note_date date not null default current_date,
+  content text not null,
+  created_at timestamptz not null default now()
+);
+create index if not exists idx_student_notes_student on student_notes(student_id, note_date desc, created_at desc);
+
+alter table student_notes enable row level security;
+drop policy if exists "public full access" on student_notes;
+create policy "public full access" on student_notes for all using (true) with check (true);
