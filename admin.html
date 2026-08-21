@@ -1921,6 +1921,14 @@ async function loadDateRecord(){
   const rows=rowsRes;
   if(!rows.length){body.innerHTML='<div class="empty">기록이 없어요</div>';return;}
 
+  // 지정자석 학생은 그 당시 좌석 기록이 끊겨있어도(도면을 다시 배치한
+  // 경우 등) 지금 배정된 좌석 번호로 대신 보여줄 수 있어요 — 단, 그
+  // 세션 당시와 지금 배정이 다를 수도 있어서 "(현재 배정)"이라고
+  // 구분해서 표시합니다.
+  const assignedRes=await sb(`seats?assigned_student_id=not.is.null${filter}&select=seat_number,assigned_student_id`);
+  const assignedByStudent={};
+  (Array.isArray(assignedRes)?assignedRes:[]).forEach(s=>{assignedByStudent[s.assigned_student_id]=s.seat_number;});
+
   const dayStart=new Date(start),dayEnd=new Date(end);
   const byStu=new Map();
   rows.forEach(a=>{
@@ -1943,14 +1951,18 @@ async function loadDateRecord(){
       const dur=fmtMinA(Math.max(0,(clipTo-clipFrom)/60000));
       // seat_number는 체크인 당시 값을 그대로 저장한 컬럼 — 이후 도면을
       // 다시 배치하거나 좌석을 지워도 지나간 기록의 좌석 번호는 그대로 남습니다.
+      // 그 컬럼이 생기기 전(이미 좌석 연결이 끊긴) 옛날 기록만 지정석
+      // 배정으로 대신 채웁니다.
       const seatNum=a.seat_number??a.seats?.seat_number;
+      const fallbackSeatNum=seatNum==null?assignedByStudent[a.student_id]:null;
+      const seatLabel=seatNum!=null?seatNum+'번':(fallbackSeatNum!=null?fallbackSeatNum+'번 (현재 배정)':'좌석 미상');
       const statusKey=outT?'out':a.status;
       const statusLabel=outT?'퇴실':(STATUS_ICON_LABEL[a.status]||'공부중');
       const inLabel=(spansFromPrevDay?'<span class="dr-prevday">전날</span>':'')+String(inT.getHours()).padStart(2,'0')+':'+String(inT.getMinutes()).padStart(2,'0');
       const outLabel=outT?(String(outT.getHours()).padStart(2,'0')+':'+String(outT.getMinutes()).padStart(2,'0')):'<span class="dr-live">진행중</span>';
       return `<div class="dr-card">
         <div class="dr-card-top">
-          <span class="dr-seat">${seatNum?seatNum+'번':'좌석 미상'}</span>
+          <span class="dr-seat">${seatLabel}</span>
           <span class="dr-status st-${statusKey}">${statusLabel}</span>
           <span class="dr-dur">${dur}</span>
         </div>
