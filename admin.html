@@ -1089,7 +1089,11 @@ async function loadRoomsForSelects(){
   document.getElementById('att-room-select').innerHTML=`<option value="">전체 독서실</option>`+opts;
   document.getElementById('set-room-select').innerHTML=opts||'<option value="">독서실 없음</option>';
   if(ROOMS.length){
-    if(!curSeatRoomId||!ROOMS.find(r=>r.id===curSeatRoomId))curSeatRoomId=ROOMS[0].id;
+    // 새로고침해도 마지막으로 보고 있던 독서실이 그대로 유지되게 합니다.
+    const savedRoomId=localStorage.getItem('admin-seat-room-id');
+    if(!curSeatRoomId||!ROOMS.find(r=>r.id===curSeatRoomId)){
+      curSeatRoomId=(savedRoomId&&ROOMS.find(r=>r.id===savedRoomId))?savedRoomId:ROOMS[0].id;
+    }
     document.getElementById('seat-room-select').value=curSeatRoomId;
     document.getElementById('set-room-select').value=curSeatRoomId;
   }
@@ -1105,6 +1109,7 @@ async function createRoom(name,desc){
   showToast('독서실이 추가됐어요');
   await loadRoomsForSelects();
   curSeatRoomId=ROOMS[ROOMS.length-1].id;
+  localStorage.setItem('admin-seat-room-id',curSeatRoomId);
   document.getElementById('seat-room-select').value=curSeatRoomId;
   loadSeatsTab();
 }
@@ -1215,6 +1220,7 @@ let selectedSeats=new Set();
 
 function onSeatRoomChange(){
   curSeatRoomId=document.getElementById('seat-room-select').value;
+  localStorage.setItem('admin-seat-room-id',curSeatRoomId);
   selectedSeats.clear();selectMode=false;
   loadSeatsTab();
 }
