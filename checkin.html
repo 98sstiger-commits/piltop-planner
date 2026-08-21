@@ -446,8 +446,13 @@ async function doCheckin(seat){
   const rows=await sb('attendance',{method:'POST',body:JSON.stringify({
     student_id:curStudent.id,room_id:ROOM.id,seat_id:seat.id,checkin_at:now,status:'studying'
   })});
-  const att=Array.isArray(rows)&&rows[0];
-  if(att)sb('attendance_status_log',{method:'POST',body:JSON.stringify({attendance_id:att.id,status:'studying',changed_at:now})});
+  const att=Array.isArray(rows)&&rows.length&&rows[0];
+  if(!att){
+    document.querySelectorAll('.seat-btn').forEach(b=>b.style.pointerEvents='');
+    showToast('입실 처리에 실패했어요. 다시 시도해주세요');
+    return;
+  }
+  sb('attendance_status_log',{method:'POST',body:JSON.stringify({attendance_id:att.id,status:'studying',changed_at:now})});
   notifyParent(curStudent,'checkin',seat.seat_number);
   showResult('in','👋',curStudent.name+' 님 반가워요!','입실이 완료됐어요','좌석 '+seat.seat_number+'번');
 }
@@ -456,7 +461,11 @@ async function doCheckin(seat){
    상태 선택 화면 없이 바로 공부중으로 자동 전환합니다 ── */
 async function autoResumeStudying(student,att){
   const now=new Date().toISOString();
-  await sb(`attendance?id=eq.${att.id}`,{method:'PATCH',body:JSON.stringify({status:'studying'})});
+  const rows=await sb(`attendance?id=eq.${att.id}`,{method:'PATCH',body:JSON.stringify({status:'studying'})});
+  if(!Array.isArray(rows)||!rows.length){
+    kpError('처리에 실패했어요. 다시 시도해주세요');
+    return;
+  }
   sb('attendance_status_log',{method:'POST',body:JSON.stringify({attendance_id:att.id,status:'studying',changed_at:now})});
   showResult('in','👋',student.name+' 님 반가워요!','공부를 다시 시작할게요');
 }
@@ -479,7 +488,11 @@ function closeStatusSelect(){resetKeypad();show('keypad');}
 async function setStudentStatus(status){
   if(status===coAtt.status){closeStatusSelect();return;}
   const now=new Date().toISOString();
-  await sb(`attendance?id=eq.${coAtt.id}`,{method:'PATCH',body:JSON.stringify({status})});
+  const rows=await sb(`attendance?id=eq.${coAtt.id}`,{method:'PATCH',body:JSON.stringify({status})});
+  if(!Array.isArray(rows)||!rows.length){
+    showToast('상태 변경에 실패했어요. 다시 시도해주세요');
+    return;
+  }
   sb('attendance_status_log',{method:'POST',body:JSON.stringify({attendance_id:coAtt.id,status,changed_at:now})});
   showToast(coStudent.name+' 님 '+STATUS_LABEL[status]+'(으)로 변경됐어요');
   resetKeypad();show('keypad');
@@ -497,7 +510,11 @@ function openCheckoutConfirm(){
 function closeCheckoutConfirm(){show('status-select');}
 async function doCheckout(){
   const now=new Date().toISOString();
-  await sb(`attendance?id=eq.${coAtt.id}`,{method:'PATCH',body:JSON.stringify({checkout_at:now,status:'checked_out'})});
+  const rows=await sb(`attendance?id=eq.${coAtt.id}`,{method:'PATCH',body:JSON.stringify({checkout_at:now,status:'checked_out'})});
+  if(!Array.isArray(rows)||!rows.length){
+    showToast('퇴실 처리에 실패했어요. 다시 시도해주세요');
+    return;
+  }
   sb('attendance_status_log',{method:'POST',body:JSON.stringify({attendance_id:coAtt.id,status:'checked_out',changed_at:now})});
   notifyParent(coStudent,'checkout');
   const mins=Math.max(0,Math.round((Date.now()-new Date(coAtt.checkin_at).getTime())/60000));
@@ -534,6 +551,17 @@ async function notifyParent(student,type,seatNumber){
     });
   }catch(e){console.warn('notify skip',e);}
 }
+
+/* ── 화면 꺼짐 방지 (태블릿 자동 잠금으로 키오스크 화면이 꺼지는 것 방지) ── */
+let wakeLock=null;
+async function requestWakeLock(){
+  if(!('wakeLock' in navigator))return;
+  try{wakeLock=await navigator.wakeLock.request('screen');}catch(e){console.warn('wake lock skip',e);}
+}
+document.addEventListener('visibilitychange',()=>{
+  if(document.visibilityState==='visible')requestWakeLock();
+});
+requestWakeLock();
 
 tickClock();
 initRoom();
