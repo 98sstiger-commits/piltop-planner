@@ -78,6 +78,13 @@ create table if not exists attendance (
   created_at timestamptz not null default now()
 );
 
+-- 체크인 당시 좌석 번호를 그대로 저장해둡니다. seats.seat_id는 나중에 도면을
+-- 다시 배치하거나 좌석을 삭제하면 값이 바뀌거나 사라질 수 있어서(on delete
+-- set null), 지나간 출석 기록의 좌석 번호까지 함께 사라지는 문제가 있었습니다.
+alter table attendance add column if not exists seat_number int;
+update attendance set seat_number = seats.seat_number
+  from seats where attendance.seat_id = seats.id and attendance.seat_number is null;
+
 create index if not exists idx_attendance_student on attendance(student_id);
 create index if not exists idx_attendance_room_date on attendance(room_id, checkin_at);
 create index if not exists idx_attendance_active on attendance(room_id) where checkout_at is null;

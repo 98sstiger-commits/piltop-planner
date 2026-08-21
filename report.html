@@ -345,7 +345,7 @@ async function renderDaily(){
   items.forEach(it=>{if(it.st&&it.et){const[sh,sm]=it.st.split(':').map(Number),[eh,em]=it.et.split(':').map(Number);totalMin+=Math.max(0,(eh*60+em)-(sh*60+sm));}});
 
   const start=`${ds}T00:00:00`,end=`${dk(addDays(d,1))}T00:00:00`;
-  const att=await fetchAttWithSegments(`attendance?student_id=eq.${STATE.id}&checkin_at=lt.${end}&or=(checkout_at.is.null,checkout_at.gte.${start})&select=id,checkin_at,checkout_at,status,seats(seat_number,label)&order=checkin_at.asc`,new Date(start),new Date(end));
+  const att=await fetchAttWithSegments(`attendance?student_id=eq.${STATE.id}&checkin_at=lt.${end}&or=(checkout_at.is.null,checkout_at.gte.${start})&select=id,checkin_at,checkout_at,status,seat_number,seats(seat_number,label)&order=checkin_at.asc`,new Date(start),new Date(end));
   const seg=sumSeg(att);
   const flagNote=awayFlagNote(seg);
 
@@ -389,7 +389,8 @@ function renderAttList(att){
     const inT=new Date(a.checkin_at);
     const outT=a.checkout_at?new Date(a.checkout_at):null;
     const dur=fmtMin(((outT||new Date())-inT)/60000);
-    const seat=a.seats?.seat_number?`${a.seats.seat_number}번 자리`:'';
+    const seatNum=a.seat_number??a.seats?.seat_number;
+    const seat=seatNum?`${seatNum}번 자리`:'';
     return `<div class="att-row"><div><div class="att-time">${String(inT.getHours()).padStart(2,'0')}:${String(inT.getMinutes()).padStart(2,'0')} → ${outT?String(outT.getHours()).padStart(2,'0')+':'+String(outT.getMinutes()).padStart(2,'0'):'공부중'}</div><div style="font-size:11px;color:var(--ink3);margin-top:2px">${seat}</div></div><div class="att-dur">${dur}</div></div>`;
   }).join('');
 }

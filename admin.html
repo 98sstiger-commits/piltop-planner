@@ -277,6 +277,9 @@ body{font-family:'Pretendard','Noto Sans KR',sans-serif;color:var(--ink);min-hei
 .att-stat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:18px}
 .att-stat-cell{background:var(--surf);border:1px solid var(--line);border-radius:14px;padding:18px 14px;text-align:center}
 .att-stat-num{font-size:24px;font-weight:800;color:var(--green);letter-spacing:-.5px}
+.att-stat-num.st-studying{color:#1C9962}
+.att-stat-num.st-in_class{color:#2B5FD9}
+.att-stat-num.st-away{color:#7C4DE0}
 .att-stat-lbl{font-size:11px;color:var(--ink2);margin-top:4px}
 .rank-list{display:flex;flex-direction:column;gap:8px}
 .rank-row{display:flex;align-items:center;gap:12px;padding:10px 12px;background:var(--surf);border:1px solid var(--line);border-radius:10px}
@@ -286,11 +289,28 @@ body{font-family:'Pretendard','Noto Sans KR',sans-serif;color:var(--ink);min-hei
 .rank-time{font-size:12px;font-weight:700;color:var(--green)}
 .alert-list{display:flex;flex-direction:column;gap:6px}
 .alert-row{display:flex;align-items:center;gap:8px;padding:9px 12px;background:#FEF5E8;border:1px solid #F5DDA8;border-radius:9px;font-size:12px;color:#7A4710}
-.date-table{width:100%;border-collapse:collapse;font-size:12px}
-.date-table th{text-align:left;padding:8px 10px;color:var(--ink3);font-weight:700;font-size:10px;text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid var(--line)}
-.date-table td{padding:9px 10px;border-bottom:1px solid var(--line)}
-.date-group-hd td{background:var(--gs);font-weight:700;font-size:12.5px;color:#18170F}
-.date-group-hd .grp-count{font-weight:500;color:var(--ink2);font-size:11px;margin-left:8px}
+
+/* 날짜별 출석 기록 — 학생별로 묶고, 한 세션당 카드 한 장으로 상태를
+   한눈에 볼 수 있게 구성 (표 대신 카드형이라 모바일에서도 안 깨짐) */
+.dr-list{display:flex;flex-direction:column;gap:16px}
+.dr-group-hd{display:flex;align-items:center;gap:8px;margin-bottom:7px}
+.dr-name{font-size:13.5px;font-weight:800;color:#18170F;letter-spacing:-.2px}
+.dr-count{font-size:10px;font-weight:700;color:var(--ink2);background:var(--gs);border-radius:8px;padding:2px 8px}
+.dr-sessions{display:flex;flex-direction:column;gap:7px}
+.dr-card{background:var(--surf);border:1px solid var(--line);border-radius:11px;padding:11px 13px;display:flex;flex-direction:column;gap:7px}
+.dr-card-top{display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+.dr-seat{font-size:11px;font-weight:700;color:var(--ink2);background:var(--gs);border-radius:6px;padding:3px 8px;flex-shrink:0}
+.dr-status{font-size:11.5px;font-weight:700;border-radius:20px;padding:3px 10px 3px 8px;display:inline-flex;align-items:center;gap:5px;flex-shrink:0}
+.dr-status::before{content:'';width:6px;height:6px;border-radius:50%;background:currentColor;flex-shrink:0}
+.dr-status.st-studying{background:#E7F8EE;color:#1C9962}
+.dr-status.st-in_class{background:#EAF1FF;color:#2B5FD9}
+.dr-status.st-away{background:#F3EEFF;color:#7C4DE0}
+.dr-status.st-out{background:var(--gs);color:var(--ink2)}
+.dr-dur{margin-left:auto;font-size:13px;font-weight:800;color:var(--green)}
+.dr-card-bottom{display:flex;align-items:center;gap:5px;font-size:12px;color:var(--ink2)}
+.dr-arrow{color:var(--ink3)}
+.dr-live{color:#1C9962;font-weight:700}
+.dr-prevday{font-size:9px;font-weight:800;color:#B45309;background:#FEF3D8;border-radius:5px;padding:1.5px 5px;margin-right:1px;letter-spacing:.2px}
 
 /* ══ 설정 ══ */
 .settings-section{margin-bottom:10px}
@@ -467,10 +487,11 @@ body{font-family:'Pretendard','Noto Sans KR',sans-serif;color:var(--ink);min-hei
   <div class="card" style="margin-bottom:16px">
     <div class="card-hd"><div class="card-title">오늘 출석 현황</div></div>
     <div class="card-bd">
-      <div class="att-stat-grid" style="grid-template-columns:repeat(4,1fr)">
+      <div class="att-stat-grid" style="grid-template-columns:repeat(3,1fr)">
         <div class="att-stat-cell"><div class="att-stat-num" id="att-total">0</div><div class="att-stat-lbl">총 입실</div></div>
-        <div class="att-stat-cell"><div class="att-stat-num" id="att-studying">0</div><div class="att-stat-lbl">공부중</div></div>
-        <div class="att-stat-cell"><div class="att-stat-num" id="att-elsewhere">0</div><div class="att-stat-lbl">수업·외출중</div></div>
+        <div class="att-stat-cell"><div class="att-stat-num st-studying" id="att-studying">0</div><div class="att-stat-lbl">공부중</div></div>
+        <div class="att-stat-cell"><div class="att-stat-num st-in_class" id="att-inclass">0</div><div class="att-stat-lbl">학원수업중</div></div>
+        <div class="att-stat-cell"><div class="att-stat-num st-away" id="att-away">0</div><div class="att-stat-lbl">외출중</div></div>
         <div class="att-stat-cell"><div class="att-stat-num" id="att-out">0</div><div class="att-stat-lbl">퇴실</div></div>
       </div>
     </div>
@@ -488,11 +509,8 @@ body{font-family:'Pretendard','Noto Sans KR',sans-serif;color:var(--ink);min-hei
 
   <div class="card">
     <div class="card-hd"><div class="card-title">날짜별 출석 기록</div></div>
-    <div class="card-bd" style="overflow-x:auto">
-      <table class="date-table" id="date-record-table">
-        <thead><tr><th>학생</th><th>좌석</th><th>상태</th><th>입실</th><th>퇴실</th><th>시간</th></tr></thead>
-        <tbody id="date-record-body"><tr><td colspan="6" class="empty">기록이 없어요</td></tr></tbody>
-      </table>
+    <div class="card-bd">
+      <div class="dr-list" id="date-record-body"><div class="empty">기록이 없어요</div></div>
     </div>
   </div>
 </div>
@@ -1857,7 +1875,8 @@ async function loadAttendanceTab(){
   const today=Array.isArray(todayRes)?todayRes:[];
   document.getElementById('att-total').textContent=today.length;
   document.getElementById('att-studying').textContent=today.filter(a=>a.status==='studying').length;
-  document.getElementById('att-elsewhere').textContent=today.filter(a=>a.status==='in_class'||a.status==='away').length;
+  document.getElementById('att-inclass').textContent=today.filter(a=>a.status==='in_class').length;
+  document.getElementById('att-away').textContent=today.filter(a=>a.status==='away').length;
   document.getElementById('att-out').textContent=today.filter(a=>a.checkout_at).length;
 
   // 아래 두 구간은 서로 독립적으로 실패할 수 있게 분리합니다 —
@@ -1916,9 +1935,9 @@ async function loadDateRecord(){
   const body=document.getElementById('date-record-body');
   // 전날 체크인해서 이 날짜까지 이어진(자정을 넘겨 아직 퇴실 안 한) 세션도 함께 보여줍니다.
   const rowsRes=await sb(`attendance?checkin_at=lt.${end}&or=(checkout_at.is.null,checkout_at.gte.${start})${filter}&select=*,planner_students(name),seats(seat_number)&order=checkin_at.asc`);
-  if(!Array.isArray(rowsRes)){body.innerHTML='<tr><td colspan="6" class="empty">기록을 불러오지 못했어요</td></tr>';return;}
+  if(!Array.isArray(rowsRes)){body.innerHTML='<div class="empty">기록을 불러오지 못했어요</div>';return;}
   const rows=rowsRes;
-  if(!rows.length){body.innerHTML='<tr><td colspan="6" class="empty">기록이 없어요</td></tr>';return;}
+  if(!rows.length){body.innerHTML='<div class="empty">기록이 없어요</div>';return;}
 
   const dayStart=new Date(start),dayEnd=new Date(end);
   const byStu=new Map();
@@ -1929,21 +1948,34 @@ async function loadDateRecord(){
   });
   const names=[...byStu.keys()].sort((a,b)=>a.localeCompare(b,'ko'));
 
+  const STATUS_ICON_LABEL={studying:'공부중',in_class:'학원수업중',away:'외출중'};
   body.innerHTML=names.map(name=>{
     const sessions=byStu.get(name);
-    const hd=`<tr class="date-group-hd"><td colspan="6">${name}${sessions.length>1?`<span class="grp-count">${sessions.length}회 입/퇴실</span>`:''}</td></tr>`;
-    const detail=sessions.map(a=>{
+    const hd=`<div class="dr-group-hd"><span class="dr-name">${name}</span>${sessions.length>1?`<span class="dr-count">${sessions.length}회 입/퇴실</span>`:''}</div>`;
+    const cards=sessions.map(a=>{
       const inT=new Date(a.checkin_at),outT=a.checkout_at?new Date(a.checkout_at):null;
       const spansFromPrevDay=inT<dayStart;
       const clipFrom=spansFromPrevDay?dayStart:inT;
       const rawEnd=outT||new Date();
       const clipTo=rawEnd<dayEnd?rawEnd:dayEnd;
       const dur=fmtMinA(Math.max(0,(clipTo-clipFrom)/60000));
-      const statusText=outT?'퇴실':(OCC_STATUS_LABEL[a.status]||'공부중');
-      const inLabel=(spansFromPrevDay?'전날 ':'')+String(inT.getHours()).padStart(2,'0')+':'+String(inT.getMinutes()).padStart(2,'0');
-      return `<tr><td></td><td>${a.seats?.seat_number?a.seats.seat_number+'번':'-'}</td><td>${statusText}</td><td>${inLabel}</td><td>${outT?String(outT.getHours()).padStart(2,'0')+':'+String(outT.getMinutes()).padStart(2,'0'):'-'}</td><td>${dur}</td></tr>`;
+      // seat_number는 체크인 당시 값을 그대로 저장한 컬럼 — 이후 도면을
+      // 다시 배치하거나 좌석을 지워도 지나간 기록의 좌석 번호는 그대로 남습니다.
+      const seatNum=a.seat_number??a.seats?.seat_number;
+      const statusKey=outT?'out':a.status;
+      const statusLabel=outT?'퇴실':(STATUS_ICON_LABEL[a.status]||'공부중');
+      const inLabel=(spansFromPrevDay?'<span class="dr-prevday">전날</span>':'')+String(inT.getHours()).padStart(2,'0')+':'+String(inT.getMinutes()).padStart(2,'0');
+      const outLabel=outT?(String(outT.getHours()).padStart(2,'0')+':'+String(outT.getMinutes()).padStart(2,'0')):'<span class="dr-live">진행중</span>';
+      return `<div class="dr-card">
+        <div class="dr-card-top">
+          <span class="dr-seat">${seatNum?seatNum+'번':'좌석 미상'}</span>
+          <span class="dr-status st-${statusKey}">${statusLabel}</span>
+          <span class="dr-dur">${dur}</span>
+        </div>
+        <div class="dr-card-bottom">${inLabel} <span class="dr-arrow">→</span> ${outLabel}</div>
+      </div>`;
     }).join('');
-    return hd+detail;
+    return `${hd}<div class="dr-sessions">${cards}</div>`;
   }).join('');
 }
 
