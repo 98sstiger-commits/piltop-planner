@@ -53,9 +53,14 @@ alter table seats add column if not exists kind text not null default 'seat' che
 alter table seats add column if not exists assigned_student_id uuid references planner_students(id) on delete set null;
 create unique index if not exists idx_seats_assigned_student on seats(assigned_student_id) where assigned_student_id is not null;
 
--- 좌석 상태를 비어있음/공부중/학원수업중/외출중으로 확장 — 실제 체크인 기록이
--- 없는 좌석도 관리자가 직접 클릭해서 상태를 표시할 수 있도록 함 ('예약'은 제거)
+-- 좌석 상태를 비어있음/공부중/학원수업중/외출중으로 확장했었으나('예약'은
+-- 제거), 체크인 기록 없는 좌석에 관리자가 공부중/학원수업중/외출중을
+-- 직접 칠할 수 있게 열어둔 게 "진짜 학생이 있는 건지 관리자가 그냥
+-- 칠해둔 건지" 헷갈리게 만들어서 다시 없앴습니다. 이제 관리자 화면은
+-- seats.status를 empty로만 다루고, 실제 상태는 항상 attendance.status
+-- (학생의 체크인/PIN 입력)에서만 나옵니다. 예전에 칠해뒀던 값들도 정리합니다.
 update seats set status='empty' where status not in ('empty','studying','in_class','away');
+update seats set status='empty' where status<>'empty';
 do $$
 begin
   alter table seats drop constraint if exists seats_status_check;

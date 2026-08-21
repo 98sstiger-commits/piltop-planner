@@ -250,13 +250,6 @@ body{font-family:'Pretendard','Noto Sans KR',sans-serif;color:var(--ink);min-hei
 .seat-pop button{display:block;width:100%;text-align:left;padding:8px;font-size:12px;border-radius:7px;color:var(--ink)}
 .seat-pop button:hover{background:var(--gs)}
 .seat-pop button.danger{color:#B91C1C}
-.seat-pop-status-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;padding:0 2px 6px}
-.seat-pop-status-grid button{width:auto;text-align:center;padding:8px 6px;font-size:11px;font-weight:700;border:1.5px solid transparent}
-.seat-pop-status-grid button.st-studying{background:#E7F8EE;color:#1C9962}
-.seat-pop-status-grid button.st-in_class{background:#EAF1FF;color:#2B5FD9}
-.seat-pop-status-grid button.st-away{background:#F3EEFF;color:#7C4DE0}
-.seat-pop-status-grid button.st-idle{background:var(--bg2,#F1F0EC);color:var(--ink2)}
-.seat-pop-status-grid button.st-current{border-color:currentColor}
 .seat-pop-occ-status{display:flex;align-items:center;gap:6px;margin:0 2px 4px;padding:9px 10px;border-radius:8px;font-size:12.5px;font-weight:700}
 .seat-pop-occ-status.st-studying{background:#E7F8EE;color:#1C9962}
 .seat-pop-occ-status.st-in_class{background:#EAF1FF;color:#2B5FD9}
@@ -472,7 +465,7 @@ body{font-family:'Pretendard','Noto Sans KR',sans-serif;color:var(--ink);min-hei
   </div>
   <div class="seat-guide-card">
     <div class="seat-guide-ttl">💡 좌석 상태 안내</div>
-    <div class="seat-guide-sub">좌석을 클릭하면 상태를 바꾸거나 학생을 배정할 수 있어요</div>
+    <div class="seat-guide-sub">좌석 상태는 학생의 체크인으로만 채워져요 — 관리자는 배정하거나 퇴실 처리만 할 수 있어요</div>
     <div class="seat-guide-grid">
       <div class="seat-guide-item"><i class="sg-dot" style="background:#EFEDE8;border:1px solid var(--line2)"></i><div><b>퇴실</b><span>학생이 없는 좌석이에요</span></div></div>
       <div class="seat-guide-item"><i class="sg-dot" style="background:#22B573"></i><div><b>공부중</b><span>학생이 입실해서 공부하고 있어요</span></div></div>
@@ -1270,11 +1263,9 @@ function renderSeatMap(){
     const occStu=!isBlock&&occ[s.id];
     const assignedStu=(assignedMode&&!isBlock&&s.assigned_student_id)?ALL_STUDENTS.find(st=>st.id===s.assigned_student_id):null;
     const node=document.createElement('div');
-    const manualStatus=s.status&&s.status!=='empty'?s.status:'st-empty';
     let seatCls;
     if(isBlock)seatCls='zone-block';
     else if(occStu)seatCls=occStu.status;
-    else if(manualStatus!=='st-empty')seatCls=manualStatus;
     else if(assignedMode&&!assignedStu)seatCls='unassigned';
     else seatCls='st-empty';
     node.className='seat-node '+seatCls;
@@ -1282,7 +1273,7 @@ function renderSeatMap(){
     node.dataset.seatId=s.id;
     node.style.left=s.x+'%';node.style.top=s.y+'%';node.style.width=s.width+'%';node.style.height=s.height+'%';
     const nameHtml=occStu?`<span class="sn-name">${occStu.name}</span>`
-      :assignedStu?(manualStatus!=='st-empty'?`<span class="sn-name">${assignedStu.name}</span>`:`<span class="sn-name">📌 ${assignedStu.name}</span>`)
+      :assignedStu?`<span class="sn-name">📌 ${assignedStu.name}</span>`
       :(s.label?`<span class="sn-name">${s.label}</span>`:'');
     node.innerHTML=isBlock
       ?`<span class="sn-num">${s.label||'제외구역'}</span>`
@@ -1434,13 +1425,12 @@ function openSeatPop(e,seat){
   pop.style.left=Math.min(cx,window.innerWidth-220)+'px';
   pop.style.top=Math.min(cy,window.innerHeight-(isBlock?170:295+(assignedMode?60:0)))+'px';
 
-  const manualStatus=seat.status&&seat.status!=='empty'?seat.status:'empty';
-  // 학생이 실제로 체크인해 있는 좌석은 공부중/학원수업중/외출중을
-  // 관리자가 임의로 바꾸지 못하게 합니다 — 그 값은 학생이 체크인
-  // 태블릿에서 PIN으로 직접 바꾸는 값이라, 관리자가 같이 건드리면
-  // 두 화면이 서로 덮어써서 꼬입니다. 관리자는 "퇴실 처리"만 가능하고
-  // (자리를 비웠는데 상태가 안 바뀐 경우를 바로잡는 용도), 학생이
-  // 돌아오면 PIN으로 다시 체크인해서 자연스럽게 카운트가 이어집니다.
+  // 공부중/학원수업중/외출중은 학생의 실제 체크인 상태를 나타내는 값이라,
+  // 체크인 기록이 없는(비어있는) 좌석에는 애초에 성립하지 않는 상태입니다.
+  // 관리자가 임의로 색칠할 수 있게 열어뒀던 게 오히려 "진짜 학생이 있는
+  // 건지 관리자가 그냥 칠해둔 건지" 헷갈리게 만들어서 아예 없앴습니다 —
+  // 좌석 상태는 학생의 체크인/PIN 입력으로만 정확하게 채워지고, 체크인
+  // 기록이 있는 좌석에서 관리자가 할 수 있는 건 "퇴실 처리"뿐입니다.
   const occStatusIcon={studying:'📚',in_class:'🏫',away:'🚶'};
   const statusHtml=isBlock?'':(occAtt?`
     <div class="seat-pop-sub">현재 상태</div>
@@ -1448,12 +1438,7 @@ function openSeatPop(e,seat){
     <div class="seat-pop-occ-note">학생이 태블릿에서 PIN으로 직접 바꾸는 상태예요. 자리를 비웠는데 상태가 그대로면 퇴실 처리해주세요 — 학생이 돌아오면 PIN으로 다시 체크인돼요.</div>
     <button class="seat-pop-checkout-btn" data-act="checkout">🚪 퇴실 처리</button>`:`
     <div class="seat-pop-sub">좌석 상태</div>
-    <div class="seat-pop-status-grid">
-      <button class="st-idle${manualStatus==='empty'?' st-current':''}" data-mst="empty">🚪 퇴실</button>
-      <button class="st-studying${manualStatus==='studying'?' st-current':''}" data-mst="studying">📚 공부중</button>
-      <button class="st-in_class${manualStatus==='in_class'?' st-current':''}" data-mst="in_class">🏫 학원수업중</button>
-      <button class="st-away${manualStatus==='away'?' st-current':''}" data-mst="away">🚶 외출중</button>
-    </div>`);
+    <div class="seat-pop-occ-note">비어있는 좌석이에요. 학생이 태블릿에서 PIN으로 체크인하면 자동으로 채워져요 — 관리자가 미리 상태를 칠할 수는 없어요.</div>`);
 
   const roomStudents=assignedMode&&!isBlock?ALL_STUDENTS.filter(st=>st.room_id===curSeatRoomId):[];
   const assignedElsewhere=new Set(SEATS.filter(sx=>sx.id!==seat.id&&sx.assigned_student_id).map(sx=>sx.assigned_student_id));
@@ -1516,14 +1501,6 @@ function openSeatPop(e,seat){
       closeSeatPop();
       forceCheckout(occAtt.id,occAtt.planner_students?.name||'학생');
     };
-  }else if(!isBlock){
-    pop.querySelectorAll('.seat-pop-status-grid button').forEach(b=>{
-      b.onclick=()=>{
-        const st=b.dataset.mst;
-        closeSeatPop();
-        setSeatStatus(seat.id,st);
-      };
-    });
   }
   pop.querySelector('[data-act="delete"]').onclick=()=>{closeSeatPop();deleteSeat(seat.id);};
   const assignSel=pop.querySelector('#seat-pop-assign-select');
@@ -1537,11 +1514,6 @@ async function assignSeatStudent(seatId,studentId){
   const result=await sb(`seats?id=eq.${seatId}`,{method:'PATCH',body:JSON.stringify({assigned_student_id:studentId||null})});
   if(!Array.isArray(result)||!result.length){showToast('배정 저장에 실패했어요 — Supabase에 최신 SQL을 실행했는지 확인해주세요');return;}
   showToast(studentId?'좌석을 배정했어요':'배정을 해제했어요');
-  refreshSeatData();
-}
-async function setSeatStatus(id,status){
-  const result=await sb(`seats?id=eq.${id}`,{method:'PATCH',body:JSON.stringify({status})});
-  if(!Array.isArray(result)||!result.length){showToast('상태 변경에 실패했어요 — Supabase에 최신 SQL을 실행했는지 확인해주세요');return;}
   refreshSeatData();
 }
 async function forceCheckout(attId,name){
