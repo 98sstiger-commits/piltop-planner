@@ -210,7 +210,17 @@ body{font-family:'Pretendard','Noto Sans KR',sans-serif;color:var(--ink);min-hei
 .seat-edit-tools-card{background:var(--gs);border:1px solid #D3E5DA;border-radius:14px;padding:12px 14px;margin-bottom:14px}
 .seat-edit-hint{display:flex;align-items:flex-start;gap:8px;font-size:11.5px;color:var(--green);line-height:1.6;margin-top:10px}
 .seat-edit-hint::before{content:'💡';flex-shrink:0;font-size:13px;line-height:1.5}
+.seat-map-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;border-radius:14px}
 .seat-map-wrap{position:relative;background:#F9F8F5;border:1px solid var(--line);border-radius:14px;height:420px;overflow:hidden}
+/* 좌석 배치도는 실제 자리 배치를 그대로 나타내는 공간 배치라, 좁은 화면에
+   맞춰 억지로 줄이면 좌석번호·이름이 다 잘려버립니다. 그 대신 최소
+   너비를 지켜서 글자가 항상 읽히게 하고, 좁은 화면에서는 좌우로
+   스크롤해서 보게 합니다. */
+.seat-map-scroll-hint{display:none}
+@media (max-width:760px){
+  .seat-map-wrap{min-width:760px}
+  .seat-map-scroll-hint{display:block;font-size:11px;color:var(--ink3);text-align:center;margin-bottom:8px}
+}
 .seat-map-wrap.editing{cursor:crosshair}
 .seat-map-wrap.region-select{cursor:crosshair}
 .region-marquee{border-color:var(--gold2)!important;background:rgba(227,190,109,.14)!important}
@@ -227,6 +237,7 @@ body{font-family:'Pretendard','Noto Sans KR',sans-serif;color:var(--ink);min-hei
 .seat-node.dragging{box-shadow:0 8px 22px rgba(0,0,0,.28);z-index:6;transform:scale(1.04)}
 .seat-node.selected{outline:2px dashed var(--green);outline-offset:2px}
 .seat-node.zone-block{background:repeating-linear-gradient(45deg,#EAE8E1,#EAE8E1 6px,#DEDBD2 6px,#DEDBD2 12px);color:var(--ink3);border-color:var(--line2)}
+.seat-node .sn-pin{position:absolute;top:-6px;right:-6px;font-size:11px;line-height:1;filter:drop-shadow(0 1px 1px rgba(0,0,0,.3))}
 .seat-node.zone-block .sn-num{font-size:10px;font-weight:600}
 .marquee-box{position:absolute;border:1.5px dashed var(--green);background:rgba(26,71,49,.08);pointer-events:none;z-index:8}
 .seat-node .sn-num{font-size:13px;line-height:1.2}
@@ -460,8 +471,11 @@ body{font-family:'Pretendard','Noto Sans KR',sans-serif;color:var(--ink);min-hei
       <div class="seat-edit-hint" id="seat-edit-hint"></div>
     </div>
   </div>
-  <div class="seat-map-wrap" id="seat-map-wrap">
-    <div class="seat-empty-hint">독서실을 먼저 추가해주세요</div>
+  <div class="seat-map-scroll-hint">↔ 좌우로 스크롤하면 전체 좌석을 볼 수 있어요</div>
+  <div class="seat-map-scroll">
+    <div class="seat-map-wrap" id="seat-map-wrap">
+      <div class="seat-empty-hint">독서실을 먼저 추가해주세요</div>
+    </div>
   </div>
   <div class="seat-guide-card">
     <div class="seat-guide-ttl">💡 좌석 상태 안내</div>
@@ -1273,11 +1287,14 @@ function renderSeatMap(){
     node.dataset.seatId=s.id;
     node.style.left=s.x+'%';node.style.top=s.y+'%';node.style.width=s.width+'%';node.style.height=s.height+'%';
     const nameHtml=occStu?`<span class="sn-name">${occStu.name}</span>`
-      :assignedStu?`<span class="sn-name">📌 ${assignedStu.name}</span>`
+      :assignedStu?`<span class="sn-name">${assignedStu.name}</span>`
       :(s.label?`<span class="sn-name">${s.label}</span>`:'');
+    // 지정석인데 아직 입실 전인 좌석은 이름 앞에 핀 이모지를 붙이는 대신
+    // 모서리에 따로 띄워서, 이름이 잘리지 않고 다 보이게 합니다.
+    const pinHtml=(!isBlock&&!occStu&&assignedStu)?'<span class="sn-pin">📌</span>':'';
     node.innerHTML=isBlock
       ?`<span class="sn-num">${s.label||'제외구역'}</span>`
-      :`<span class="sn-num">${s.seat_number}</span>${nameHtml}`;
+      :`${pinHtml}<span class="sn-num">${s.seat_number}</span>${nameHtml}`;
     if(seatEditMode){
       if(selectMode){
         node.onmousedown=(e)=>startDrag(e,node,s);
@@ -1922,9 +1939,9 @@ async function loadDateRecord(){
   if(!rows.length){body.innerHTML='<div class="empty">기록이 없어요</div>';return;}
 
   // 지정자석 학생은 그 당시 좌석 기록이 끊겨있어도(도면을 다시 배치한
-  // 경우 등) 지금 배정된 좌석 번호로 대신 보여줄 수 있어요 — 단, 그
-  // 세션 당시와 지금 배정이 다를 수도 있어서 "(현재 배정)"이라고
-  // 구분해서 표시합니다.
+  // 경우 등) 지금 배정된 좌석 번호로 대신 보여줍니다 — 중요한 건 정확한
+  // 과거 좌석 번호가 아니라 그 학생의 기록(공부시간 등)이 안 끊기는
+  // 것이므로, 굳이 "현재 배정"이라고 구분하지 않고 그냥 보여줍니다.
   const assignedRes=await sb(`seats?assigned_student_id=not.is.null${filter}&select=seat_number,assigned_student_id`);
   const assignedByStudent={};
   (Array.isArray(assignedRes)?assignedRes:[]).forEach(s=>{assignedByStudent[s.assigned_student_id]=s.seat_number;});
@@ -1955,7 +1972,7 @@ async function loadDateRecord(){
       // 배정으로 대신 채웁니다.
       const seatNum=a.seat_number??a.seats?.seat_number;
       const fallbackSeatNum=seatNum==null?assignedByStudent[a.student_id]:null;
-      const seatLabel=seatNum!=null?seatNum+'번':(fallbackSeatNum!=null?fallbackSeatNum+'번 (현재 배정)':'좌석 미상');
+      const seatLabel=seatNum!=null?seatNum+'번':(fallbackSeatNum!=null?fallbackSeatNum+'번':'좌석 미상');
       const statusKey=outT?'out':a.status;
       const statusLabel=outT?'퇴실':(STATUS_ICON_LABEL[a.status]||'공부중');
       const inLabel=(spansFromPrevDay?'<span class="dr-prevday">전날</span>':'')+String(inT.getHours()).padStart(2,'0')+':'+String(inT.getMinutes()).padStart(2,'0');
