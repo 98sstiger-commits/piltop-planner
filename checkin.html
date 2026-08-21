@@ -108,9 +108,7 @@ button{cursor:pointer;border:none;background:none;font-family:inherit}
 .sp-legend i{width:10px;height:10px;border-radius:3px;display:inline-block}
 .sp-map{position:relative;width:100%;background:#fff;border-radius:14px;border:1px solid var(--line);overflow:hidden;min-height:280px}
 .sp-map img{width:100%;display:block}
-.sp-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(78px,1fr));gap:10px;padding:16px}
-.seat-btn{aspect-ratio:1;border-radius:12px;background:var(--line);color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;font-weight:700;font-size:13px;gap:2px;border:2px solid transparent;transition:all .1s}
-.seat-btn.abs{position:absolute;aspect-ratio:auto}
+.seat-btn{position:absolute;border-radius:12px;background:var(--line);color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;font-weight:700;font-size:13px;gap:2px;border:2px solid transparent;transition:all .1s}
 .seat-btn.empty{background:#fff;border-color:var(--line2);color:var(--ink)}
 .seat-btn.empty:active{background:var(--gs);border-color:var(--g);transform:scale(.95)}
 .seat-btn.busy{background:#FBEAEA;border-color:#F3D0D0;color:var(--danger);opacity:.75}
@@ -418,20 +416,23 @@ async function renderSeatMap(){
   const occ={};
   (active||[]).forEach(a=>{if(a.seat_id)occ[a.seat_id]=a.planner_students?.name||'사용중';});
 
-  const useMap=!!ROOM.floor_image_url;
+  // 도면 이미지가 없어도(격자로만 배치한 독서실이라도) 관리자가 좌석현황에서
+  // 배치한 실제 위치(x/y) 그대로 보여줘서, 학생이 어디가 어디인지 감을
+  // 잡을 수 있게 합니다. 단순 번호 나열 격자로는 실제 배치를 알 수 없었습니다.
+  const hasImage=!!ROOM.floor_image_url;
   map.innerHTML='';
-  map.className='sp-map'+(useMap?'':' sp-grid');
-  if(useMap){
-    map.style.aspectRatio='';
+  map.className='sp-map';
+  if(hasImage){
+    map.style.height='';
     const img=document.createElement('img');img.src=ROOM.floor_image_url;map.appendChild(img);
+  }else{
+    map.style.height=(ROOM.canvas_height||420)+'px';
   }
   seats.forEach(s=>{
     const isBusy=!!occ[s.id];
     const btn=document.createElement('button');
-    btn.className='seat-btn'+(useMap?' abs':'')+(isBusy?' busy':(s.status==='reserved'?' reserved':' empty'));
-    if(useMap){
-      btn.style.left=s.x+'%';btn.style.top=s.y+'%';btn.style.width=s.width+'%';btn.style.height=s.height+'%';
-    }
+    btn.className='seat-btn'+(isBusy?' busy':(s.status==='reserved'?' reserved':' empty'));
+    btn.style.left=s.x+'%';btn.style.top=s.y+'%';btn.style.width=s.width+'%';btn.style.height=s.height+'%';
     btn.innerHTML=`<span class="seat-num">${s.seat_number}</span>${isBusy?`<span class="seat-name">${occ[s.id]}</span>`:(s.label?`<span class="seat-name">${s.label}</span>`:'')}`;
     if(!isBusy&&s.status!=='reserved'){
       btn.onclick=()=>doCheckin(s);
