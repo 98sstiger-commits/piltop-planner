@@ -277,10 +277,12 @@ body{font-family:'Pretendard','Noto Sans KR',sans-serif;color:var(--ink);min-hei
 .grid-modal{background:#fff;border-radius:16px;padding:22px;width:100%;max-width:340px}
 .grid-modal-ttl{font-size:15px;font-weight:700;margin-bottom:6px}
 .grid-modal-sub{font-size:11px;color:var(--ink2);line-height:1.6;margin-bottom:16px}
+.gm-mode-note{font-size:11px;color:var(--ink2);line-height:1.5;margin:-4px 0 14px;padding:8px 10px;background:var(--gs);border-radius:8px}
 .gm-row{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}
 .gm-row label{font-size:12px;color:var(--ink2);font-weight:600}
 .gm-row input{width:80px;padding:8px 10px;border:1px solid var(--line2);border-radius:8px;font-size:13px;text-align:right;font-family:inherit}
 .gm-row input:focus{outline:none;border-color:var(--green)}
+.gm-preview{font-size:12px;font-weight:700;color:var(--green);text-align:center;padding:9px;background:var(--gs);border-radius:8px;margin-top:4px}
 .gm-btns{display:flex;gap:8px;margin-top:16px}
 .gm-btns .mini-btn{flex:1;text-align:center}
 
@@ -1363,6 +1365,9 @@ function startDrag(e,node,seat){
   const groupSeats=isGroup?SEATS.filter(s=>selectedSeats.has(s.id)):[seat];
   const startPositions=groupSeats.map(s=>({seat:s,x:s.x,y:s.y}));
   function move(ev){
+    // 터치스크린(태블릿)에서 좌석을 드래그하는 동안 배경 화면까지 같이
+    // 스크롤/팬 되면서 드래그가 흔들리고 불안정하게 느껴지던 문제를 막습니다.
+    ev.preventDefault();
     const pt=ev.touches?ev.touches[0]:ev;
     if(!dragMoved){
       if(Math.abs(pt.clientX-startX)<DRAG_THRESHOLD&&Math.abs(pt.clientY-startY)<DRAG_THRESHOLD)return;
@@ -1379,18 +1384,27 @@ function startDrag(e,node,seat){
       if(n){n.style.left=x+'%';n.style.top=y+'%';}
     });
   }
-  function up(){
+  async function up(){
     document.removeEventListener('mousemove',move);document.removeEventListener('mouseup',up);
     document.removeEventListener('touchmove',move);document.removeEventListener('touchend',up);
     node.classList.remove('dragging');
     if(dragMoved){
-      startPositions.forEach(sp=>{
+      // 저장이 실제로 성공했는지 확인하지 않으면, 네트워크가 잠깐
+      // 끊겼을 때 화면엔 옮겨진 것처럼 보이다가 새로고침하면 원래
+      // 자리로 되돌아가버려서 "불안정하다"고 느껴지는 원인이 됩니다.
+      const results=await Promise.all(startPositions.map(async sp=>{
         const n=wrap.querySelector(`[data-seat-id="${sp.seat.id}"]`);
-        if(!n)return;
+        if(!n)return true;
         const x=parseFloat(n.style.left),y=parseFloat(n.style.top);
+        const result=await sb(`seats?id=eq.${sp.seat.id}`,{method:'PATCH',body:JSON.stringify({x,y})});
+        if(!Array.isArray(result)||!result.length){
+          n.style.left=sp.x+'%';n.style.top=sp.y+'%';
+          return false;
+        }
         sp.seat.x=x;sp.seat.y=y;
-        sb(`seats?id=eq.${sp.seat.id}`,{method:'PATCH',body:JSON.stringify({x,y})});
-      });
+        return true;
+      }));
+      if(results.some(ok=>!ok))showToast('일부 좌석 이동이 저장되지 않았어요 — 다시 시도해주세요');
     }
   }
   document.addEventListener('mousemove',move);document.addEventListener('mouseup',up);
@@ -1406,18 +1420,24 @@ function startSeatResize(e,node,seat){
   const startW=parseFloat(node.style.width)||9,startH=parseFloat(node.style.height)||9;
   const maxSize=seat.kind==='block'?96:40;
   function move(ev){
+    ev.preventDefault();
     const pt=ev.touches?ev.touches[0]:ev;
     let w=startW+(pt.clientX-startX)/rect.width*100;
     let h=startH+(pt.clientY-startY)/rect.height*100;
     w=Math.max(4,Math.min(maxSize,w));h=Math.max(4,Math.min(maxSize,h));
     node.style.width=w+'%';node.style.height=h+'%';
   }
-  function up(){
+  async function up(){
     document.removeEventListener('mousemove',move);document.removeEventListener('mouseup',up);
     document.removeEventListener('touchmove',move);document.removeEventListener('touchend',up);
     const w=parseFloat(node.style.width),h=parseFloat(node.style.height);
+    const result=await sb(`seats?id=eq.${seat.id}`,{method:'PATCH',body:JSON.stringify({width:w,height:h})});
+    if(!Array.isArray(result)||!result.length){
+      node.style.width=startW+'%';node.style.height=startH+'%';
+      showToast('좌석 크기 변경이 저장되지 않았어요 — 다시 시도해주세요');
+      return;
+    }
     seat.width=w;seat.height=h;
-    sb(`seats?id=eq.${seat.id}`,{method:'PATCH',body:JSON.stringify({width:w,height:h})});
   }
   document.addEventListener('mousemove',move);document.addEventListener('mouseup',up);
   document.addEventListener('touchmove',move,{passive:false});document.addEventListener('touchend',up);
@@ -1430,16 +1450,23 @@ function startCanvasResize(e){
   const startY=startPt.clientY;
   const startH=wrap.offsetHeight;
   function move(ev){
+    ev.preventDefault();
     const pt=ev.touches?ev.touches[0]:ev;
     const h=Math.max(240,Math.min(1000,startH+(pt.clientY-startY)));
     wrap.style.height=h+'px';
   }
-  function up(){
+  async function up(){
     document.removeEventListener('mousemove',move);document.removeEventListener('mouseup',up);
     document.removeEventListener('touchmove',move);document.removeEventListener('touchend',up);
     const h=wrap.offsetHeight;
+    if(!curSeatRoomId)return;
+    const result=await sb(`study_rooms?id=eq.${curSeatRoomId}`,{method:'PATCH',body:JSON.stringify({canvas_height:h})});
+    if(!Array.isArray(result)||!result.length){
+      wrap.style.height=startH+'px';
+      showToast('크기 변경이 저장되지 않았어요 — 다시 시도해주세요');
+      return;
+    }
     const room=ROOMS.find(r=>r.id===curSeatRoomId);if(room)room.canvas_height=h;
-    if(curSeatRoomId)sb(`study_rooms?id=eq.${curSeatRoomId}`,{method:'PATCH',body:JSON.stringify({canvas_height:h})});
   }
   document.addEventListener('mousemove',move);document.addEventListener('mouseup',up);
   document.addEventListener('touchmove',move,{passive:false});document.addEventListener('touchend',up);
@@ -1604,6 +1631,7 @@ function handleWrapMouseDown(e){
   box.className='marquee-box';
   wrap.appendChild(box);
   function move(ev){
+    ev.preventDefault();
     const pt=ev.touches?ev.touches[0]:ev;
     const x1=Math.min(startX,pt.clientX),x2=Math.max(startX,pt.clientX);
     const y1=Math.min(startY,pt.clientY),y2=Math.max(startY,pt.clientY);
@@ -1660,6 +1688,7 @@ function handleRegionSelectDrag(e){
   box.className='marquee-box region-marquee';
   wrap.appendChild(box);
   function move(ev){
+    ev.preventDefault();
     const pt=ev.touches?ev.touches[0]:ev;
     const x1=Math.min(startX,pt.clientX),x2=Math.max(startX,pt.clientX);
     const y1=Math.min(startY,pt.clientY),y2=Math.max(startY,pt.clientY);
@@ -1782,15 +1811,27 @@ async function addZone(){
   showToast('제외구역을 추가했어요 — 드래그로 위치를, 우측 하단 손잡이로 크기를 조정해보세요');
 }
 
-/* ── 격자로 좌석 일괄 생성 ── */
+/* ── 격자로 좌석 일괄 생성 ──
+   "낱개"와 "마주보기 2인1조"의 차이가 행/열 라벨이 모드마다 다른 뜻으로
+   바뀌어서(예: "행 (다발당 마주보기 쌍 개수)") 헷갈린다는 피드백을 받아,
+   행/열은 항상 "그냥 격자의 세로·가로 칸 수"로 고정하고, 모드 차이는
+   그 아래 안내 문구 + 실시간 좌석 개수 미리보기로 명확히 보여줍니다. */
 let gmMode='single';
 function setGmMode(m){
   gmMode=m;
   document.getElementById('gm-mode-single').classList.toggle('pri',m==='single');
   document.getElementById('gm-mode-paired').classList.toggle('pri',m==='paired');
   document.getElementById('gm-divider-row').style.display=m==='paired'?'flex':'none';
-  document.getElementById('gm-cols-label').textContent=m==='paired'?'열 (마주보기 다발 개수)':'열 (가로)';
-  document.getElementById('gm-rows-label').textContent=m==='paired'?'행 (다발당 마주보기 쌍 개수)':'행 (세로)';
+  document.getElementById('gm-mode-note').textContent=m==='paired'
+    ?'각 칸마다 좌석 2개가 나란히 짝을 이루어 만들어져요 (칸막이로 구분)'
+    :'각 칸에 좌석을 1개씩 만들어요';
+  updateGmPreview();
+}
+function updateGmPreview(){
+  const rows=Math.max(1,Math.min(20,parseInt(document.getElementById('gm-rows').value)||1));
+  const cols=Math.max(1,Math.min(20,parseInt(document.getElementById('gm-cols').value)||1));
+  const perCell=gmMode==='paired'?2:1;
+  document.getElementById('gm-preview').textContent=`총 ${rows*cols*perCell}석 만들어져요 (${rows}행 × ${cols}열${perCell===2?' × 2인1조':''})`;
 }
 function openGridModal(){
   if(!curSeatRoomId){showToast('독서실을 먼저 선택하세요');return;}
@@ -1809,11 +1850,13 @@ function openGridModal(){
         <button type="button" class="mini-btn" id="gm-mode-paired" onclick="setGmMode('paired')">마주보기 2인1조</button>
       </div>
     </div>
-    <div class="gm-row"><label id="gm-rows-label">행 (세로)</label><input type="number" id="gm-rows" value="3" min="1" max="20"></div>
-    <div class="gm-row"><label id="gm-cols-label">열 (가로)</label><input type="number" id="gm-cols" value="3" min="1" max="20"></div>
+    <div class="gm-mode-note" id="gm-mode-note">각 칸에 좌석을 1개씩 만들어요</div>
+    <div class="gm-row"><label>행 (세로)</label><input type="number" id="gm-rows" value="3" min="1" max="20" oninput="updateGmPreview()"></div>
+    <div class="gm-row"><label>열 (가로)</label><input type="number" id="gm-cols" value="3" min="1" max="20" oninput="updateGmPreview()"></div>
     <div class="gm-row"><label>좌석 크기(%)</label><input type="number" id="gm-size" value="7" min="3" max="30" step="0.5"></div>
     <div class="gm-row"><label>줄 간격(%)</label><input type="number" id="gm-gap" value="1.5" min="0" max="10" step="0.5"></div>
     <div class="gm-row" id="gm-divider-row" style="display:none"><label>마주보기 칸막이 간격(%)</label><input type="number" id="gm-divider" value="1" min="0" max="5" step="0.5"></div>
+    <div class="gm-preview" id="gm-preview"></div>
     <div class="gm-btns">
       <button class="mini-btn" onclick="closeGridModal()">취소</button>
       <button class="mini-btn pri" id="gm-generate-btn" onclick="generateSeatGrid()">생성</button>
@@ -1821,6 +1864,7 @@ function openGridModal(){
   </div>`;
   document.body.appendChild(bg);
   bg.onclick=(e)=>{if(e.target===bg)closeGridModal();};
+  updateGmPreview();
 }
 function closeGridModal(){document.getElementById('grid-modal-bg')?.remove();}
 
