@@ -552,6 +552,22 @@ async function notifyParent(student,type,seatNumber){
   }catch(e){console.warn('notify skip',e);}
 }
 
+/* ── 백스페이스로 화면을 벗어나지 못하게 잠금 (태블릿 상시 운영용) ──
+   일부 키오스크 브라우저는 물리 Backspace 키를 "뒤로가기"로 처리해서
+   실수로(혹은 학생이) 체크인 화면을 벗어날 수 있습니다. 독서실별
+   잠금 비밀번호(admin.html 설정 탭의 kiosk_pin)를 입력하지 않으면
+   체크인 화면 그대로 유지되게 막습니다. */
+document.addEventListener('keydown',(e)=>{
+  if(e.key!=='Backspace')return;
+  e.preventDefault();
+  const pin=ROOM&&ROOM.kiosk_pin;
+  if(!pin){showToast('잠금 비밀번호가 설정되지 않았어요');return;}
+  const input=prompt('화면을 벗어나려면 비밀번호를 입력하세요');
+  if(input===null)return;
+  if(input!==pin){showToast('비밀번호가 틀렸어요');return;}
+  history.back();
+},true);
+
 /* ── 화면 꺼짐 방지 (태블릿 자동 잠금으로 키오스크 화면이 꺼지는 것 방지) ── */
 let wakeLock=null;
 async function requestWakeLock(){

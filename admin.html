@@ -970,21 +970,30 @@ function fmtMinA(mins){mins=Math.max(0,Math.round(mins));const h=Math.floor(mins
 /* ── 실제 순공시간 계산: attendance_status_log 로그 기반 ──
    status='studying' 구간만 합산. 로그가 없는(예전) 기록은 체크인~체크아웃
    전체를 공부시간으로 간주(기존 방식)해 하위호환을 유지합니다. */
-function computeAttSegments(att,logsForAtt){
+/* rangeStart/rangeEnd가 주어지면 그 기간에 걸치는 부분만 집계합니다 —
+   전날부터 이어진 세션(예: 퇴실을 안 누르고 자정을 넘긴 경우)이 있어도
+   해당 기간(이번주 등)의 순공시간이 실제보다 부풀지 않도록 합니다. */
+function computeAttSegments(att,logsForAtt,rangeStart,rangeEnd){
   const segs={studying:0,in_class:0,away:0};
   const sorted=(logsForAtt||[]).slice().sort((a,b)=>new Date(a.changed_at)-new Date(b.changed_at));
-  const end=att.checkout_at?new Date(att.checkout_at):new Date();
+  const sessionEnd=att.checkout_at?new Date(att.checkout_at):new Date();
+  const clipStart=rangeStart&&rangeStart>new Date(att.checkin_at)?rangeStart:new Date(att.checkin_at);
+  const clipEnd=rangeEnd&&rangeEnd<sessionEnd?rangeEnd:sessionEnd;
+  if(clipEnd<=clipStart)return segs;
   if(!sorted.length){
-    segs.studying=Math.max(0,(end-new Date(att.checkin_at))/60000);
+    segs.studying=Math.max(0,(clipEnd-clipStart)/60000);
     return segs;
   }
   let curStatus='studying',curTime=new Date(att.checkin_at);
   sorted.forEach(l=>{
     const t=new Date(l.changed_at);
-    if(t>curTime&&segs[curStatus]!==undefined)segs[curStatus]+=(t-curTime)/60000;
+    const segFrom=curTime<clipStart?clipStart:curTime;
+    const segTo=t>clipEnd?clipEnd:t;
+    if(segTo>segFrom&&segs[curStatus]!==undefined)segs[curStatus]+=(segTo-segFrom)/60000;
     curStatus=l.status;curTime=t;
   });
-  if(end>curTime&&segs[curStatus]!==undefined)segs[curStatus]+=(end-curTime)/60000;
+  const segFrom=curTime<clipStart?clipStart:curTime;
+  if(clipEnd>segFrom&&segs[curStatus]!==undefined)segs[curStatus]+=(clipEnd-segFrom)/60000;
   return segs;
 }
 function groupLogsByAttendance(logs){
@@ -1843,7 +1852,8 @@ async function loadAttendanceTab(){
   const filter=roomId?`&room_id=eq.${roomId}`:'';
   const todayStr=dk(new Date());
   const start=`${todayStr}T00:00:00`,end=`${dk(addDaysA(new Date(),1))}T00:00:00`;
-  const todayRes=await sb(`attendance?checkin_at=gte.${start}&checkin_at=lt.${end}${filter}&select=*`);
+  // 전날 체크인해서 아직 퇴실을 안 누른(자정을 넘긴) 학생도 "오늘" 현황에 포함시킵니다.
+  const todayRes=await sb(`attendance?checkin_at=lt.${end}&or=(checkout_at.is.null,checkout_at.gte.${start})${filter}&select=*`);
   const today=Array.isArray(todayRes)?todayRes:[];
   document.getElementById('att-total').textContent=today.length;
   document.getElementById('att-studying').textContent=today.filter(a=>a.status==='studying').length;
@@ -1856,7 +1866,7 @@ async function loadAttendanceTab(){
   try{
     const mon=mondayOfA(new Date());
     const wStart=`${dk(mon)}T00:00:00`,wEnd=`${dk(addDaysA(mon,7))}T00:00:00`;
-    const weekRes=await sb(`attendance?checkin_at=gte.${wStart}&checkin_at=lt.${wEnd}${filter}&select=id,student_id,checkin_at,checkout_at,planner_students(name)`);
+    const weekRes=await sb(`attendance?checkin_at=lt.${wEnd}&or=(checkout_at.is.null,checkout_at.gte.${wStart})${filter}&select=id,student_id,checkin_at,checkout_at,planner_students(name)`);
     const week=Array.isArray(weekRes)?weekRes:[];
     const weekIds=week.map(a=>a.id);
     const weekLogsRes=weekIds.length?await sb(`attendance_status_log?attendance_id=in.(${weekIds.join(',')})&select=attendance_id,status,changed_at`):[];
@@ -1864,7 +1874,7 @@ async function loadAttendanceTab(){
     const weekLogsByAtt=groupLogsByAttendance(weekLogs);
     const byStu={};
     week.forEach(a=>{
-      const mins=computeAttSegments(a,weekLogsByAtt[a.id]).studying;
+      const mins=computeAttSegments(a,weekLogsByAtt[a.id],new Date(wStart),new Date(wEnd)).studying;
       if(!byStu[a.student_id])byStu[a.student_id]={name:a.planner_students?.name||'?',min:0};
       byStu[a.student_id].min+=mins;
     });
@@ -1904,11 +1914,13 @@ async function loadDateRecord(){
   const filter=roomId?`&room_id=eq.${roomId}`:'';
   const start=`${date}T00:00:00`,end=`${dk(addDaysA(parseDkA(date),1))}T00:00:00`;
   const body=document.getElementById('date-record-body');
-  const rowsRes=await sb(`attendance?checkin_at=gte.${start}&checkin_at=lt.${end}${filter}&select=*,planner_students(name),seats(seat_number)&order=checkin_at.asc`);
+  // 전날 체크인해서 이 날짜까지 이어진(자정을 넘겨 아직 퇴실 안 한) 세션도 함께 보여줍니다.
+  const rowsRes=await sb(`attendance?checkin_at=lt.${end}&or=(checkout_at.is.null,checkout_at.gte.${start})${filter}&select=*,planner_students(name),seats(seat_number)&order=checkin_at.asc`);
   if(!Array.isArray(rowsRes)){body.innerHTML='<tr><td colspan="6" class="empty">기록을 불러오지 못했어요</td></tr>';return;}
   const rows=rowsRes;
   if(!rows.length){body.innerHTML='<tr><td colspan="6" class="empty">기록이 없어요</td></tr>';return;}
 
+  const dayStart=new Date(start),dayEnd=new Date(end);
   const byStu=new Map();
   rows.forEach(a=>{
     const name=a.planner_students?.name||'?';
@@ -1922,9 +1934,14 @@ async function loadDateRecord(){
     const hd=`<tr class="date-group-hd"><td colspan="6">${name}${sessions.length>1?`<span class="grp-count">${sessions.length}회 입/퇴실</span>`:''}</td></tr>`;
     const detail=sessions.map(a=>{
       const inT=new Date(a.checkin_at),outT=a.checkout_at?new Date(a.checkout_at):null;
-      const dur=fmtMinA(((outT||new Date())-inT)/60000);
+      const spansFromPrevDay=inT<dayStart;
+      const clipFrom=spansFromPrevDay?dayStart:inT;
+      const rawEnd=outT||new Date();
+      const clipTo=rawEnd<dayEnd?rawEnd:dayEnd;
+      const dur=fmtMinA(Math.max(0,(clipTo-clipFrom)/60000));
       const statusText=outT?'퇴실':(OCC_STATUS_LABEL[a.status]||'공부중');
-      return `<tr><td></td><td>${a.seats?.seat_number?a.seats.seat_number+'번':'-'}</td><td>${statusText}</td><td>${String(inT.getHours()).padStart(2,'0')}:${String(inT.getMinutes()).padStart(2,'0')}</td><td>${outT?String(outT.getHours()).padStart(2,'0')+':'+String(outT.getMinutes()).padStart(2,'0'):'-'}</td><td>${dur}</td></tr>`;
+      const inLabel=(spansFromPrevDay?'전날 ':'')+String(inT.getHours()).padStart(2,'0')+':'+String(inT.getMinutes()).padStart(2,'0');
+      return `<tr><td></td><td>${a.seats?.seat_number?a.seats.seat_number+'번':'-'}</td><td>${statusText}</td><td>${inLabel}</td><td>${outT?String(outT.getHours()).padStart(2,'0')+':'+String(outT.getMinutes()).padStart(2,'0'):'-'}</td><td>${dur}</td></tr>`;
     }).join('');
     return hd+detail;
   }).join('');

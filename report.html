@@ -225,21 +225,30 @@ function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t
 /* ── 실제 순공시간 계산: attendance_status_log 로그 기반 ──
    status='studying' 구간만 합산. 로그가 없는(예전) 기록은 체크인~체크아웃
    전체를 공부시간으로 간주(기존 방식)해 하위호환을 유지합니다. */
-function computeAttSegments(att,logsForAtt){
+/* rangeStart/rangeEnd가 주어지면 그 기간에 걸치는 부분만 집계합니다 —
+   전날부터 이어진 세션(예: 퇴실을 안 누르고 자정을 넘긴 경우)이 있어도
+   해당 기간(오늘/이번주/이번달)의 순공시간이 실제보다 부풀지 않도록 합니다. */
+function computeAttSegments(att,logsForAtt,rangeStart,rangeEnd){
   const segs={studying:0,in_class:0,away:0};
   const sorted=(logsForAtt||[]).slice().sort((a,b)=>new Date(a.changed_at)-new Date(b.changed_at));
-  const end=att.checkout_at?new Date(att.checkout_at):new Date();
+  const sessionEnd=att.checkout_at?new Date(att.checkout_at):new Date();
+  const clipStart=rangeStart&&rangeStart>new Date(att.checkin_at)?rangeStart:new Date(att.checkin_at);
+  const clipEnd=rangeEnd&&rangeEnd<sessionEnd?rangeEnd:sessionEnd;
+  if(clipEnd<=clipStart)return segs;
   if(!sorted.length){
-    segs.studying=Math.max(0,(end-new Date(att.checkin_at))/60000);
+    segs.studying=Math.max(0,(clipEnd-clipStart)/60000);
     return segs;
   }
   let curStatus='studying',curTime=new Date(att.checkin_at);
   sorted.forEach(l=>{
     const t=new Date(l.changed_at);
-    if(t>curTime&&segs[curStatus]!==undefined)segs[curStatus]+=(t-curTime)/60000;
+    const segFrom=curTime<clipStart?clipStart:curTime;
+    const segTo=t>clipEnd?clipEnd:t;
+    if(segTo>segFrom&&segs[curStatus]!==undefined)segs[curStatus]+=(segTo-segFrom)/60000;
     curStatus=l.status;curTime=t;
   });
-  if(end>curTime&&segs[curStatus]!==undefined)segs[curStatus]+=(end-curTime)/60000;
+  const segFrom=curTime<clipStart?clipStart:curTime;
+  if(clipEnd>segFrom&&segs[curStatus]!==undefined)segs[curStatus]+=(clipEnd-segFrom)/60000;
   return segs;
 }
 function groupLogsByAttendance(logs){
@@ -247,12 +256,12 @@ function groupLogsByAttendance(logs){
   (logs||[]).forEach(l=>{(m[l.attendance_id]=m[l.attendance_id]||[]).push(l);});
   return m;
 }
-async function fetchAttWithSegments(query){
+async function fetchAttWithSegments(query,rangeStart,rangeEnd){
   const att=await sb(query)||[];
   const ids=att.map(a=>a.id);
   const logs=ids.length?(await sb(`attendance_status_log?attendance_id=in.(${ids.join(',')})&select=attendance_id,status,changed_at`)||[]):[];
   const logsByAtt=groupLogsByAttendance(logs);
-  att.forEach(a=>{a._seg=computeAttSegments(a,logsByAtt[a.id]);});
+  att.forEach(a=>{a._seg=computeAttSegments(a,logsByAtt[a.id],rangeStart,rangeEnd);});
   return att;
 }
 /* 외출 비중이 상대적으로 길 때 상담 참고용 안내 문구 (학원수업 시간은 제외) */
@@ -336,7 +345,7 @@ async function renderDaily(){
   items.forEach(it=>{if(it.st&&it.et){const[sh,sm]=it.st.split(':').map(Number),[eh,em]=it.et.split(':').map(Number);totalMin+=Math.max(0,(eh*60+em)-(sh*60+sm));}});
 
   const start=`${ds}T00:00:00`,end=`${dk(addDays(d,1))}T00:00:00`;
-  const att=await fetchAttWithSegments(`attendance?student_id=eq.${STATE.id}&checkin_at=gte.${start}&checkin_at=lt.${end}&select=id,checkin_at,checkout_at,status,seats(seat_number,label)&order=checkin_at.asc`);
+  const att=await fetchAttWithSegments(`attendance?student_id=eq.${STATE.id}&checkin_at=lt.${end}&or=(checkout_at.is.null,checkout_at.gte.${start})&select=id,checkin_at,checkout_at,status,seats(seat_number,label)&order=checkin_at.asc`,new Date(start),new Date(end));
   const seg=sumSeg(att);
   const flagNote=awayFlagNote(seg);
 
@@ -405,7 +414,7 @@ async function renderWeekly(){
   });
 
   const start=`${dayKeys[0]}T00:00:00`,end=`${dk(addDays(sun,1))}T00:00:00`;
-  const att=await fetchAttWithSegments(`attendance?student_id=eq.${STATE.id}&checkin_at=gte.${start}&checkin_at=lt.${end}&select=id,checkin_at,checkout_at,status&order=checkin_at.asc`);
+  const att=await fetchAttWithSegments(`attendance?student_id=eq.${STATE.id}&checkin_at=lt.${end}&or=(checkout_at.is.null,checkout_at.gte.${start})&select=id,checkin_at,checkout_at,status&order=checkin_at.asc`,new Date(start),new Date(end));
   const attDays=new Set(att.map(a=>dk(new Date(a.checkin_at))));
   const seg=sumSeg(att);
   const attMin=seg.studying;
@@ -477,7 +486,7 @@ async function renderMonthly(){
 
   const first=new Date(y,m,1),last=new Date(y,m+1,0);
   const start=`${dk(first)}T00:00:00`,end=`${dk(addDays(last,1))}T00:00:00`;
-  const att=await fetchAttWithSegments(`attendance?student_id=eq.${STATE.id}&checkin_at=gte.${start}&checkin_at=lt.${end}&select=id,checkin_at,checkout_at,status&order=checkin_at.asc`);
+  const att=await fetchAttWithSegments(`attendance?student_id=eq.${STATE.id}&checkin_at=lt.${end}&or=(checkout_at.is.null,checkout_at.gte.${start})&select=id,checkin_at,checkout_at,status&order=checkin_at.asc`,new Date(start),new Date(end));
   const attDays=new Set(att.map(a=>dk(new Date(a.checkin_at))));
   const seg=sumSeg(att);
   const totalMin=seg.studying;
