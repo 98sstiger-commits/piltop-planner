@@ -301,6 +301,13 @@ body{font-family:'Pretendard','Noto Sans KR',sans-serif;color:var(--ink);min-hei
 .alert-list{display:flex;flex-direction:column;gap:6px}
 .alert-row{display:flex;align-items:center;gap:8px;padding:9px 12px;background:#FEF5E8;border:1px solid #F5DDA8;border-radius:9px;font-size:12px;color:#7A4710}
 
+/* 그 날 등록 학생 중 아예 출석하지 않은 학생 명단 */
+.dr-absent{background:#FEF5E8;border:1px solid #F5DDA8;border-radius:11px;padding:12px 13px;margin-bottom:16px}
+.dr-absent-ttl{font-size:12px;font-weight:800;color:#7A4710;margin-bottom:8px}
+.dr-absent-chips{display:flex;flex-wrap:wrap;gap:6px}
+.dr-absent-chip{font-size:11.5px;font-weight:700;color:#7A4710;background:#fff;border:1px solid #F0D9A0;border-radius:20px;padding:4px 11px}
+.dr-absent.dr-absent-ok{background:var(--gs);border-color:#D3E5DA;color:var(--green);font-size:12px;font-weight:700}
+
 /* 날짜별 출석 기록 — 학생별로 묶고, 한 세션당 카드 한 장으로 상태를
    한눈에 볼 수 있게 구성 (표 대신 카드형이라 모바일에서도 안 깨짐) */
 .dr-list{display:flex;flex-direction:column;gap:16px}
@@ -524,6 +531,7 @@ body{font-family:'Pretendard','Noto Sans KR',sans-serif;color:var(--ink);min-hei
   <div class="card">
     <div class="card-hd"><div class="card-title">날짜별 출석 기록</div></div>
     <div class="card-bd">
+      <div id="date-absent-box"></div>
       <div class="dr-list" id="date-record-body"><div class="empty">기록이 없어요</div></div>
     </div>
   </div>
@@ -1932,10 +1940,27 @@ async function loadDateRecord(){
   const filter=roomId?`&room_id=eq.${roomId}`:'';
   const start=`${date}T00:00:00`,end=`${dk(addDaysA(parseDkA(date),1))}T00:00:00`;
   const body=document.getElementById('date-record-body');
+  const absentBox=document.getElementById('date-absent-box');
   // 전날 체크인해서 이 날짜까지 이어진(자정을 넘겨 아직 퇴실 안 한) 세션도 함께 보여줍니다.
   const rowsRes=await sb(`attendance?checkin_at=lt.${end}&or=(checkout_at.is.null,checkout_at.gte.${start})${filter}&select=*,planner_students(name),seats(seat_number)&order=checkin_at.asc`);
-  if(!Array.isArray(rowsRes)){body.innerHTML='<div class="empty">기록을 불러오지 못했어요</div>';return;}
+  if(!Array.isArray(rowsRes)){body.innerHTML='<div class="empty">기록을 불러오지 못했어요</div>';absentBox.innerHTML='';return;}
   const rows=rowsRes;
+
+  // 등록 학생 중 그 날 아예 출석하지 않은 학생을 따로 보여줍니다 — 특정
+  // 독서실을 선택했을 때만(전체 독서실은 "등록 명단" 기준이 불분명해서
+  // 생략), 중단 중인 학생은 결석으로 치지 않고 제외합니다.
+  if(roomId){
+    const studentsRes=await sb(`planner_students?room_id=eq.${roomId}&is_paused=eq.false&select=id,name`);
+    const students=Array.isArray(studentsRes)?studentsRes:[];
+    const attendedIds=new Set(rows.map(a=>a.student_id));
+    const absent=students.filter(s=>!attendedIds.has(s.id)).sort((a,b)=>a.name.localeCompare(b.name,'ko'));
+    absentBox.innerHTML=!students.length?'':(absent.length
+      ?`<div class="dr-absent"><div class="dr-absent-ttl">❌ 결석 (${absent.length}명)</div><div class="dr-absent-chips">${absent.map(s=>`<span class="dr-absent-chip">${escapeHtml(s.name)}</span>`).join('')}</div></div>`
+      :`<div class="dr-absent dr-absent-ok">✅ 등록 학생 ${students.length}명 전원 출석했어요</div>`);
+  }else{
+    absentBox.innerHTML='';
+  }
+
   if(!rows.length){body.innerHTML='<div class="empty">기록이 없어요</div>';return;}
 
   // 지정자석 학생은 그 당시 좌석 기록이 끊겨있어도(도면을 다시 배치한
