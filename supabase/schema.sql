@@ -121,7 +121,7 @@ alter table planner_students add column if not exists room_id uuid references st
 alter table planner_students add column if not exists parent_phone text;
 -- 학생 본인 휴대폰번호 (뒷자리 4개를 PIN으로 자동 사용)
 alter table planner_students add column if not exists student_phone text;
--- 시험 성적(등수/수강자수) + 학습전략 — 플래니(index.html)에서 학생이 직접 입력
+-- 시험 성적(등수/수강자수) + 학습전략 — 에듀냅 프리즌(index.html)에서 학생이 직접 입력
 alter table planner_students add column if not exists exam_scores jsonb not null default '[]'::jsonb;
 
 -- 이미 위 SQL을 한 번 실행한 적이 있다면(테이블이 이미 존재하면) 아래 줄들이
