@@ -1300,6 +1300,8 @@ async function startPlanner(){
   goView(3);
   initRankFeature();
   initFocusFeature();
+  if(typeof window.initLiveViewFeature==='function')window.initLiveViewFeature();
+  else setTimeout(()=>{if(typeof window.initLiveViewFeature==='function')window.initLiveViewFeature();},1000);
 
   // yearly_plan 없거나, fallback 플랜인데 career 정보가 있으면 백그라운드 재생성
   const isFallback=!Object.keys(S.yearlyPlan).length||Object.values(S.yearlyPlan).some(p=>p.keyword==='학습 계획을 세워보세요');
@@ -2147,7 +2149,24 @@ async function openRankSheet(){
    출석 상태가 '공부중'일 때만 카메라를 켜고, 몇 초 간격으로 프레임 하나만
    태블릿 안에서 즉시 분석·폐기합니다 — 영상 자체는 저장·전송하지 않고
    "그 순간 집중/산만" 판정 결과 한 줄만 focus_log에 남깁니다. */
-let focusPoller=null,focusLandmarker=null,focusStream=null,focusVideo=null,focusLoopId=null,focusActive=false,focusAttId=null;
+let focusPoller=null,focusLandmarker=null,focusVideo=null,focusLoopId=null,focusActive=false,focusAttId=null;
+
+/* 집중도 분석과 실시간 공부모습(라이브뷰) 둘 다 카메라가 필요할 수 있어서,
+   실제 getUserMedia는 한 번만 열고 참조 카운트로 공유합니다. */
+let sharedCameraStream=null,sharedCameraRefs=0;
+async function acquireCamera(){
+  if(sharedCameraStream){sharedCameraRefs++;return sharedCameraStream;}
+  sharedCameraStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'user'},audio:false});
+  sharedCameraRefs=1;
+  return sharedCameraStream;
+}
+function releaseCamera(){
+  sharedCameraRefs=Math.max(0,sharedCameraRefs-1);
+  if(sharedCameraRefs===0&&sharedCameraStream){
+    sharedCameraStream.getTracks().forEach(t=>t.stop());
+    sharedCameraStream=null;
+  }
+}
 
 async function initFocusFeature(){
   if(!S.roomId)return;
@@ -2168,8 +2187,9 @@ async function checkFocusEligibility(){
 }
 async function startFocusTracking(attendanceId){
   focusActive=true;focusAttId=attendanceId;
+  let stream;
   try{
-    focusStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'user'},audio:false});
+    stream=await acquireCamera();
   }catch(e){console.warn('카메라 권한이 없어 집중도 분석을 건너뜁니다',e);focusActive=false;return;}
   try{
     if(!focusLandmarker){
@@ -2185,7 +2205,7 @@ async function startFocusTracking(attendanceId){
     }
   }catch(e){console.warn('집중도 분석 모델 로드 실패',e);stopFocusTracking();return;}
   focusVideo=document.createElement('video');
-  focusVideo.srcObject=focusStream;focusVideo.playsInline=true;focusVideo.muted=true;
+  focusVideo.srcObject=stream;focusVideo.playsInline=true;focusVideo.muted=true;
   await focusVideo.play();
   focusSampleLoop();
 }
@@ -2212,11 +2232,15 @@ function classifyFocus(result){
   return true;
 }
 function stopFocusTracking(){
+  if(!focusActive)return;
   focusActive=false;focusAttId=null;
   if(focusLoopId)clearTimeout(focusLoopId);focusLoopId=null;
-  if(focusStream){focusStream.getTracks().forEach(t=>t.stop());focusStream=null;}
+  releaseCamera();
   focusVideo=null;
 }
+window.S=S;
+window.acquireCamera=acquireCamera;
+window.releaseCamera=releaseCamera;
 
 /* ── Supabase month_goals/month_memos 컬럼 추가 확인 ── */
 /* ── INIT ── */
@@ -2352,6 +2376,57 @@ function dismissInstall(){
   document.getElementById('install-banner')?.classList.remove('show');
   localStorage.setItem('pwa-dismissed','1');
 }
+</script>
+
+<!-- 실시간 공부모습 응답 — 관리자 화면이 요청하면(WebRTC) 카메라 영상을
+     직접 그쪽으로만 보냅니다. 저장은 전혀 하지 않아요. -->
+<script type="module">
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+const lvClient = createClient(
+  'https://zmtldohklivkzpfdyflc.supabase.co',
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InptdGxkb2hrbGl2a3pwZmR5ZmxjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI5NjgxMDQsImV4cCI6MjA4ODU0NDEwNH0.cv1WrvDzNedVZABWyRCS9ARRxf4Si9qgeUqEvhpHWlo'
+);
+const LV_ICE_SERVERS=[{urls:'stun:stun.l.google.com:19302'}];
+let lvChannel=null,lvPc=null,lvCameraHeld=false;
+
+async function initLiveViewFeature(){
+  const S=window.S;
+  if(!S||!S.roomId)return;
+  const rows=await sb(`study_rooms?id=eq.${S.roomId}&select=live_view_enabled`);
+  const room=Array.isArray(rows)&&rows[0];
+  if(!room||!room.live_view_enabled)return;
+  lvChannel=lvClient.channel('live-view-'+S.roomId,{config:{broadcast:{self:false}}});
+  lvChannel.on('broadcast',{event:'watch-request'},({payload})=>{
+    if(payload.targetStudentId===S.id)answerWatchRequest(payload);
+  });
+  lvChannel.on('broadcast',{event:'ice-candidate'},({payload})=>{
+    if(payload.to===S.id&&lvPc&&payload.candidate)lvPc.addIceCandidate(payload.candidate).catch(()=>{});
+  });
+  lvChannel.on('broadcast',{event:'stop-watch'},({payload})=>{
+    if(payload.targetStudentId===S.id)stopLiveView();
+  });
+  lvChannel.subscribe();
+}
+async function answerWatchRequest(payload){
+  stopLiveView(); // 이전에 남아있던 연결이 있으면 먼저 정리
+  let stream;
+  try{ stream=await window.acquireCamera(); lvCameraHeld=true; }
+  catch(e){ console.warn('카메라 권한이 없어 실시간 공부모습에 응답할 수 없습니다',e); return; }
+  lvPc=new RTCPeerConnection({iceServers:LV_ICE_SERVERS});
+  stream.getTracks().forEach(t=>lvPc.addTrack(t,stream));
+  lvPc.onicecandidate=(e)=>{
+    if(e.candidate)lvChannel.send({type:'broadcast',event:'ice-candidate',payload:{to:payload.fromClientId,from:window.S.id,candidate:e.candidate}});
+  };
+  await lvPc.setRemoteDescription(payload.offer);
+  const answer=await lvPc.createAnswer();
+  await lvPc.setLocalDescription(answer);
+  lvChannel.send({type:'broadcast',event:'watch-answer',payload:{toClientId:payload.fromClientId,fromStudentId:window.S.id,answer}});
+}
+function stopLiveView(){
+  if(lvPc){lvPc.close();lvPc=null;}
+  if(lvCameraHeld){window.releaseCamera();lvCameraHeld=false;}
+}
+window.initLiveViewFeature=initLiveViewFeature;
 </script>
 </body>
 </html>

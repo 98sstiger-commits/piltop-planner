@@ -255,6 +255,18 @@ body{font-family:'Pretendard','Noto Sans KR',sans-serif;color:var(--ink);min-hei
 .seat-guide-item b{display:block;font-size:12.5px;font-weight:700;color:#18170F;margin-bottom:2px}
 .seat-guide-item span{display:block;font-size:11px;color:var(--ink2);line-height:1.4}
 .seat-guide-note{margin-top:14px;padding-top:14px;border-top:1px solid var(--line);font-size:11px;color:var(--ink2);line-height:1.6}
+
+/* ══ 실시간 공부모습 ══ */
+.lv-toolbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px}
+.lv-count{font-size:12.5px;font-weight:700;color:var(--ink2)}
+.lv-pager{display:flex;align-items:center;gap:10px;font-size:12px;color:var(--ink2);font-weight:600}
+.lv-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px}
+.lv-tile{position:relative;aspect-ratio:4/3;background:#12291F;border-radius:12px;overflow:hidden;box-shadow:0 4px 14px rgba(0,0,0,.18)}
+.lv-tile video{width:100%;height:100%;object-fit:cover;display:block}
+.lv-tile-label{position:absolute;left:0;right:0;bottom:0;padding:6px 9px;background:linear-gradient(0deg,rgba(0,0,0,.65),transparent);color:#fff;font-size:11.5px;font-weight:700;display:flex;justify-content:space-between;align-items:center;gap:6px}
+.lv-tile-seat{opacity:.75;font-weight:600}
+.lv-tile-status{position:absolute;top:6px;left:8px;font-size:10px;font-weight:700;color:rgba(255,255,255,.7);background:rgba(0,0,0,.4);border-radius:6px;padding:2px 7px}
+.lv-tile-status.connected{color:#7BE6A8}
 .seat-pop{position:fixed;background:#fff;border:1px solid var(--line2);border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,.15);padding:10px;z-index:60;min-width:220px}
 .seat-pop-ttl{font-size:12px;font-weight:700;padding:4px 8px 8px;border-bottom:1px solid var(--line);margin-bottom:8px}
 .seat-pop-sub{font-size:10px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--ink3);padding:6px 8px 4px}
@@ -357,6 +369,7 @@ body{font-family:'Pretendard','Noto Sans KR',sans-serif;color:var(--ink);min-hei
 <div class="tabbar">
   <button class="tabbtn on" data-tab="students" onclick="switchTab('students')">학생관리</button>
   <button class="tabbtn" data-tab="seats" onclick="switchTab('seats')">좌석현황</button>
+  <button class="tabbtn" data-tab="liveview" onclick="switchTab('liveview')">📹 실시간</button>
   <button class="tabbtn" data-tab="attendance" onclick="switchTab('attendance')">출석기록</button>
   <button class="tabbtn" data-tab="settings" onclick="switchTab('settings')">설정</button>
   <button class="tabbtn kiosk-tab" data-tab="checkin" onclick="switchTab('checkin')">🖥️ <span class="kiosk-tab-label-full">학생 입출입</span><span class="kiosk-tab-label-short">입출입</span></button>
@@ -500,6 +513,26 @@ body{font-family:'Pretendard','Noto Sans KR',sans-serif;color:var(--ink);min-hei
   </div>
 </div>
 
+<!-- 실시간 공부모습 -->
+<div class="wrap-wide panel" id="panel-liveview">
+  <div class="room-select-row">
+    <select class="f-select" id="lv-room-select" onchange="onLiveViewRoomChange()"></select>
+  </div>
+  <div id="lv-disabled-note" class="empty" style="display:none">이 독서실은 실시간 공부모습 기능이 꺼져있어요.<br>설정 탭에서 켤 수 있어요.</div>
+  <div id="lv-empty-note" class="empty" style="display:none">지금 이 독서실에 입실해있는 학생이 없어요.</div>
+  <div id="lv-content" style="display:none">
+    <div class="lv-toolbar">
+      <div class="lv-count" id="lv-count"></div>
+      <div class="lv-pager">
+        <button class="mini-btn" id="lv-prev" onclick="lvChangePage(-1)">‹ 이전</button>
+        <span id="lv-page-label"></span>
+        <button class="mini-btn" id="lv-next" onclick="lvChangePage(1)">다음 ›</button>
+      </div>
+    </div>
+    <div class="lv-grid" id="lv-grid"></div>
+  </div>
+</div>
+
 <!-- 출석기록 -->
 <div class="wrap-wide panel" id="panel-attendance">
   <div class="room-select-row">
@@ -619,6 +652,16 @@ body{font-family:'Pretendard','Noto Sans KR',sans-serif;color:var(--ink);min-hei
       <div style="display:flex;gap:8px">
         <button class="mini-btn pri" id="focus-mode-off" style="flex:1" onclick="setFocusTracking(false)">🙈 사용 안 함</button>
         <button class="mini-btn" id="focus-mode-on" style="flex:1" onclick="setFocusTracking(true)">📷 사용</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-hd"><div class="card-title">실시간 공부모습 (라이브 영상, 저장 없음)</div><div class="card-sub">켜면 관리자 화면 [실시간 공부모습] 탭에서 지금 자리에 있는 학생들의 모습을 실시간 영상으로 볼 수 있어요. 영상은 절대 저장되지 않고 화면에 그대로 스쳐 지나가요. 학부모 동의를 받은 후에 켜주세요.</div></div>
+    <div class="card-bd">
+      <div style="display:flex;gap:8px">
+        <button class="mini-btn pri" id="live-view-mode-off" style="flex:1" onclick="setLiveView(false)">🙈 사용 안 함</button>
+        <button class="mini-btn" id="live-view-mode-on" style="flex:1" onclick="setLiveView(true)">📹 사용</button>
       </div>
     </div>
   </div>
@@ -1075,12 +1118,19 @@ function switchTab(name){
     document.getElementById('panel-checkin').classList.add('on');
     return;
   }
+  // 실시간 공부모습 탭을 벗어나면 카메라 연결을 바로 다 끊어요 (백그라운드에서
+  // 계속 영상이 흐르지 않게 — 이 기능은 그 탭을 보고 있을 때만 동작해야 해요).
+  if(lastMainTab==='liveview'&&name!=='liveview'&&typeof window.lvDisconnectAll==='function')window.lvDisconnectAll();
   document.getElementById('panel-checkin').classList.remove('on');
   document.querySelectorAll('.tabbtn').forEach(b=>b.classList.toggle('on',b.dataset.tab===name));
   document.querySelectorAll('.panel').forEach(p=>p.classList.remove('on'));
   document.getElementById('panel-'+name).classList.add('on');
   lastMainTab=name;
   if(name==='seats')loadSeatsTab();
+  if(name==='liveview'){
+    document.getElementById('lv-room-select').value=curSeatRoomId||'';
+    loadLiveViewTab();
+  }
   if(name==='attendance'){
     document.getElementById('att-room-select').value=curSeatRoomId||'';
     document.getElementById('att-date-picker').value=dk(new Date());
@@ -1114,6 +1164,7 @@ async function loadRoomsForSelects(){
   document.getElementById('seat-room-select').innerHTML=opts||'<option value="">독서실 없음</option>';
   document.getElementById('att-room-select').innerHTML=`<option value="">전체 독서실</option>`+opts;
   document.getElementById('set-room-select').innerHTML=opts||'<option value="">독서실 없음</option>';
+  document.getElementById('lv-room-select').innerHTML=opts||'<option value="">독서실 없음</option>';
   if(ROOMS.length){
     // 새로고침해도 마지막으로 보고 있던 독서실이 그대로 유지되게 합니다.
     const savedRoomId=localStorage.getItem('admin-seat-room-id');
@@ -1122,6 +1173,7 @@ async function loadRoomsForSelects(){
     }
     document.getElementById('seat-room-select').value=curSeatRoomId;
     document.getElementById('set-room-select').value=curSeatRoomId;
+    document.getElementById('lv-room-select').value=curSeatRoomId;
   }
 }
 function openRoomModal(){
@@ -1267,6 +1319,63 @@ async function refreshSeatData(){
 }
 const OCC_STATUS_LABEL={studying:'공부중',in_class:'학원수업중',away:'외출중'};
 window.refreshSeatData=refreshSeatData;
+
+/* ══ 실시간 공부모습 (라이브 영상, 저장 없음) ══
+   한 번에 너무 많은 영상을 동시에 받으면 관리자 브라우저가 버벅이므로,
+   한 페이지에 최대 LV_PAGE_SIZE명만 동시에 연결하고 페이지를 넘기면
+   이전 페이지 연결은 바로 끊고 새 페이지만 새로 연결합니다. */
+const LV_PAGE_SIZE=8;
+let lvSeats=[],lvPage=0;
+function onLiveViewRoomChange(){
+  curSeatRoomId=document.getElementById('lv-room-select').value;
+  localStorage.setItem('admin-seat-room-id',curSeatRoomId);
+  loadLiveViewTab();
+}
+async function loadLiveViewTab(){
+  if(!curSeatRoomId)return;
+  if(typeof window.lvDisconnectAll==='function')window.lvDisconnectAll();
+  const room=ROOMS.find(r=>r.id===curSeatRoomId);
+  const enabled=!!(room&&room.live_view_enabled);
+  document.getElementById('lv-disabled-note').style.display=enabled?'none':'block';
+  document.getElementById('lv-content').style.display=enabled?'block':'none';
+  document.getElementById('lv-empty-note').style.display='none';
+  if(!enabled)return;
+  const rows=await sb(`attendance?room_id=eq.${curSeatRoomId}&checkout_at=is.null&select=id,student_id,status,seat_number,planner_students(name)&order=seat_number.asc`);
+  lvSeats=Array.isArray(rows)?rows:[];
+  lvPage=0;
+  if(!lvSeats.length){
+    document.getElementById('lv-content').style.display='none';
+    document.getElementById('lv-empty-note').style.display='block';
+    return;
+  }
+  renderLiveViewPage();
+}
+function lvChangePage(delta){
+  const maxPage=Math.ceil(lvSeats.length/LV_PAGE_SIZE)-1;
+  const next=Math.max(0,Math.min(maxPage,lvPage+delta));
+  if(next===lvPage)return;
+  lvPage=next;
+  renderLiveViewPage();
+}
+function renderLiveViewPage(){
+  if(typeof window.lvDisconnectAll==='function')window.lvDisconnectAll();
+  const totalPages=Math.max(1,Math.ceil(lvSeats.length/LV_PAGE_SIZE));
+  const pageItems=lvSeats.slice(lvPage*LV_PAGE_SIZE,(lvPage+1)*LV_PAGE_SIZE);
+  document.getElementById('lv-count').textContent=`지금 입실 중 ${lvSeats.length}명`;
+  document.getElementById('lv-page-label').textContent=`${lvPage+1} / ${totalPages}`;
+  document.getElementById('lv-prev').disabled=lvPage===0;
+  document.getElementById('lv-next').disabled=lvPage>=totalPages-1;
+  const grid=document.getElementById('lv-grid');
+  grid.innerHTML=pageItems.map(a=>`
+    <div class="lv-tile" data-student-id="${a.student_id}">
+      <video autoplay playsinline muted></video>
+      <div class="lv-tile-status" id="lv-status-${a.student_id}">연결 중…</div>
+      <div class="lv-tile-label"><span>${a.planner_students?.name||'학생'}</span><span class="lv-tile-seat">${a.seat_number?a.seat_number+'번':''}</span></div>
+    </div>`).join('');
+  if(typeof window.lvConnectSeats==='function'){
+    window.lvConnectSeats(curSeatRoomId,pageItems.map(a=>a.student_id));
+  }
+}
 
 const DRAG_THRESHOLD=4;
 
@@ -2115,6 +2224,8 @@ function loadSettingsTab(){
   document.getElementById('rank-mode-realname').classList.toggle('pri',rankMode==='realname');
   document.getElementById('focus-mode-off').classList.toggle('pri',!room.focus_tracking_enabled);
   document.getElementById('focus-mode-on').classList.toggle('pri',!!room.focus_tracking_enabled);
+  document.getElementById('live-view-mode-off').classList.toggle('pri',!room.live_view_enabled);
+  document.getElementById('live-view-mode-on').classList.toggle('pri',!!room.live_view_enabled);
   document.getElementById('set-kiosk-pin').value=room.kiosk_pin||'';
 }
 async function setFocusTracking(enabled){
@@ -2126,6 +2237,16 @@ async function setFocusTracking(enabled){
   if(!Array.isArray(result)||!result.length){showToast('저장 실패 — Supabase에 최신 SQL을 실행했는지 확인해주세요');return;}
   const room=ROOMS.find(r=>r.id===roomId);if(room)room.focus_tracking_enabled=enabled;
   showToast(enabled?'집중도 분석을 사용해요 (학생 태블릿에서 카메라 권한을 허용해야 동작해요)':'집중도 분석을 껐어요');
+}
+async function setLiveView(enabled){
+  const roomId=document.getElementById('set-room-select').value;
+  if(!roomId){showToast('독서실을 먼저 추가하세요');return;}
+  document.getElementById('live-view-mode-off').classList.toggle('pri',!enabled);
+  document.getElementById('live-view-mode-on').classList.toggle('pri',enabled);
+  const result=await sb(`study_rooms?id=eq.${roomId}`,{method:'PATCH',body:JSON.stringify({live_view_enabled:enabled})});
+  if(!Array.isArray(result)||!result.length){showToast('저장 실패 — Supabase에 최신 SQL을 실행했는지 확인해주세요');return;}
+  const room=ROOMS.find(r=>r.id===roomId);if(room)room.live_view_enabled=enabled;
+  showToast(enabled?'실시간 공부모습을 사용해요 (학생 태블릿에서 카메라 권한을 허용해야 보여요)':'실시간 공부모습을 껐어요');
 }
 async function setRankMode(mode){
   const roomId=document.getElementById('set-room-select').value;
@@ -2211,6 +2332,74 @@ rtClient.channel('admin-live')
 
 // 실시간 웹소켓이 조용히 끊겼을 때를 대비한 30초 안전장치 (평소엔 realtime이 이미 즉시 반영함)
 setInterval(refreshVisiblePanels,30000);
+</script>
+
+<!-- 실시간 공부모습 — WebRTC로 학생 태블릿→관리자 화면에 직접 영상을 받습니다.
+     저장은 전혀 하지 않고, 시그널링(연결 정보 교환)만 Supabase Realtime
+     Broadcast로 주고받습니다. -->
+<script type="module">
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+const lvClient = createClient(
+  'https://zmtldohklivkzpfdyflc.supabase.co',
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InptdGxkb2hrbGl2a3pwZmR5ZmxjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI5NjgxMDQsImV4cCI6MjA4ODU0NDEwNH0.cv1WrvDzNedVZABWyRCS9ARRxf4Si9qgeUqEvhpHWlo'
+);
+const LV_ICE_SERVERS=[{urls:'stun:stun.l.google.com:19302'}];
+const lvClientId='admin-'+Math.random().toString(36).slice(2);
+let lvChannel=null,lvChannelRoomId=null;
+const lvPeers=new Map(); // studentId -> RTCPeerConnection
+
+function ensureChannel(roomId){
+  if(lvChannel&&lvChannelRoomId===roomId)return lvChannel;
+  if(lvChannel){lvClient.removeChannel(lvChannel);lvChannel=null;}
+  lvChannelRoomId=roomId;
+  lvChannel=lvClient.channel('live-view-'+roomId,{config:{broadcast:{self:false}}});
+  lvChannel.on('broadcast',{event:'watch-answer'},({payload})=>{
+    if(payload.toClientId!==lvClientId)return;
+    const pc=lvPeers.get(payload.fromStudentId);
+    if(pc)pc.setRemoteDescription(payload.answer).catch(e=>console.warn('실시간 공부모습 연결 실패',e));
+  });
+  lvChannel.on('broadcast',{event:'ice-candidate'},({payload})=>{
+    if(payload.to!==lvClientId)return;
+    const pc=lvPeers.get(payload.from);
+    if(pc&&payload.candidate)pc.addIceCandidate(payload.candidate).catch(()=>{});
+  });
+  lvChannel.subscribe();
+  return lvChannel;
+}
+
+async function connectSeat(roomId,studentId){
+  const channel=ensureChannel(roomId);
+  const pc=new RTCPeerConnection({iceServers:LV_ICE_SERVERS});
+  lvPeers.set(studentId,pc);
+  pc.ontrack=(e)=>{
+    const tile=document.querySelector(`.lv-tile[data-student-id="${studentId}"] video`);
+    if(tile)tile.srcObject=e.streams[0];
+    const st=document.getElementById('lv-status-'+studentId);
+    if(st){st.textContent='연결됨';st.classList.add('connected');}
+  };
+  pc.onicecandidate=(e)=>{
+    if(e.candidate)channel.send({type:'broadcast',event:'ice-candidate',payload:{to:studentId,from:lvClientId,candidate:e.candidate}});
+  };
+  pc.onconnectionstatechange=()=>{
+    if(['failed','disconnected','closed'].includes(pc.connectionState)){
+      const st=document.getElementById('lv-status-'+studentId);
+      if(st){st.textContent='연결 끊김';st.classList.remove('connected');}
+    }
+  };
+  const offer=await pc.createOffer();
+  await pc.setLocalDescription(offer);
+  channel.send({type:'broadcast',event:'watch-request',payload:{targetStudentId:studentId,fromClientId:lvClientId,offer}});
+}
+window.lvConnectSeats=(roomId,studentIds)=>{
+  studentIds.forEach(id=>connectSeat(roomId,id));
+};
+window.lvDisconnectAll=()=>{
+  lvPeers.forEach((pc,studentId)=>{
+    if(lvChannel)lvChannel.send({type:'broadcast',event:'stop-watch',payload:{targetStudentId:studentId,fromClientId:lvClientId}});
+    pc.close();
+  });
+  lvPeers.clear();
+};
 </script>
 </body>
 </html>

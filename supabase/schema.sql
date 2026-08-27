@@ -239,3 +239,9 @@ create index if not exists idx_focus_log_attendance on focus_log(attendance_id, 
 alter table focus_log enable row level security;
 drop policy if exists "public full access" on focus_log;
 create policy "public full access" on focus_log for all using (true) with check (true);
+
+-- ── 11. 실시간 공부모습 (관리자 화면에서 라이브로만 보기, 저장 없음) ──
+-- 영상은 학생 태블릿 → 관리자 화면으로 WebRTC로 직접 전송되고 어디에도
+-- 저장되지 않습니다. 시그널링(연결 정보 교환)만 Supabase Realtime
+-- Broadcast로 주고받아서, 별도 DB 테이블은 필요 없습니다.
+alter table study_rooms add column if not exists live_view_enabled boolean not null default false;
