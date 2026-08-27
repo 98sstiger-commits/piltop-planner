@@ -2461,6 +2461,11 @@ async function connectSeat(roomId,studentId){
   const channel=await ensureChannel(roomId);
   const pc=new RTCPeerConnection({iceServers:LV_ICE_SERVERS});
   lvPeers.set(studentId,pc);
+  // 관리자는 영상을 받기만 하는 입장이라 로컬 트랙이 전혀 없는데, 이걸
+  // 명시적으로 선언해주지 않으면 offer에 미디어 섹션(m-line)이 아예
+  // 없어져서 브라우저가 ICE 후보를 모을 필요조차 없다고 판단해버립니다
+  // (신호 교환은 되는데 연결 후보가 하나도 안 뜨던 원인이었음).
+  pc.addTransceiver('video',{direction:'recvonly'});
   pc.ontrack=(e)=>{
     const tile=document.querySelector(`.lv-tile[data-student-id="${studentId}"] video`);
     if(tile)tile.srcObject=e.streams[0];
