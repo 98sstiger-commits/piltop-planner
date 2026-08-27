@@ -1182,6 +1182,9 @@ async function loadRoomsForSelects(){
     document.getElementById('seat-room-select').value=curSeatRoomId;
     document.getElementById('set-room-select').value=curSeatRoomId;
     document.getElementById('lv-room-select').value=curSeatRoomId;
+  } else {
+    curSeatRoomId=null;
+    localStorage.removeItem('admin-seat-room-id');
   }
 }
 function openRoomModal(){
@@ -2295,8 +2298,8 @@ async function deleteRoom(){
   if(!roomId){showToast('독서실을 먼저 추가하세요');return;}
   const room=ROOMS.find(r=>r.id===roomId);
   if(!room)return;
-  if(ROOMS.length<=1){showToast('마지막 남은 독서실은 삭제할 수 없어요');return;}
-  const input=prompt(`"${room.name}" 독서실을 삭제하면 좌석 배치와 출석 기록이 모두 함께 사라지고 되돌릴 수 없어요.\n정말 삭제하려면 독서실 이름을 그대로 입력하세요.`);
+  const lastOne=ROOMS.length<=1;
+  const input=prompt(`"${room.name}" 독서실을 삭제하면 좌석 배치와 출석 기록이 모두 함께 사라지고 되돌릴 수 없어요.${lastOne?'\n(마지막 남은 독서실이에요 — 삭제하면 독서실이 하나도 없는 상태가 돼요)':''}\n정말 삭제하려면 독서실 이름을 그대로 입력하세요.`);
   if(input===null)return;
   if(input.trim()!==room.name){showToast('이름이 일치하지 않아 취소했어요');return;}
   await sb(`study_rooms?id=eq.${roomId}`,{method:'DELETE'});
