@@ -680,6 +680,13 @@ body{font-family:'Pretendard','Noto Sans KR',sans-serif;color:var(--ink);min-hei
       <button class="mini-btn pri" onclick="switchTab('seats')">좌석현황 탭에서 편집하기 →</button>
     </div>
   </div>
+
+  <div class="card" style="border-color:#D14343">
+    <div class="card-hd"><div class="card-title" style="color:#D14343">이 독서실 삭제</div><div class="card-sub">좌석 배치와 출석 기록이 모두 함께 삭제되고 되돌릴 수 없어요. 학생 계정 자체는 남아요.</div></div>
+    <div class="card-bd">
+      <button class="mini-btn" style="border-color:#D14343;color:#D14343" onclick="deleteRoom()">🗑 독서실 삭제</button>
+    </div>
+  </div>
 </div>
 
 <!-- 학생 입출입 (태블릿 키오스크 모드) -->
@@ -2282,6 +2289,21 @@ async function setSeatingMode(mode){
   if(!Array.isArray(result)||!result.length){showToast('저장 실패 — Supabase에 최신 SQL을 실행했는지 확인해주세요');return;}
   const room=ROOMS.find(r=>r.id===roomId);if(room)room.seating_mode=mode;
   showToast(mode==='assigned'?'지정자석으로 바뀌었어요':'자유석으로 바뀌었어요');
+}
+async function deleteRoom(){
+  const roomId=document.getElementById('set-room-select').value;
+  if(!roomId){showToast('독서실을 먼저 추가하세요');return;}
+  const room=ROOMS.find(r=>r.id===roomId);
+  if(!room)return;
+  if(ROOMS.length<=1){showToast('마지막 남은 독서실은 삭제할 수 없어요');return;}
+  const input=prompt(`"${room.name}" 독서실을 삭제하면 좌석 배치와 출석 기록이 모두 함께 사라지고 되돌릴 수 없어요.\n정말 삭제하려면 독서실 이름을 그대로 입력하세요.`);
+  if(input===null)return;
+  if(input.trim()!==room.name){showToast('이름이 일치하지 않아 취소했어요');return;}
+  await sb(`study_rooms?id=eq.${roomId}`,{method:'DELETE'});
+  showToast(`"${room.name}" 독서실을 삭제했어요`);
+  if(curSeatRoomId===roomId){curSeatRoomId=null;localStorage.removeItem('admin-seat-room-id');}
+  await loadRoomsForSelects();
+  loadSettingsTab();
 }
 async function saveRoomInfo(){
   const roomId=document.getElementById('set-room-select').value;
