@@ -2361,9 +2361,17 @@ async function saveNotifySettings(){
   const savedTab=localStorage.getItem('admin-active-tab');
   if(savedTab&&savedTab!=='students'){
     if(savedTab==='liveview'&&typeof window.lvConnectSeats!=='function'){
-      // 실시간 공부모습 탭은 별도 module 스크립트가 다 불러와진 뒤에야
-      // 연결을 시작할 수 있어서, 아직 준비 안 됐으면 잠깐 기다렸다 엽니다.
-      setTimeout(()=>switchTab(savedTab),300);
+      // 실시간 공부모습 탭은 esm.sh에서 별도 module 스크립트를 다
+      // 불러온 뒤에야 연결을 시작할 수 있는데, 네트워크가 느리거나
+      // 캐시를 껐을 땐 그게 꽤 오래 걸릴 수 있어서 준비될 때까지
+      // 계속 다시 확인합니다 (최대 10초).
+      let tries=0;
+      const waitAndOpen=()=>{
+        if(typeof window.lvConnectSeats==='function'||tries>=20){switchTab(savedTab);return;}
+        tries++;
+        setTimeout(waitAndOpen,500);
+      };
+      waitAndOpen();
     } else {
       switchTab(savedTab);
     }
