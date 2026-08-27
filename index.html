@@ -939,6 +939,16 @@ textarea{resize:none}
   <button class="install-banner-btn" id="install-btn">설치</button>
   <button class="install-banner-close" onclick="dismissInstall()">×</button>
 </div>
+<!-- 카카오톡 인앱 브라우저 안내 (카메라 권한이 막혀서 실시간 공부모습·집중도 분석이 안 됨) -->
+<div class="install-banner" id="kakao-banner">
+  <div class="install-banner-icon">🔒</div>
+  <div class="install-banner-txt">
+    <div class="install-banner-title">카카오톡 브라우저에선 카메라가 안 열려요</div>
+    <div class="install-banner-sub">실시간 공부모습·집중도 분석을 쓰려면 다른 브라우저로 열어주세요</div>
+  </div>
+  <button class="install-banner-btn" id="kakao-open-btn" onclick="openInExternalBrowser()">열기</button>
+  <button class="install-banner-close" onclick="dismissKakaoBanner()">×</button>
+</div>
 <div class="toast" id="toast"></div>
 
 <script src="univ-data.js"></script>
@@ -2338,7 +2348,7 @@ window.addEventListener('beforeinstallprompt', e => {
   e.preventDefault();
   deferredPrompt = e;
   showPwaBtn();
-  if(!localStorage.getItem('pwa-dismissed')){
+  if(!localStorage.getItem('pwa-dismissed')&&!isKakaoInApp()){
     setTimeout(()=>document.getElementById('install-banner')?.classList.add('show'), 2000);
   }
 });
@@ -2386,6 +2396,21 @@ document.getElementById('install-btn')?.addEventListener('click', ()=>triggerIns
 function dismissInstall(){
   document.getElementById('install-banner')?.classList.remove('show');
   localStorage.setItem('pwa-dismissed','1');
+}
+
+/* ── 카카오톡 인앱 브라우저 안내 (카메라 권한이 막혀서 실시간 공부모습/집중도 분석이 안 됨) ── */
+function isKakaoInApp(){
+  return /KAKAOTALK/i.test(navigator.userAgent);
+}
+function openInExternalBrowser(){
+  location.href='kakaotalk://web/openExternal?url='+encodeURIComponent(location.href);
+}
+function dismissKakaoBanner(){
+  document.getElementById('kakao-banner')?.classList.remove('show');
+  localStorage.setItem('kakao-banner-dismissed','1');
+}
+if(isKakaoInApp()&&!localStorage.getItem('kakao-banner-dismissed')){
+  setTimeout(()=>document.getElementById('kakao-banner')?.classList.add('show'), 1500);
 }
 </script>
 
