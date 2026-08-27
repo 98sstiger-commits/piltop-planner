@@ -2076,7 +2076,7 @@ async function loadAttendanceTab(){
   try{
     const mon=mondayOfA(new Date());
     const wStart=`${dk(mon)}T00:00:00`,wEnd=`${dk(addDaysA(mon,7))}T00:00:00`;
-    const weekRes=await sb(`attendance?checkin_at=lt.${wEnd}&or=(checkout_at.is.null,checkout_at.gte.${wStart})${filter}&select=id,student_id,checkin_at,checkout_at,planner_students(name)`);
+    const weekRes=await sb(`attendance?checkin_at=lt.${wEnd}&or=(checkout_at.is.null,checkout_at.gte.${wStart})${filter}&select=id,student_id,checkin_at,checkout_at,planner_students(name,nickname)`);
     const week=Array.isArray(weekRes)?weekRes:[];
     const weekIds=week.map(a=>a.id);
     const weekLogsRes=weekIds.length?await sb(`attendance_status_log?attendance_id=in.(${weekIds.join(',')})&select=attendance_id,status,changed_at`):[];
@@ -2085,11 +2085,11 @@ async function loadAttendanceTab(){
     const byStu={};
     week.forEach(a=>{
       const mins=computeAttSegments(a,weekLogsByAtt[a.id],new Date(wStart),new Date(wEnd)).studying;
-      if(!byStu[a.student_id])byStu[a.student_id]={name:a.planner_students?.name||'?',min:0};
+      if(!byStu[a.student_id])byStu[a.student_id]={name:a.planner_students?.name||'?',nickname:a.planner_students?.nickname||'',min:0};
       byStu[a.student_id].min+=mins;
     });
     const ranked=Object.values(byStu).sort((a,b)=>b.min-a.min).slice(0,10);
-    document.getElementById('rank-list').innerHTML=ranked.length?ranked.map((r,i)=>`<div class="rank-row"><div class="rank-no ${i<3?'top':''}">${i+1}</div><div class="rank-name">${r.name}</div><div class="rank-time">${fmtMinA(r.min)}</div></div>`).join(''):'<div class="empty">데이터가 없어요</div>';
+    document.getElementById('rank-list').innerHTML=ranked.length?ranked.map((r,i)=>`<div class="rank-row"><div class="rank-no ${i<3?'top':''}">${i+1}</div><div class="rank-name">${r.name}${r.nickname?` <span style="font-size:11px;font-weight:500;color:var(--ink2)">(${r.nickname})</span>`:''}</div><div class="rank-time">${fmtMinA(r.min)}</div></div>`).join(''):'<div class="empty">데이터가 없어요</div>';
   }catch(e){
     console.error('공부시간 랭킹을 불러오지 못했어요 — Supabase에 최신 schema.sql(attendance_status_log)을 실행했는지 확인해주세요:',e);
     document.getElementById('rank-list').innerHTML='<div class="empty">랭킹을 불러오지 못했어요</div>';
