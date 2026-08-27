@@ -2487,7 +2487,11 @@ async function answerWatchRequest(payload){
   stopLiveView(); // 이전에 남아있던 연결이 있으면 먼저 정리
   let stream;
   try{ stream=await window.acquireCamera(); lvCameraHeld=true; }
-  catch(e){ console.warn('카메라 권한이 없어 실시간 공부모습에 응답할 수 없습니다',e); return; }
+  catch(e){
+    console.warn('카메라 권한이 없어 실시간 공부모습에 응답할 수 없습니다',e);
+    if(lvChannel)lvChannel.send({type:'broadcast',event:'camera-denied',payload:{toClientId:payload.fromClientId,fromStudentId:window.S.id}});
+    return;
+  }
   lvPc=new RTCPeerConnection({iceServers:LV_ICE_SERVERS});
   stream.getTracks().forEach(t=>lvPc.addTrack(t,stream));
   lvPc.onicecandidate=(e)=>{

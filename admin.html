@@ -2402,6 +2402,13 @@ function ensureChannel(roomId){
     const pc=lvPeers.get(payload.from);
     if(pc&&payload.candidate)pc.addIceCandidate(payload.candidate).catch(()=>{});
   });
+  lvChannel.on('broadcast',{event:'camera-denied'},({payload})=>{
+    if(payload.toClientId!==lvClientId)return;
+    const pc=lvPeers.get(payload.fromStudentId);
+    if(pc){clearTimeout(pc._lvTimeout);pc.close();lvPeers.delete(payload.fromStudentId);}
+    const st=document.getElementById('lv-status-'+payload.fromStudentId);
+    if(st){st.textContent='카메라 권한 없음';st.classList.remove('connected');}
+  });
   // subscribe()가 서버에 실제로 연결되기 전에 offer를 보내면 그 메시지가
   // 그냥 유실될 수 있어서, "SUBSCRIBED" 상태가 될 때까지 기다렸다가 그
   // 이후에 신호를 보내도록 합니다 (연결이 끝없이 "연결 중..."에 멈춰있던
