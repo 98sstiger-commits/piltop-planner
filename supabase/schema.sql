@@ -217,3 +217,7 @@ create policy "public full access" on student_notes for all using (true) with ch
 alter table planner_students add column if not exists nickname text;
 -- 관리자가 켜야만 그 독서실 학생들에게 랭킹이 보여요 (기본은 꺼짐)
 alter table study_rooms add column if not exists rank_visible boolean not null default false;
+-- 학생 화면에 랭킹을 닉네임으로 보여줄지 실명으로 보여줄지 — 관리자
+-- 화면(admin.html)의 랭킹은 이 설정과 상관없이 항상 실명으로 보여서
+-- 관리자는 별명공개 상태여도 누가 누군지 바로 알 수 있습니다.
+alter table study_rooms add column if not exists rank_name_mode text not null default 'nickname' check (rank_name_mode in ('nickname','realname'));

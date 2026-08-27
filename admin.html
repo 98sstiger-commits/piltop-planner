@@ -603,11 +603,12 @@ body{font-family:'Pretendard','Noto Sans KR',sans-serif;color:var(--ink);min-hei
   </div>
 
   <div class="card">
-    <div class="card-hd"><div class="card-title">학생에게 순공 랭킹 공개</div><div class="card-sub">켜면 학생 플래너 화면에 이번 주 순공시간 TOP5가 떠요 (닉네임 + 학교·학년만 보이고 실명은 안 보여요)</div></div>
+    <div class="card-hd"><div class="card-title">학생에게 순공 랭킹 공개</div><div class="card-sub">켜면 학생 플래너 화면에 이번 주 순공시간 TOP5가 떠요. 별명공개를 선택해도 관리자 화면(이번 주 공부시간 랭킹)에는 항상 실명이 같이 보여서 누군지 헷갈릴 일은 없어요.</div></div>
     <div class="card-bd">
       <div style="display:flex;gap:8px">
-        <button class="mini-btn pri" id="rank-visible-off" style="flex:1" onclick="setRankVisible(false)">🙈 비공개</button>
-        <button class="mini-btn" id="rank-visible-on" style="flex:1" onclick="setRankVisible(true)">🏆 공개</button>
+        <button class="mini-btn pri" id="rank-mode-off" style="flex:1" onclick="setRankMode('off')">🙈 비공개</button>
+        <button class="mini-btn" id="rank-mode-nickname" style="flex:1" onclick="setRankMode('nickname')">😀 별명공개</button>
+        <button class="mini-btn" id="rank-mode-realname" style="flex:1" onclick="setRankMode('realname')">🪪 실명공개</button>
       </div>
     </div>
   </div>
@@ -2098,19 +2099,23 @@ function loadSettingsTab(){
   const mode=room.seating_mode||'free';
   document.getElementById('seating-mode-free').classList.toggle('pri',mode==='free');
   document.getElementById('seating-mode-assigned').classList.toggle('pri',mode==='assigned');
-  document.getElementById('rank-visible-off').classList.toggle('pri',!room.rank_visible);
-  document.getElementById('rank-visible-on').classList.toggle('pri',!!room.rank_visible);
+  const rankMode=!room.rank_visible?'off':(room.rank_name_mode==='realname'?'realname':'nickname');
+  document.getElementById('rank-mode-off').classList.toggle('pri',rankMode==='off');
+  document.getElementById('rank-mode-nickname').classList.toggle('pri',rankMode==='nickname');
+  document.getElementById('rank-mode-realname').classList.toggle('pri',rankMode==='realname');
   document.getElementById('set-kiosk-pin').value=room.kiosk_pin||'';
 }
-async function setRankVisible(visible){
+async function setRankMode(mode){
   const roomId=document.getElementById('set-room-select').value;
   if(!roomId){showToast('독서실을 먼저 추가하세요');return;}
-  document.getElementById('rank-visible-off').classList.toggle('pri',!visible);
-  document.getElementById('rank-visible-on').classList.toggle('pri',visible);
-  const result=await sb(`study_rooms?id=eq.${roomId}`,{method:'PATCH',body:JSON.stringify({rank_visible:visible})});
+  document.getElementById('rank-mode-off').classList.toggle('pri',mode==='off');
+  document.getElementById('rank-mode-nickname').classList.toggle('pri',mode==='nickname');
+  document.getElementById('rank-mode-realname').classList.toggle('pri',mode==='realname');
+  const patch=mode==='off'?{rank_visible:false}:{rank_visible:true,rank_name_mode:mode};
+  const result=await sb(`study_rooms?id=eq.${roomId}`,{method:'PATCH',body:JSON.stringify(patch)});
   if(!Array.isArray(result)||!result.length){showToast('저장 실패 — Supabase에 최신 SQL을 실행했는지 확인해주세요');return;}
-  const room=ROOMS.find(r=>r.id===roomId);if(room)room.rank_visible=visible;
-  showToast(visible?'학생 화면에 순공 랭킹이 공개돼요':'학생 화면에서 순공 랭킹을 숨겼어요');
+  const room=ROOMS.find(r=>r.id===roomId);if(room)Object.assign(room,patch);
+  showToast(mode==='off'?'학생 화면에서 순공 랭킹을 숨겼어요':mode==='realname'?'학생 화면에 실명으로 순공 랭킹이 공개돼요':'학생 화면에 별명으로 순공 랭킹이 공개돼요');
 }
 async function saveKioskPin(){
   const roomId=document.getElementById('set-room-select').value;

@@ -912,11 +912,11 @@ textarea{resize:none}
   <div class="sheet">
     <div class="sheet-grip"></div>
     <div class="sheet-hd">
-      <div><div class="sheet-ttl">🏆 이번 주 순공 랭킹</div><div class="sheet-sub">닉네임 · 학교/학년만 보여요 (실명은 안 보여요)</div></div>
+      <div><div class="sheet-ttl">🏆 이번 주 순공 랭킹</div><div class="sheet-sub" id="rank-sheet-sub">학교/학년만 보여요</div></div>
       <button class="sheet-x" onclick="closeRankSheet()">×</button>
     </div>
     <div class="sheet-bd">
-      <div class="prof-group" style="margin-bottom:16px">
+      <div class="prof-group" id="pe-nickname-group" style="margin-bottom:16px">
         <div class="prof-lbl">내 닉네임 (랭킹에 이 이름으로 표시돼요)</div>
         <div style="display:flex;gap:7px">
           <input class="prof-input" id="pe-nickname" placeholder="예: 열공왕" maxlength="12" style="flex:1">
@@ -1020,7 +1020,7 @@ let S={
   school:P.get('school')||'',grade:P.get('grade')||'',
   sc:P.get('sc')||'',so:P.get('so')||'',
   academy:P.get('academy')||'piltop',
-  career:'',careerField:'',u1:'',d1:'',u2:'',d2:'',roomId:'',nickname:'',
+  career:'',careerField:'',u1:'',d1:'',u2:'',d2:'',roomId:'',nickname:'',rankNameMode:'nickname',
   yearlyPlan:{},schoolSched:[],monthGoals:{},monthMemos:{},
   dayMemos:{},dayChecks:{},dayTl:{},dayStickers:{},dayColors:{},dayNotes:{},
   weekGoals:{},weekMemos:{},examScores:[],
@@ -2055,9 +2055,10 @@ async function saveProfSheet(){
 /* ── 순공 랭킹 (관리자가 켠 독서실에서만 노출) ── */
 async function initRankFeature(){
   if(!S.roomId)return;
-  const rows=await sb(`study_rooms?id=eq.${S.roomId}&select=rank_visible`);
+  const rows=await sb(`study_rooms?id=eq.${S.roomId}&select=rank_visible,rank_name_mode`);
   const room=Array.isArray(rows)&&rows[0];
   if(!room||!room.rank_visible)return;
+  S.rankNameMode=room.rank_name_mode==='realname'?'realname':'nickname';
   document.getElementById('pl-rank-btn').style.display='flex';
   if(window.innerWidth<768)document.getElementById('mob-rank').style.display='flex';
 }
@@ -2084,6 +2085,9 @@ async function saveNickname(){
   toast('닉네임이 저장됐어요');
 }
 async function openRankSheet(){
+  const isRealname=S.rankNameMode==='realname';
+  document.getElementById('pe-nickname-group').style.display=isRealname?'none':'flex';
+  document.getElementById('rank-sheet-sub').textContent=isRealname?'이름 · 학교/학년이 보여요':'닉네임 · 학교/학년만 보여요 (실명은 안 보여요)';
   document.getElementById('pe-nickname').value=S.nickname||'';
   document.getElementById('rank-bg').classList.add('open');
   const listEl=document.getElementById('rank-list');
@@ -2094,7 +2098,7 @@ async function openRankSheet(){
   const mon=getMonday(new Date());
   const sun7=new Date(mon.getTime()+7*86400000);
   const start=`${dk(mon)}T00:00:00`,end=`${dk(sun7)}T00:00:00`;
-  const attRes=await sb(`attendance?room_id=eq.${S.roomId}&checkin_at=lt.${end}&or=(checkout_at.is.null,checkout_at.gte.${start})&select=id,student_id,checkin_at,checkout_at,status,planner_students(nickname,school,grade)`);
+  const attRes=await sb(`attendance?room_id=eq.${S.roomId}&checkin_at=lt.${end}&or=(checkout_at.is.null,checkout_at.gte.${start})&select=id,student_id,checkin_at,checkout_at,status,planner_students(name,nickname,school,grade)`);
   const att=Array.isArray(attRes)?attRes:[];
   if(!att.length){listEl.innerHTML='<div class="rank-empty">이번주 기록이 아직 없어요</div>';return;}
   const ids=att.map(a=>a.id);
@@ -2106,6 +2110,7 @@ async function openRankSheet(){
   att.forEach(a=>{
     const mins=computeStudyMinutes(a,logsByAtt[a.id]);
     if(!byStu[a.student_id])byStu[a.student_id]={
+      name:a.planner_students?.name||'',
       nickname:a.planner_students?.nickname||'',
       school:a.planner_students?.school||'',
       grade:a.planner_students?.grade||'',
@@ -2113,13 +2118,14 @@ async function openRankSheet(){
     };
     byStu[a.student_id].min+=mins;
   });
+  const displayName=r=>isRealname?(r.name||'?'):(r.nickname||'닉네임 미설정');
   const ranked=Object.entries(byStu).map(([id,v])=>({id,...v})).sort((a,b)=>b.min-a.min);
   const top5=ranked.slice(0,5);
   listEl.innerHTML=top5.map((r,i)=>`
     <div class="rank-row${r.id===S.id?' me':''}">
       <div class="rank-no${i<3?' top':''}">${i+1}</div>
       <div class="rank-info">
-        <div class="rank-name">${r.nickname||'닉네임 미설정'}</div>
+        <div class="rank-name">${displayName(r)}</div>
         <div class="rank-sub">${r.school||''}${r.school&&r.grade?' · ':''}${r.grade?r.grade+'학년':''}</div>
       </div>
       <div class="rank-time">${fmtMinRank(r.min)}</div>
@@ -2129,7 +2135,7 @@ async function openRankSheet(){
     const me=ranked[myRank];
     myEl.innerHTML=`<div class="rank-row me">
       <div class="rank-no">${myRank+1}</div>
-      <div class="rank-info"><div class="rank-name">내 순위</div><div class="rank-sub">${me.nickname||'닉네임 미설정'}</div></div>
+      <div class="rank-info"><div class="rank-name">내 순위</div><div class="rank-sub">${displayName(me)}</div></div>
       <div class="rank-time">${fmtMinRank(me.min)}</div>
     </div>`;
   }
