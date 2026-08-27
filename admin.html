@@ -1137,7 +1137,7 @@ function switchTab(name){
   if(name==='seats')loadSeatsTab();
   if(name==='liveview'){
     document.getElementById('lv-room-select').value=curSeatRoomId||'';
-    loadLiveViewTab();
+    loadLiveViewTab(true);
   }
   if(name==='attendance'){
     document.getElementById('att-room-select').value=curSeatRoomId||'';
@@ -1340,23 +1340,41 @@ let lvSeats=[],lvPage=0;
 function onLiveViewRoomChange(){
   curSeatRoomId=document.getElementById('lv-room-select').value;
   localStorage.setItem('admin-seat-room-id',curSeatRoomId);
-  loadLiveViewTab();
+  loadLiveViewTab(true);
 }
-async function loadLiveViewTab(){
+async function loadLiveViewTab(forceRender){
   if(!curSeatRoomId)return;
-  if(typeof window.lvDisconnectAll==='function')window.lvDisconnectAll();
   const room=ROOMS.find(r=>r.id===curSeatRoomId);
   const enabled=!!(room&&room.live_view_enabled);
   document.getElementById('lv-disabled-note').style.display=enabled?'none':'block';
   document.getElementById('lv-content').style.display=enabled?'block':'none';
   document.getElementById('lv-empty-note').style.display='none';
-  if(!enabled)return;
+  if(!enabled){
+    if(typeof window.lvDisconnectAll==='function')window.lvDisconnectAll();
+    lvSeats=[];
+    return;
+  }
   const rows=await sb(`attendance?room_id=eq.${curSeatRoomId}&checkout_at=is.null&status=eq.studying&select=id,student_id,status,seat_number,planner_students(name)&order=seat_number.asc`);
-  lvSeats=Array.isArray(rows)?rows:[];
-  lvPage=0;
+  const newSeats=Array.isArray(rows)?rows:[];
+  // 이 화면은 30초마다, 그리고 (다른 방 포함) 출석 정보가 바뀔 때마다 자동으로
+  // 새로고침되는데, 매번 연결을 다 끊고 새로 맺으면 WebRTC 연결이 끝날
+  // 틈도 없이 "연결 중..."↔"연결 실패"만 반복하게 됩니다. 그래서 지금
+  // 공부 중인 학생 구성이 실제로 바뀌었을 때만 다시 그리고 다시 연결합니다.
+  const sameSet=newSeats.length===lvSeats.length&&newSeats.every((s,i)=>s.student_id===lvSeats[i]?.student_id);
+  lvSeats=newSeats;
   if(!lvSeats.length){
+    if(typeof window.lvDisconnectAll==='function')window.lvDisconnectAll();
     document.getElementById('lv-content').style.display='none';
     document.getElementById('lv-empty-note').style.display='block';
+    lvPage=0;
+    return;
+  }
+  document.getElementById('lv-content').style.display='block';
+  if(forceRender)lvPage=0;
+  const maxPage=Math.max(0,Math.ceil(lvSeats.length/LV_PAGE_SIZE)-1);
+  if(lvPage>maxPage)lvPage=maxPage;
+  if(sameSet&&!forceRender){
+    document.getElementById('lv-count').textContent=`지금 공부 중 ${lvSeats.length}명`;
     return;
   }
   renderLiveViewPage();
