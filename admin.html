@@ -2352,7 +2352,15 @@ const lvClient = createClient(
   'https://zmtldohklivkzpfdyflc.supabase.co',
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InptdGxkb2hrbGl2a3pwZmR5ZmxjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI5NjgxMDQsImV4cCI6MjA4ODU0NDEwNH0.cv1WrvDzNedVZABWyRCS9ARRxf4Si9qgeUqEvhpHWlo'
 );
-const LV_ICE_SERVERS=[{urls:'stun:stun.l.google.com:19302'}];
+// STUN만으로는 공유기 "AP 격리" 등 일부 네트워크에서 기기끼리 직접
+// 연결이 안 될 수 있어서, 그럴 때 영상을 중계해주는 무료 TURN 서버를
+// 예비로 같이 넣어둡니다 (openrelay.metered.ca — 소규모 프로젝트용 공개 TURN).
+const LV_ICE_SERVERS=[
+  {urls:'stun:stun.l.google.com:19302'},
+  {urls:'turn:openrelay.metered.ca:80',username:'openrelayproject',credential:'openrelayproject'},
+  {urls:'turn:openrelay.metered.ca:443',username:'openrelayproject',credential:'openrelayproject'},
+  {urls:'turn:openrelay.metered.ca:443?transport=tcp',username:'openrelayproject',credential:'openrelayproject'},
+];
 const lvClientId='admin-'+Math.random().toString(36).slice(2);
 let lvChannel=null,lvChannelRoomId=null;
 const lvPeers=new Map(); // studentId -> RTCPeerConnection
@@ -2390,11 +2398,22 @@ async function connectSeat(roomId,studentId){
     if(e.candidate)channel.send({type:'broadcast',event:'ice-candidate',payload:{to:studentId,from:lvClientId,candidate:e.candidate}});
   };
   pc.onconnectionstatechange=()=>{
-    if(['failed','disconnected','closed'].includes(pc.connectionState)){
+    if(pc.connectionState==='connected'){
+      clearTimeout(pc._lvTimeout);
+    } else if(['failed','disconnected','closed'].includes(pc.connectionState)){
       const st=document.getElementById('lv-status-'+studentId);
       if(st){st.textContent='연결 끊김';st.classList.remove('connected');}
     }
   };
+  // 15초 안에 연결이 안 되면 "연결 중..."에 계속 멈춰있지 않고 실패로 표시
+  // (학생 태블릿의 카메라 허용 여부와 무관하게, 두 기기 사이 네트워크
+  // 경로 자체가 막혀있을 때 — 방화벽/AP 격리 등 — 이 상태가 됩니다).
+  pc._lvTimeout=setTimeout(()=>{
+    if(pc.connectionState!=='connected'){
+      const st=document.getElementById('lv-status-'+studentId);
+      if(st){st.textContent='연결 실패 (네트워크 확인)';st.classList.remove('connected');}
+    }
+  },15000);
   const offer=await pc.createOffer();
   await pc.setLocalDescription(offer);
   channel.send({type:'broadcast',event:'watch-request',payload:{targetStudentId:studentId,fromClientId:lvClientId,offer}});
