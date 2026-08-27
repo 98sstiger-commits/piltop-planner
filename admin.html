@@ -519,7 +519,7 @@ body{font-family:'Pretendard','Noto Sans KR',sans-serif;color:var(--ink);min-hei
     <select class="f-select" id="lv-room-select" onchange="onLiveViewRoomChange()"></select>
   </div>
   <div id="lv-disabled-note" class="empty" style="display:none">이 독서실은 실시간 공부모습 기능이 꺼져있어요.<br>설정 탭에서 켤 수 있어요.</div>
-  <div id="lv-empty-note" class="empty" style="display:none">지금 이 독서실에 입실해있는 학생이 없어요.</div>
+  <div id="lv-empty-note" class="empty" style="display:none">지금 이 독서실에서 공부 중인 학생이 없어요.<br>(학원수업중·외출중인 학생은 표시되지 않아요)</div>
   <div id="lv-content" style="display:none">
     <div class="lv-toolbar">
       <div class="lv-count" id="lv-count"></div>
@@ -1340,7 +1340,7 @@ async function loadLiveViewTab(){
   document.getElementById('lv-content').style.display=enabled?'block':'none';
   document.getElementById('lv-empty-note').style.display='none';
   if(!enabled)return;
-  const rows=await sb(`attendance?room_id=eq.${curSeatRoomId}&checkout_at=is.null&select=id,student_id,status,seat_number,planner_students(name)&order=seat_number.asc`);
+  const rows=await sb(`attendance?room_id=eq.${curSeatRoomId}&checkout_at=is.null&status=eq.studying&select=id,student_id,status,seat_number,planner_students(name)&order=seat_number.asc`);
   lvSeats=Array.isArray(rows)?rows:[];
   lvPage=0;
   if(!lvSeats.length){
@@ -1361,7 +1361,7 @@ function renderLiveViewPage(){
   if(typeof window.lvDisconnectAll==='function')window.lvDisconnectAll();
   const totalPages=Math.max(1,Math.ceil(lvSeats.length/LV_PAGE_SIZE));
   const pageItems=lvSeats.slice(lvPage*LV_PAGE_SIZE,(lvPage+1)*LV_PAGE_SIZE);
-  document.getElementById('lv-count').textContent=`지금 입실 중 ${lvSeats.length}명`;
+  document.getElementById('lv-count').textContent=`지금 공부 중 ${lvSeats.length}명`;
   document.getElementById('lv-page-label').textContent=`${lvPage+1} / ${totalPages}`;
   document.getElementById('lv-prev').disabled=lvPage===0;
   document.getElementById('lv-next').disabled=lvPage>=totalPages-1;
@@ -2322,6 +2322,7 @@ const rtClient = createClient(
 function refreshVisiblePanels(){
   if(document.getElementById('panel-seats')?.classList.contains('on')&&typeof window.refreshSeatData==='function')window.refreshSeatData();
   if(document.getElementById('panel-attendance')?.classList.contains('on')&&typeof window.loadAttendanceTab==='function')window.loadAttendanceTab();
+  if(document.getElementById('panel-liveview')?.classList.contains('on')&&typeof window.loadLiveViewTab==='function')window.loadLiveViewTab();
 }
 rtClient.channel('admin-live')
   .on('postgres_changes',{event:'*',schema:'public',table:'attendance'},refreshVisiblePanels)
