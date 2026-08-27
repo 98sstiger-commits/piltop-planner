@@ -1302,6 +1302,7 @@ async function startPlanner(){
   initFocusFeature();
   if(typeof window.initLiveViewFeature==='function')window.initLiveViewFeature();
   else setTimeout(()=>{if(typeof window.initLiveViewFeature==='function')window.initLiveViewFeature();},1000);
+  requestWakeLock();
 
   // yearly_plan 없거나, fallback 플랜인데 career 정보가 있으면 백그라운드 재생성
   const isFallback=!Object.keys(S.yearlyPlan).length||Object.values(S.yearlyPlan).some(p=>p.keyword==='학습 계획을 세워보세요');
@@ -2241,6 +2242,16 @@ function stopFocusTracking(){
 window.S=S;
 window.acquireCamera=acquireCamera;
 window.releaseCamera=releaseCamera;
+
+/* ── 화면 꺼짐 방지 (태블릿 자동 잠금으로 실시간 공부모습/집중도 분석이 멈추는 것 방지) ── */
+let wakeLock=null;
+async function requestWakeLock(){
+  if(!('wakeLock' in navigator))return;
+  try{wakeLock=await navigator.wakeLock.request('screen');}catch(e){console.warn('wake lock skip',e);}
+}
+document.addEventListener('visibilitychange',()=>{
+  if(document.visibilityState==='visible'&&S.id)requestWakeLock();
+});
 
 /* ── Supabase month_goals/month_memos 컬럼 추가 확인 ── */
 /* ── INIT ── */
