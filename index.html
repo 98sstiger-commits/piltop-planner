@@ -523,6 +523,11 @@ textarea{resize:none}
 
     <!-- Step 1: 진로 -->
     <div class="ob-step on" id="ob-s1">
+      <div class="ob-q">별명을 정해주세요</div>
+      <div class="ob-hint">랭킹 등 다른 학생에게 보이는 화면에 실명 대신 쓰여요. 나중에 정보 수정에서 바꿀 수 있어요.</div>
+      <input class="fi" id="ob-nickname" placeholder="예: 열공왕" maxlength="12" oninput="document.getElementById('ob-nickname-err').style.display='none'">
+      <div id="ob-nickname-err" style="display:none;color:#D14343;font-size:12px;margin:-4px 0 14px">별명을 입력해주세요</div>
+
       <div class="ob-q" id="ob-career-q">꿈꾸는 직업이나<br>분야가 있나요?</div>
       <div class="ob-hint">없어도 괜찮아요. 관심 분야만 골라도 돼요. 나중에 언제든 바꿀 수 있어요.</div>
       <div class="chips-wrap" id="career-chips"></div>
@@ -1096,7 +1101,7 @@ async function saveDB(){
     const result = await sb(`planner_students?id=eq.${S.id}`,{
       method:'PATCH',
       body:JSON.stringify({
-        career:S.career,career_field:S.careerField,
+        career:S.career,career_field:S.careerField,nickname:S.nickname||null,
         univ1:S.u1,dept1:S.d1,univ2:S.u2,dept2:S.d2,
         yearly_plan:S.yearlyPlan,school_schedule:S.schoolSched,
         month_goals:S.monthGoals,month_memos:S.monthMemos,
@@ -1108,6 +1113,29 @@ async function saveDB(){
       })
     });
   }catch(e){console.error('save err',e);}
+}
+
+/* ── 별명 필수 입력 (온보딩을 이미 끝낸 기존 학생 중 별명이 없는 경우) ── */
+function ensureNickname(){
+  if(S.nickname||document.getElementById('nickname-gate'))return;
+  const modal=document.createElement('div');
+  modal.id='nickname-gate';
+  modal.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:900;display:flex;align-items:center;justify-content:center;padding:24px';
+  modal.innerHTML=`<div style="background:var(--surf);border-radius:16px;padding:26px 22px;max-width:320px;width:100%;text-align:center">
+    <div style="font-size:17px;font-weight:800;margin-bottom:8px">별명을 정해주세요</div>
+    <div style="font-size:12.5px;color:var(--ink2);line-height:1.6;margin-bottom:16px">랭킹 등 다른 학생에게 보이는 화면에 실명 대신 쓰여요.</div>
+    <input class="fi" id="gate-nickname" placeholder="예: 열공왕" maxlength="12" style="margin-bottom:8px">
+    <div id="gate-nickname-err" style="display:none;color:#D14343;font-size:12px;margin-bottom:8px">별명을 입력해주세요</div>
+    <button class="ob-next" style="width:100%" onclick="submitNicknameGate()">저장</button>
+  </div>`;
+  document.body.appendChild(modal);
+}
+async function submitNicknameGate(){
+  const v=document.getElementById('gate-nickname').value.trim();
+  if(!v){document.getElementById('gate-nickname-err').style.display='block';return;}
+  S.nickname=v;
+  await sb(`planner_students?id=eq.${S.id}`,{method:'PATCH',body:JSON.stringify({nickname:v})});
+  document.getElementById('nickname-gate')?.remove();
 }
 
 /* ── 유틸 ── */
@@ -1129,6 +1157,11 @@ function buildProg(){
 }
 
 function goOb(n){
+  if(obCur===1&&n>1){
+    const nick=document.getElementById('ob-nickname').value.trim();
+    if(!nick){document.getElementById('ob-nickname-err').style.display='block';return;}
+    S.nickname=nick;
+  }
   if(n===2){const v=document.getElementById('career-inp').value.trim();if(v&&!S.career)S.career=v;}
   if(n===3){startGen();obCur=3;for(let i=1;i<=3;i++)document.getElementById(`ob-s${i}`).classList.toggle('on',i===3);return;}
   obCur=n;buildProg();
@@ -1313,6 +1346,7 @@ async function startPlanner(){
   if(typeof window.initLiveViewFeature==='function')window.initLiveViewFeature();
   else setTimeout(()=>{if(typeof window.initLiveViewFeature==='function')window.initLiveViewFeature();},1000);
   requestWakeLock();
+  ensureNickname();
 
   // yearly_plan 없거나, fallback 플랜인데 career 정보가 있으면 백그라운드 재생성
   const isFallback=!Object.keys(S.yearlyPlan).length||Object.values(S.yearlyPlan).some(p=>p.keyword==='학습 계획을 세워보세요');
@@ -2314,6 +2348,7 @@ buildProg();
     const q=document.getElementById('ob-career-q');
     if(q)q.innerHTML=`${S.name} 학생은<br>꿈꾸는 직업이나 분야가 있나요?`;
   }
+  if(S.nickname)document.getElementById('ob-nickname').value=S.nickname;
 })();
 
 

@@ -685,7 +685,7 @@ body{font-family:'Pretendard','Noto Sans KR',sans-serif;color:var(--ink);min-hei
 <!-- 학생 입출입 (태블릿 키오스크 모드) -->
 <div class="panel-checkin" id="panel-checkin">
   <button class="kiosk-back-btn" onclick="requestKioskExit()">←</button>
-  <iframe id="checkin-iframe" title="학생 입출입"></iframe>
+  <iframe id="checkin-iframe" title="학생 입출입" allow="screen-wake-lock; camera"></iframe>
 </div>
 
 <!-- 염탐 시트 -->
@@ -1111,6 +1111,7 @@ function groupLogsByAttendance(logs){
 /* ── 탭 전환 ── */
 let lastMainTab='students';
 function switchTab(name){
+  localStorage.setItem('admin-active-tab',name);
   if(name==='checkin'){
     const iframe=document.getElementById('checkin-iframe');
     const wantSrc='checkin.html'+(curSeatRoomId?'?room='+curSeatRoomId:'');
@@ -2309,7 +2310,14 @@ async function saveNotifySettings(){
   loadRoomsForSelects();
 }
 
-(async()=>{ await loadRoomsForSelects(); loadStudents(); })();
+(async()=>{
+  await loadRoomsForSelects();
+  loadStudents();
+  // 태블릿이 [학생 입출입] 탭으로 켜져 있다가 브라우저가 화면을 새로고침해도
+  // 관리자 메인 화면(학생관리)으로 튕기지 않고 그대로 그 탭으로 돌아오게 합니다.
+  const savedTab=localStorage.getItem('admin-active-tab');
+  if(savedTab&&savedTab!=='students')switchTab(savedTab);
+})();
 </script>
 
 <!-- 좌석/출석 실시간 업데이트 (Supabase Realtime) -->
