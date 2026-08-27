@@ -1020,7 +1020,7 @@ let S={
   school:P.get('school')||'',grade:P.get('grade')||'',
   sc:P.get('sc')||'',so:P.get('so')||'',
   academy:P.get('academy')||'piltop',
-  career:'',careerField:'',u1:'',d1:'',u2:'',d2:'',roomId:'',nickname:'',rankNameMode:'nickname',
+  career:'',careerField:'',u1:'',d1:'',u2:'',d2:'',roomId:'',nickname:'',rankNameMode:'nickname',focusEnabled:false,
   yearlyPlan:{},schoolSched:[],monthGoals:{},monthMemos:{},
   dayMemos:{},dayChecks:{},dayTl:{},dayStickers:{},dayColors:{},dayNotes:{},
   weekGoals:{},weekMemos:{},examScores:[],
@@ -1299,6 +1299,7 @@ async function startPlanner(){
   initSwipe();
   goView(3);
   initRankFeature();
+  initFocusFeature();
 
   // yearly_plan 없거나, fallback 플랜인데 career 정보가 있으면 백그라운드 재생성
   const isFallback=!Object.keys(S.yearlyPlan).length||Object.values(S.yearlyPlan).some(p=>p.keyword==='학습 계획을 세워보세요');
@@ -2139,6 +2140,82 @@ async function openRankSheet(){
       <div class="rank-time">${fmtMinRank(me.min)}</div>
     </div>`;
   }
+}
+
+/* ── 집중도 분석 (학생 태블릿 카메라, 영상 저장 없음) ──
+   지정자석 태블릿에 이 학생 개인 링크가 항상 떠있다는 전제로 동작합니다.
+   출석 상태가 '공부중'일 때만 카메라를 켜고, 몇 초 간격으로 프레임 하나만
+   태블릿 안에서 즉시 분석·폐기합니다 — 영상 자체는 저장·전송하지 않고
+   "그 순간 집중/산만" 판정 결과 한 줄만 focus_log에 남깁니다. */
+let focusPoller=null,focusLandmarker=null,focusStream=null,focusVideo=null,focusLoopId=null,focusActive=false,focusAttId=null;
+
+async function initFocusFeature(){
+  if(!S.roomId)return;
+  const rows=await sb(`study_rooms?id=eq.${S.roomId}&select=focus_tracking_enabled`);
+  const room=Array.isArray(rows)&&rows[0];
+  if(!room||!room.focus_tracking_enabled)return;
+  S.focusEnabled=true;
+  checkFocusEligibility();
+  if(!focusPoller)focusPoller=setInterval(checkFocusEligibility,20000);
+}
+async function checkFocusEligibility(){
+  if(!S.focusEnabled)return;
+  const rows=await sb(`attendance?student_id=eq.${S.id}&checkout_at=is.null&select=id,status`);
+  const att=Array.isArray(rows)&&rows[0];
+  const shouldRun=!!(att&&att.status==='studying');
+  if(shouldRun&&!focusActive)startFocusTracking(att.id);
+  else if(!shouldRun&&focusActive)stopFocusTracking();
+}
+async function startFocusTracking(attendanceId){
+  focusActive=true;focusAttId=attendanceId;
+  try{
+    focusStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'user'},audio:false});
+  }catch(e){console.warn('카메라 권한이 없어 집중도 분석을 건너뜁니다',e);focusActive=false;return;}
+  try{
+    if(!focusLandmarker){
+      const vision=await import('https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/vision_bundle.mjs');
+      const files=await vision.FilesetResolver.forVisionTasks('https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm');
+      focusLandmarker=await vision.FaceLandmarker.createFromOptions(files,{
+        baseOptions:{modelAssetPath:'https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task'},
+        outputFacialTransformationMatrixes:true,
+        outputFaceBlendshapes:true,
+        runningMode:'VIDEO',
+        numFaces:1
+      });
+    }
+  }catch(e){console.warn('집중도 분석 모델 로드 실패',e);stopFocusTracking();return;}
+  focusVideo=document.createElement('video');
+  focusVideo.srcObject=focusStream;focusVideo.playsInline=true;focusVideo.muted=true;
+  await focusVideo.play();
+  focusSampleLoop();
+}
+function focusSampleLoop(){
+  if(!focusActive)return;
+  try{
+    const result=focusLandmarker.detectForVideo(focusVideo,performance.now());
+    const focused=classifyFocus(result);
+    sb('focus_log',{method:'POST',body:JSON.stringify({attendance_id:focusAttId,focused})});
+  }catch(e){console.warn('집중도 프레임 분석 실패',e);}
+  focusLoopId=setTimeout(focusSampleLoop,8000);
+}
+function classifyFocus(result){
+  if(!result.faceLandmarks||!result.faceLandmarks.length)return false; // 얼굴이 안 잡힘 = 자리 이탈/딴짓
+  const m=result.facialTransformationMatrixes?.[0]?.data;
+  if(m&&m.length>=16){
+    const yaw=Math.atan2(-m[2],Math.sqrt(m[6]*m[6]+m[10]*m[10]))*180/Math.PI;
+    const pitch=Math.atan2(m[6],m[10])*180/Math.PI;
+    if(Math.abs(yaw)>25||Math.abs(pitch)>25)return false; // 고개를 많이 돌리거나 숙임/젖힘
+  }
+  const cats=result.faceBlendshapes?.[0]?.categories||[];
+  const score=n=>cats.find(c=>c.categoryName===n)?.score||0;
+  if((score('eyeBlinkLeft')+score('eyeBlinkRight'))/2>0.7)return false; // 눈 감김(졸음) 추정
+  return true;
+}
+function stopFocusTracking(){
+  focusActive=false;focusAttId=null;
+  if(focusLoopId)clearTimeout(focusLoopId);focusLoopId=null;
+  if(focusStream){focusStream.getTracks().forEach(t=>t.stop());focusStream=null;}
+  focusVideo=null;
 }
 
 /* ── Supabase month_goals/month_memos 컬럼 추가 확인 ── */

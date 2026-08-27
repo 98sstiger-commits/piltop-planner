@@ -221,3 +221,21 @@ alter table study_rooms add column if not exists rank_visible boolean not null d
 -- 화면(admin.html)의 랭킹은 이 설정과 상관없이 항상 실명으로 보여서
 -- 관리자는 별명공개 상태여도 누가 누군지 바로 알 수 있습니다.
 alter table study_rooms add column if not exists rank_name_mode text not null default 'nickname' check (rank_name_mode in ('nickname','realname'));
+
+-- ── 10. 집중도 분석 (학생 태블릿 카메라, 지정자석 · 학부모 동의 전제) ──
+-- 관리자가 켜야만 그 독서실에서 카메라 분석이 동작해요 (기본은 꺼짐).
+-- 영상은 절대 저장/전송하지 않고, 태블릿 안에서 그 순간 얼굴 방향·눈
+-- 감김만 판정해서 focused(집중/산만) 결과 한 줄만 남깁니다.
+alter table study_rooms add column if not exists focus_tracking_enabled boolean not null default false;
+
+create table if not exists focus_log (
+  id uuid primary key default gen_random_uuid(),
+  attendance_id uuid not null references attendance(id) on delete cascade,
+  checked_at timestamptz not null default now(),
+  focused boolean not null
+);
+create index if not exists idx_focus_log_attendance on focus_log(attendance_id, checked_at);
+
+alter table focus_log enable row level security;
+drop policy if exists "public full access" on focus_log;
+create policy "public full access" on focus_log for all using (true) with check (true);

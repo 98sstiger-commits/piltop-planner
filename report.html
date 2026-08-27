@@ -48,6 +48,7 @@ button{cursor:pointer;border:none;background:none;font-family:inherit}
 /* stat grid */
 .stat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
 .stat-grid.c2{grid-template-columns:repeat(2,1fr)}
+.stat-grid.c4{grid-template-columns:repeat(2,1fr)}
 .stat-cell{background:var(--bg);border-radius:12px;padding:14px 10px;text-align:center}
 .stat-num{font-size:19px;font-weight:800;color:var(--g);letter-spacing:-.3px;white-space:nowrap}
 .stat-lbl{font-size:11px;color:var(--ink2);margin-top:4px}
@@ -277,6 +278,16 @@ function sumSeg(atts){
   atts.forEach(a=>{s.studying+=a._seg.studying;s.in_class+=a._seg.in_class;s.away+=a._seg.away;});
   return s;
 }
+/* 집중도 분석 기능을 켠 독서실에서만 focus_log가 쌓입니다 — 기록이
+   하나도 없으면(기능 미사용) null을 반환해서 카드 자체를 숨깁니다. */
+async function fetchFocusRate(attIds){
+  const ids=attIds.filter(Boolean);
+  if(!ids.length)return null;
+  const rows=await sb(`focus_log?attendance_id=in.(${ids.join(',')})&select=focused`);
+  if(!Array.isArray(rows)||!rows.length)return null;
+  const focusedCnt=rows.filter(r=>r.focused).length;
+  return Math.round(focusedCnt/rows.length*100);
+}
 
 /* ── 상태 ── */
 const P=new URLSearchParams(location.search);
@@ -348,13 +359,15 @@ async function renderDaily(){
   const att=await fetchAttWithSegments(`attendance?student_id=eq.${STATE.id}&checkin_at=lt.${end}&or=(checkout_at.is.null,checkout_at.gte.${start})&select=id,checkin_at,checkout_at,status,seat_number,seats(seat_number,label)&order=checkin_at.asc`,new Date(start),new Date(end));
   const seg=sumSeg(att);
   const flagNote=awayFlagNote(seg);
+  const focusRate=await fetchFocusRate(att.map(a=>a.id));
 
   let html=`<div class="card">
     <div class="card-ttl">📊 오늘 요약</div>
-    <div class="stat-grid">
+    <div class="stat-grid${focusRate!=null?' c4':''}">
       <div class="stat-cell"><div class="stat-num">${fmtMin(totalMin)}</div><div class="stat-lbl">총 계획 시간</div></div>
       <div class="stat-cell"><div class="stat-num">${clRate}%</div><div class="stat-lbl">체크리스트 달성</div></div>
       <div class="stat-cell"><div class="stat-num">${fmtMin(seg.studying)}</div><div class="stat-lbl">독서실 순공시간</div></div>
+      ${focusRate!=null?`<div class="stat-cell"><div class="stat-num">${focusRate}%</div><div class="stat-lbl">집중도</div></div>`:''}
     </div>
   </div>
 
