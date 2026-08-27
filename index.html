@@ -494,6 +494,18 @@ textarea{resize:none}
 .prof-row{display:grid;grid-template-columns:1fr 1fr;gap:7px}
 .prof-input{padding:10px 12px;border:1px solid var(--line2);border-radius:7px;font-size:13px;background:var(--bg);color:var(--ink)}
 .prof-input:focus{border-color:var(--g);background:#fff}
+
+/* 순공 랭킹 */
+.rank-row{display:flex;align-items:center;gap:12px;padding:11px 12px;background:var(--bg);border-radius:10px;margin-bottom:7px}
+.rank-row.me{background:#E6F4EA;box-shadow:inset 0 0 0 1.5px var(--g)}
+.rank-no{width:24px;height:24px;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:var(--ink2);flex-shrink:0}
+.rank-no.top{background:var(--g);color:#fff}
+.rank-info{flex:1;min-width:0}
+.rank-name{font-size:13px;font-weight:700;color:var(--ink)}
+.rank-sub{font-size:10.5px;color:var(--ink3);margin-top:1px}
+.rank-time{font-size:12px;font-weight:800;color:var(--g);flex-shrink:0}
+.rank-empty{text-align:center;color:var(--ink3);font-size:12.5px;padding:24px 0}
+.rank-my-row{margin-top:10px;padding-top:10px;border-top:1px dashed var(--line2)}
 </style>
 </head>
 <body>
@@ -595,10 +607,12 @@ textarea{resize:none}
     <div class="pl-nav-bottom">
       <button class="pl-edit-btn" onclick="openScoreSheet()"><span>🎯</span>성적·전략</button>
       <button class="pl-edit-btn" onclick="openProf()"><span>✎</span>정보 수정</button>
+      <button class="pl-edit-btn" id="pl-rank-btn" onclick="openRankSheet()" style="display:none"><span>🏆</span>순공 랭킹</button>
       <button class="pl-edit-btn" id="pwa-nav-btn" onclick="triggerInstall()" style="display:none"><span>⬇</span>앱 설치</button>
     </div>
     <button class="pl-edit-btn" onclick="openScoreSheet()" style="display:none" id="mob-score">🎯</button>
     <button class="pl-edit-btn" onclick="openProf()" style="display:none" id="mob-edit">✎</button>
+    <button class="pl-edit-btn" onclick="openRankSheet()" style="display:none" id="mob-rank">🏆</button>
   </div>
 
   <div class="pl-content">
@@ -842,7 +856,7 @@ textarea{resize:none}
       <div class="prof-grid">
         <div class="prof-group">
           <div class="prof-lbl">진로 / 직업</div>
-          <input class="prof-input" id="pe-career" placeholder="예: 의사, AI 연구원">
+          <input class="prof-input" id="pe-career" placeholder="예: 의사, 소프트웨어 개발자">
         </div>
         <div class="prof-group">
           <div class="prof-lbl">1지망 대학 / 학과</div>
@@ -893,6 +907,27 @@ textarea{resize:none}
   </div>
 </div>
 
+<!-- 순공 랭킹 -->
+<div class="sheet-bg" id="rank-bg" onclick="if(event.target===this)closeRankSheet()">
+  <div class="sheet">
+    <div class="sheet-grip"></div>
+    <div class="sheet-hd">
+      <div><div class="sheet-ttl">🏆 이번 주 순공 랭킹</div><div class="sheet-sub">닉네임 · 학교/학년만 보여요 (실명은 안 보여요)</div></div>
+      <button class="sheet-x" onclick="closeRankSheet()">×</button>
+    </div>
+    <div class="sheet-bd">
+      <div class="prof-group" style="margin-bottom:16px">
+        <div class="prof-lbl">내 닉네임 (랭킹에 이 이름으로 표시돼요)</div>
+        <div style="display:flex;gap:7px">
+          <input class="prof-input" id="pe-nickname" placeholder="예: 열공왕" maxlength="12" style="flex:1">
+          <button class="s-btn pri" style="flex:0 0 auto;width:auto;padding:0 16px" onclick="saveNickname()">저장</button>
+        </div>
+      </div>
+      <div id="rank-list"></div>
+      <div id="rank-my-row"></div>
+    </div>
+  </div>
+</div>
 
 <!-- PWA 설치 배너 -->
 <div class="install-banner" id="install-banner">
@@ -919,12 +954,12 @@ const MON=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','De
 const DOW=['일','월','화','수','목','금','토'];
 const DOWE=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
 
-const CAREERS_LIST=['의사','치과의사','한의사','약사','간호사','수의사','판사','검사','변호사','경찰관','소방관','군인','공무원','외교관','소프트웨어 엔지니어','AI 연구원','데이터 사이언티스트','게임 개발자','앱 개발자','사이버보안 전문가','경영자','마케터','회계사','금융 애널리스트','교사','교수','유튜버','크리에이터','디자이너','건축가','영화감독','기자','작가','심리상담사','사회복지사','요리사','셰프','파일럿','스포츠 선수','뷰티 전문가'];
+const CAREERS_LIST=['의사','치과의사','한의사','약사','간호사','수의사','판사','검사','변호사','경찰관','소방관','군인','공무원','외교관','소프트웨어 엔지니어','로봇공학자','데이터 사이언티스트','게임 개발자','앱 개발자','사이버보안 전문가','경영자','마케터','회계사','금융 애널리스트','교사','교수','유튜버','크리에이터','디자이너','건축가','영화감독','기자','작가','심리상담사','사회복지사','요리사','셰프','파일럿','스포츠 선수','뷰티 전문가'];
 
 const CAREER_FIELDS=[
   {i:'🏥',l:'의학·약학'},{i:'🧬',l:'생명과학·생명공학'},{i:'💊',l:'간호·보건'},
   {i:'⚖️',l:'법학·행정'},{i:'🏛️',l:'정치·외교'},{i:'👮',l:'경찰·소방·군인'},
-  {i:'💻',l:'소프트웨어·IT'},{i:'🤖',l:'AI·데이터사이언스'},{i:'🔧',l:'기계·전기공학'},
+  {i:'💻',l:'소프트웨어·IT'},{i:'📊',l:'데이터사이언스'},{i:'🔧',l:'기계·전기공학'},
   {i:'🔬',l:'물리·화학·수학'},{i:'🌏',l:'지구과학·환경'},{i:'🐾',l:'수의학·동물'},
   {i:'📈',l:'경영·마케팅'},{i:'💰',l:'금융·경제'},{i:'📊',l:'회계·세무'},
   {i:'📚',l:'교육·연구'},{i:'✍️',l:'언론·출판·작가'},{i:'🎙️',l:'방송·미디어'},
@@ -985,7 +1020,7 @@ let S={
   school:P.get('school')||'',grade:P.get('grade')||'',
   sc:P.get('sc')||'',so:P.get('so')||'',
   academy:P.get('academy')||'piltop',
-  career:'',careerField:'',u1:'',d1:'',u2:'',d2:'',
+  career:'',careerField:'',u1:'',d1:'',u2:'',d2:'',roomId:'',nickname:'',
   yearlyPlan:{},schoolSched:[],monthGoals:{},monthMemos:{},
   dayMemos:{},dayChecks:{},dayTl:{},dayStickers:{},dayColors:{},dayNotes:{},
   weekGoals:{},weekMemos:{},examScores:[],
@@ -1016,6 +1051,8 @@ async function loadDB(){
   const r=d[0];
   if(r.career)S.career=r.career;
   if(r.career_field)S.careerField=r.career_field;
+  if(r.room_id)S.roomId=r.room_id;
+  if(r.nickname)S.nickname=r.nickname;
   if(r.univ1)S.u1=r.univ1;if(r.dept1)S.d1=r.dept1;
   if(r.univ2)S.u2=r.univ2;if(r.dept2)S.d2=r.dept2;
   if(r.yearly_plan&&Object.keys(r.yearly_plan).length)S.yearlyPlan=r.yearly_plan;
@@ -1261,6 +1298,7 @@ async function startPlanner(){
   renderYr();renderMon();renderWk();renderDy();
   initSwipe();
   goView(3);
+  initRankFeature();
 
   // yearly_plan 없거나, fallback 플랜인데 career 정보가 있으면 백그라운드 재생성
   const isFallback=!Object.keys(S.yearlyPlan).length||Object.values(S.yearlyPlan).some(p=>p.keyword==='학습 계획을 세워보세요');
@@ -2012,6 +2050,89 @@ async function saveProfSheet(){
   document.getElementById('yr-info').textContent=`${S.name} · ${S.career||S.careerField||'진로 탐색 중'}`;
   renderYr();renderMon();renderWk();renderDy();
   toast(ok?`진로 맞춤 플랜 완성! (${S.career||S.careerField||''})`:'저장 완료 (생성 실패 — 나중에 ↺ 재생성 버튼을 눌러보세요)',ok?2400:4000);
+}
+
+/* ── 순공 랭킹 (관리자가 켠 독서실에서만 노출) ── */
+async function initRankFeature(){
+  if(!S.roomId)return;
+  const rows=await sb(`study_rooms?id=eq.${S.roomId}&select=rank_visible`);
+  const room=Array.isArray(rows)&&rows[0];
+  if(!room||!room.rank_visible)return;
+  document.getElementById('pl-rank-btn').style.display='flex';
+  if(window.innerWidth<768)document.getElementById('mob-rank').style.display='flex';
+}
+function computeStudyMinutes(att,logsForAtt){
+  const sorted=(logsForAtt||[]).slice().sort((a,b)=>new Date(a.changed_at)-new Date(b.changed_at));
+  const end=att.checkout_at?new Date(att.checkout_at):new Date();
+  if(!sorted.length)return Math.max(0,(end-new Date(att.checkin_at))/60000);
+  let mins=0,curStatus='studying',curTime=new Date(att.checkin_at);
+  sorted.forEach(l=>{
+    const t=new Date(l.changed_at);
+    if(t>curTime&&curStatus==='studying')mins+=(t-curTime)/60000;
+    curStatus=l.status;curTime=t;
+  });
+  if(end>curTime&&curStatus==='studying')mins+=(end-curTime)/60000;
+  return mins;
+}
+function fmtMinRank(min){const m=Math.round(min);const h=Math.floor(m/60);return h?`${h}시간 ${m%60}분`:`${m}분`;}
+function closeRankSheet(){document.getElementById('rank-bg').classList.remove('open');}
+async function saveNickname(){
+  const v=document.getElementById('pe-nickname').value.trim();
+  const result=await sb(`planner_students?id=eq.${S.id}`,{method:'PATCH',body:JSON.stringify({nickname:v||null})});
+  if(!Array.isArray(result)||!result.length){toast('저장에 실패했어요');return;}
+  S.nickname=v;
+  toast('닉네임이 저장됐어요');
+}
+async function openRankSheet(){
+  document.getElementById('pe-nickname').value=S.nickname||'';
+  document.getElementById('rank-bg').classList.add('open');
+  const listEl=document.getElementById('rank-list');
+  const myEl=document.getElementById('rank-my-row');
+  listEl.innerHTML='<div class="rank-empty">불러오는 중...</div>';
+  myEl.innerHTML='';
+  if(!S.roomId)return;
+  const mon=getMonday(new Date());
+  const sun7=new Date(mon.getTime()+7*86400000);
+  const start=`${dk(mon)}T00:00:00`,end=`${dk(sun7)}T00:00:00`;
+  const attRes=await sb(`attendance?room_id=eq.${S.roomId}&checkin_at=lt.${end}&or=(checkout_at.is.null,checkout_at.gte.${start})&select=id,student_id,checkin_at,checkout_at,status,planner_students(nickname,school,grade)`);
+  const att=Array.isArray(attRes)?attRes:[];
+  if(!att.length){listEl.innerHTML='<div class="rank-empty">이번주 기록이 아직 없어요</div>';return;}
+  const ids=att.map(a=>a.id);
+  const logsRes=ids.length?await sb(`attendance_status_log?attendance_id=in.(${ids.join(',')})&select=attendance_id,status,changed_at`):[];
+  const logs=Array.isArray(logsRes)?logsRes:[];
+  const logsByAtt={};
+  logs.forEach(l=>{(logsByAtt[l.attendance_id]=logsByAtt[l.attendance_id]||[]).push(l);});
+  const byStu={};
+  att.forEach(a=>{
+    const mins=computeStudyMinutes(a,logsByAtt[a.id]);
+    if(!byStu[a.student_id])byStu[a.student_id]={
+      nickname:a.planner_students?.nickname||'',
+      school:a.planner_students?.school||'',
+      grade:a.planner_students?.grade||'',
+      min:0
+    };
+    byStu[a.student_id].min+=mins;
+  });
+  const ranked=Object.entries(byStu).map(([id,v])=>({id,...v})).sort((a,b)=>b.min-a.min);
+  const top5=ranked.slice(0,5);
+  listEl.innerHTML=top5.map((r,i)=>`
+    <div class="rank-row${r.id===S.id?' me':''}">
+      <div class="rank-no${i<3?' top':''}">${i+1}</div>
+      <div class="rank-info">
+        <div class="rank-name">${r.nickname||'닉네임 미설정'}</div>
+        <div class="rank-sub">${r.school||''}${r.school&&r.grade?' · ':''}${r.grade?r.grade+'학년':''}</div>
+      </div>
+      <div class="rank-time">${fmtMinRank(r.min)}</div>
+    </div>`).join('');
+  const myRank=ranked.findIndex(r=>r.id===S.id);
+  if(myRank>=5){
+    const me=ranked[myRank];
+    myEl.innerHTML=`<div class="rank-row me">
+      <div class="rank-no">${myRank+1}</div>
+      <div class="rank-info"><div class="rank-name">내 순위</div><div class="rank-sub">${me.nickname||'닉네임 미설정'}</div></div>
+      <div class="rank-time">${fmtMinRank(me.min)}</div>
+    </div>`;
+  }
 }
 
 /* ── Supabase month_goals/month_memos 컬럼 추가 확인 ── */

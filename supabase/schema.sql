@@ -211,3 +211,9 @@ create index if not exists idx_student_notes_student on student_notes(student_id
 alter table student_notes enable row level security;
 drop policy if exists "public full access" on student_notes;
 create policy "public full access" on student_notes for all using (true) with check (true);
+
+-- ── 9. 순공 랭킹 (학생에게 보여주는 이번주 TOP5) ──────────────────
+-- 실명 대신 쓸 닉네임 (설정 안 하면 랭킹에서 "닉네임 미설정"으로 표시)
+alter table planner_students add column if not exists nickname text;
+-- 관리자가 켜야만 그 독서실 학생들에게 랭킹이 보여요 (기본은 꺼짐)
+alter table study_rooms add column if not exists rank_visible boolean not null default false;
