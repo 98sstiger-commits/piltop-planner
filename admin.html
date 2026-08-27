@@ -2362,11 +2362,11 @@ const LV_ICE_SERVERS=[
   {urls:'turn:openrelay.metered.ca:443?transport=tcp',username:'openrelayproject',credential:'openrelayproject'},
 ];
 const lvClientId='admin-'+Math.random().toString(36).slice(2);
-let lvChannel=null,lvChannelRoomId=null;
+let lvChannel=null,lvChannelRoomId=null,lvSubscribePromise=null;
 const lvPeers=new Map(); // studentId -> RTCPeerConnection
 
 function ensureChannel(roomId){
-  if(lvChannel&&lvChannelRoomId===roomId)return lvChannel;
+  if(lvChannel&&lvChannelRoomId===roomId)return lvSubscribePromise;
   if(lvChannel){lvClient.removeChannel(lvChannel);lvChannel=null;}
   lvChannelRoomId=roomId;
   lvChannel=lvClient.channel('live-view-'+roomId,{config:{broadcast:{self:false}}});
@@ -2380,12 +2380,19 @@ function ensureChannel(roomId){
     const pc=lvPeers.get(payload.from);
     if(pc&&payload.candidate)pc.addIceCandidate(payload.candidate).catch(()=>{});
   });
-  lvChannel.subscribe();
-  return lvChannel;
+  // subscribe()가 서버에 실제로 연결되기 전에 offer를 보내면 그 메시지가
+  // 그냥 유실될 수 있어서, "SUBSCRIBED" 상태가 될 때까지 기다렸다가 그
+  // 이후에 신호를 보내도록 합니다 (연결이 끝없이 "연결 중..."에 멈춰있던
+  // 원인 중 하나로 확인됨).
+  const thisChannel=lvChannel;
+  lvSubscribePromise=new Promise((resolve)=>{
+    thisChannel.subscribe((status)=>{ if(status==='SUBSCRIBED')resolve(thisChannel); });
+  });
+  return lvSubscribePromise;
 }
 
 async function connectSeat(roomId,studentId){
-  const channel=ensureChannel(roomId);
+  const channel=await ensureChannel(roomId);
   const pc=new RTCPeerConnection({iceServers:LV_ICE_SERVERS});
   lvPeers.set(studentId,pc);
   pc.ontrack=(e)=>{
