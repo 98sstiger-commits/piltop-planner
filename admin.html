@@ -2359,7 +2359,15 @@ async function saveNotifySettings(){
   // 태블릿이 [학생 입출입] 탭으로 켜져 있다가 브라우저가 화면을 새로고침해도
   // 관리자 메인 화면(학생관리)으로 튕기지 않고 그대로 그 탭으로 돌아오게 합니다.
   const savedTab=localStorage.getItem('admin-active-tab');
-  if(savedTab&&savedTab!=='students')switchTab(savedTab);
+  if(savedTab&&savedTab!=='students'){
+    if(savedTab==='liveview'&&typeof window.lvConnectSeats!=='function'){
+      // 실시간 공부모습 탭은 별도 module 스크립트가 다 불러와진 뒤에야
+      // 연결을 시작할 수 있어서, 아직 준비 안 됐으면 잠깐 기다렸다 엽니다.
+      setTimeout(()=>switchTab(savedTab),300);
+    } else {
+      switchTab(savedTab);
+    }
+  }
 })();
 </script>
 
@@ -2452,9 +2460,20 @@ async function connectSeat(roomId,studentId){
     if(st){st.textContent='연결됨';st.classList.add('connected');}
   };
   pc.onicecandidate=(e)=>{
+    console.log('[실시간 진단] onicecandidate',studentId,e.candidate?e.candidate.candidate:'(gathering 완료 — 더 이상 후보 없음)');
     if(e.candidate)channel.send({type:'broadcast',event:'ice-candidate',payload:{to:studentId,from:lvClientId,candidate:e.candidate}});
   };
+  pc.onicecandidateerror=(e)=>{
+    console.log('[실시간 진단] onicecandidateerror',studentId,{url:e.url,errorCode:e.errorCode,errorText:e.errorText});
+  };
+  pc.onicegatheringstatechange=()=>{
+    console.log('[실시간 진단] iceGatheringState',studentId,pc.iceGatheringState);
+  };
+  pc.oniceconnectionstatechange=()=>{
+    console.log('[실시간 진단] iceConnectionState',studentId,pc.iceConnectionState);
+  };
   pc.onconnectionstatechange=()=>{
+    console.log('[실시간 진단] connectionState',studentId,pc.connectionState);
     if(pc.connectionState==='connected'){
       clearTimeout(pc._lvTimeout);
     } else if(['failed','disconnected','closed'].includes(pc.connectionState)){
