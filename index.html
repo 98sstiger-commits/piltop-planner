@@ -2463,7 +2463,7 @@ const LV_ICE_SERVERS=[
   {urls:'turn:openrelay.metered.ca:443',username:'openrelayproject',credential:'openrelayproject'},
   {urls:'turn:openrelay.metered.ca:443?transport=tcp',username:'openrelayproject',credential:'openrelayproject'},
 ];
-let lvChannel=null,lvPc=null,lvCameraHeld=false;
+let lvChannel=null,lvPc=null,lvCameraHeld=false,lvIceQueue=[];
 
 async function initLiveViewFeature(){
   const S=window.S;
@@ -2476,7 +2476,12 @@ async function initLiveViewFeature(){
     if(payload.targetStudentId===S.id)answerWatchRequest(payload);
   });
   lvChannel.on('broadcast',{event:'ice-candidate'},({payload})=>{
-    if(payload.to===S.id&&lvPc&&payload.candidate)lvPc.addIceCandidate(payload.candidate).catch(()=>{});
+    if(payload.to!==S.id||!lvPc||!payload.candidate)return;
+    if(lvPc.remoteDescription){
+      lvPc.addIceCandidate(payload.candidate).catch(()=>{});
+    } else {
+      lvIceQueue.push(payload.candidate);
+    }
   });
   lvChannel.on('broadcast',{event:'stop-watch'},({payload})=>{
     if(payload.targetStudentId===S.id)stopLiveView();
@@ -2485,6 +2490,7 @@ async function initLiveViewFeature(){
 }
 async function answerWatchRequest(payload){
   stopLiveView(); // 이전에 남아있던 연결이 있으면 먼저 정리
+  lvIceQueue=[];
   let stream;
   try{ stream=await window.acquireCamera(); lvCameraHeld=true; }
   catch(e){
@@ -2498,6 +2504,9 @@ async function answerWatchRequest(payload){
     if(e.candidate)lvChannel.send({type:'broadcast',event:'ice-candidate',payload:{to:payload.fromClientId,from:window.S.id,candidate:e.candidate}});
   };
   await lvPc.setRemoteDescription(payload.offer);
+  // offer가 설정되기 전에 먼저 도착해서 버려지던 연결 후보들을 여기서 반영
+  lvIceQueue.forEach(c=>lvPc.addIceCandidate(c).catch(()=>{}));
+  lvIceQueue=[];
   const answer=await lvPc.createAnswer();
   await lvPc.setLocalDescription(answer);
   lvChannel.send({type:'broadcast',event:'watch-answer',payload:{toClientId:payload.fromClientId,fromStudentId:window.S.id,answer}});

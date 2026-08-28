@@ -2435,12 +2435,24 @@ function ensureChannel(roomId){
   lvChannel.on('broadcast',{event:'watch-answer'},({payload})=>{
     if(payload.toClientId!==lvClientId)return;
     const pc=lvPeers.get(payload.fromStudentId);
-    if(pc)pc.setRemoteDescription(payload.answer).catch(e=>console.warn('실시간 공부모습 연결 실패',e));
+    if(!pc)return;
+    pc.setRemoteDescription(payload.answer).then(()=>{
+      // answer가 설정되기 전에 먼저 도착한 연결 후보들(특히 같은 네트워크의
+      // 가장 좋은 "직접 연결" 후보)이 조용히 버려지고 있었습니다 — 그동안
+      // 모아둔 후보를 지금 한꺼번에 추가합니다.
+      (pc._iceQueue||[]).forEach(c=>pc.addIceCandidate(c).catch(()=>{}));
+      pc._iceQueue=[];
+    }).catch(e=>console.warn('실시간 공부모습 연결 실패',e));
   });
   lvChannel.on('broadcast',{event:'ice-candidate'},({payload})=>{
     if(payload.to!==lvClientId)return;
     const pc=lvPeers.get(payload.from);
-    if(pc&&payload.candidate)pc.addIceCandidate(payload.candidate).catch(()=>{});
+    if(!pc||!payload.candidate)return;
+    if(pc.remoteDescription){
+      pc.addIceCandidate(payload.candidate).catch(()=>{});
+    } else {
+      (pc._iceQueue=pc._iceQueue||[]).push(payload.candidate);
+    }
   });
   lvChannel.on('broadcast',{event:'camera-denied'},({payload})=>{
     if(payload.toClientId!==lvClientId)return;
