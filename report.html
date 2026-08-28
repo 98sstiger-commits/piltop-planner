@@ -279,14 +279,59 @@ function sumSeg(atts){
   return s;
 }
 /* 집중도 분석 기능을 켠 독서실에서만 focus_log가 쌓입니다 — 기록이
-   하나도 없으면(기능 미사용) null을 반환해서 카드 자체를 숨깁니다. */
+   하나도 없으면(기능 미사용) null을 반환해서 카드 자체를 숨깁니다.
+   판정 사유(reason)까지 같이 집계해서 "왜 이 점수가 나왔는지" 설명할 때 씁니다. */
 async function fetchFocusRate(attIds){
   const ids=attIds.filter(Boolean);
   if(!ids.length)return null;
-  const rows=await sb(`focus_log?attendance_id=in.(${ids.join(',')})&select=focused`);
+  const rows=await sb(`focus_log?attendance_id=in.(${ids.join(',')})&select=focused,reason`);
   if(!Array.isArray(rows)||!rows.length)return null;
-  const focusedCnt=rows.filter(r=>r.focused).length;
-  return Math.round(focusedCnt/rows.length*100);
+  const total=rows.length;
+  const counts={focused:0,no_face:0,head_turned:0,eyes_closed:0,unknown:0};
+  rows.forEach(r=>{
+    const key=r.reason||(r.focused?'focused':'unknown');
+    if(counts[key]===undefined)counts.unknown++;else counts[key]++;
+  });
+  return{rate:Math.round(counts.focused/total*100),total,counts};
+}
+const FOCUS_REASON_LABEL={
+  focused:'집중함',
+  no_face:'얼굴이 안 보임 (자리 이탈 추정)',
+  head_turned:'고개를 돌리거나 숙임',
+  eyes_closed:'눈을 감음 (졸음 추정)',
+  unknown:'사유 기록 안 됨',
+};
+let LAST_FOCUS_INFO=null;
+function showFocusDetail(){
+  if(!LAST_FOCUS_INFO)return;
+  const{total,counts}=LAST_FOCUS_INFO;
+  const rows=Object.keys(FOCUS_REASON_LABEL)
+    .map(k=>({key:k,cnt:counts[k]||0}))
+    .filter(r=>r.cnt>0)
+    .sort((a,b)=>b.cnt-a.cnt);
+  const existing=document.getElementById('focus-detail-modal');
+  if(existing)existing.remove();
+  const modal=document.createElement('div');
+  modal.id='focus-detail-modal';
+  modal.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:900;display:flex;align-items:center;justify-content:center;padding:20px';
+  modal.onclick=(e)=>{if(e.target===modal)modal.remove();};
+  modal.innerHTML=`<div style="background:var(--surf);border-radius:16px;padding:22px;max-width:340px;width:100%">
+    <div style="font-size:16px;font-weight:800;margin-bottom:4px">집중도 판정 내역</div>
+    <div style="font-size:12px;color:var(--ink2);margin-bottom:16px">8초마다 찍은 ${total}번의 샘플을 기준으로 계산했어요.</div>
+    ${rows.map(r=>{
+      const pct=Math.round(r.cnt/total*100);
+      return`<div style="margin-bottom:10px">
+        <div style="display:flex;justify-content:space-between;font-size:13px;font-weight:600;margin-bottom:4px">
+          <span>${FOCUS_REASON_LABEL[r.key]}</span><span>${pct}%</span>
+        </div>
+        <div style="background:var(--bg);border-radius:6px;height:8px;overflow:hidden">
+          <div style="width:${pct}%;height:100%;background:${r.key==='focused'?'var(--g)':'var(--gold2)'}"></div>
+        </div>
+      </div>`;
+    }).join('')}
+    <button onclick="document.getElementById('focus-detail-modal').remove()" style="margin-top:8px;width:100%;padding:11px;background:var(--g);color:#fff;border-radius:9px;font-size:13px;font-weight:700;border:none;cursor:pointer">확인</button>
+  </div>`;
+  document.body.appendChild(modal);
 }
 
 /* ── 상태 ── */
@@ -359,15 +404,16 @@ async function renderDaily(){
   const att=await fetchAttWithSegments(`attendance?student_id=eq.${STATE.id}&checkin_at=lt.${end}&or=(checkout_at.is.null,checkout_at.gte.${start})&select=id,checkin_at,checkout_at,status,seat_number,seats(seat_number,label)&order=checkin_at.asc`,new Date(start),new Date(end));
   const seg=sumSeg(att);
   const flagNote=awayFlagNote(seg);
-  const focusRate=await fetchFocusRate(att.map(a=>a.id));
+  const focusInfo=await fetchFocusRate(att.map(a=>a.id));
+  if(focusInfo)LAST_FOCUS_INFO=focusInfo;
 
   let html=`<div class="card">
     <div class="card-ttl">📊 오늘 요약</div>
-    <div class="stat-grid${focusRate!=null?' c4':''}">
+    <div class="stat-grid${focusInfo?' c4':''}">
       <div class="stat-cell"><div class="stat-num">${fmtMin(totalMin)}</div><div class="stat-lbl">총 계획 시간</div></div>
       <div class="stat-cell"><div class="stat-num">${clRate}%</div><div class="stat-lbl">체크리스트 달성</div></div>
       <div class="stat-cell"><div class="stat-num">${fmtMin(seg.studying)}</div><div class="stat-lbl">독서실 순공시간</div></div>
-      ${focusRate!=null?`<div class="stat-cell"><div class="stat-num">${focusRate}%</div><div class="stat-lbl">집중도</div></div>`:''}
+      ${focusInfo?`<div class="stat-cell" style="cursor:pointer" onclick="showFocusDetail()"><div class="stat-num">${focusInfo.rate}%</div><div class="stat-lbl">집중도 <span style="opacity:.55">ⓘ</span></div></div>`:''}
     </div>
   </div>
 
@@ -448,14 +494,17 @@ async function renderWeekly(){
     return (e.type==='school-exam'||e.type==='suneung')&&ed>=nextWeekStart&&ed<=nextWeekEnd;
   }).sort((a,b)=>a.date.localeCompare(b.date));
 
+  const focusInfo=await fetchFocusRate(att.map(a=>a.id));
+  if(focusInfo)LAST_FOCUS_INFO=focusInfo;
   const stats={attendanceDays:attDays.size,totalStudyMinutes:Math.round(attMin),awayMinutes:Math.round(seg.away),timelineItems:itemCnt,timelineDone:doneCnt,topSubjects:Object.entries(subjMin).sort((a,b)=>b[1]-a[1]).slice(0,2).map(([k,m])=>({subject:CATS.find(c=>c.k===k)?.l,minutes:Math.round(m)}))};
 
   let html=`<div class="card">
     <div class="card-ttl">📊 이번 주 요약</div>
-    <div class="stat-grid">
+    <div class="stat-grid${focusInfo?' c4':''}">
       <div class="stat-cell"><div class="stat-num">${attDays.size}일</div><div class="stat-lbl">출석일수</div></div>
       <div class="stat-cell"><div class="stat-num">${fmtMin(attMin)}</div><div class="stat-lbl">독서실 순공시간</div></div>
       <div class="stat-cell"><div class="stat-num">${itemCnt?Math.round(doneCnt/itemCnt*100):0}%</div><div class="stat-lbl">일정 완료율</div></div>
+      ${focusInfo?`<div class="stat-cell" style="cursor:pointer" onclick="showFocusDetail()"><div class="stat-num">${focusInfo.rate}%</div><div class="stat-lbl">집중도 <span style="opacity:.55">ⓘ</span></div></div>`:''}
     </div>
   </div>
 
@@ -522,14 +571,17 @@ async function renderMonthly(){
   }
   const maxW=Math.max(1,...weeks.map(w=>w.min));
 
+  const focusInfo=await fetchFocusRate(att.map(a=>a.id));
+  if(focusInfo)LAST_FOCUS_INFO=focusInfo;
   const stats={attendanceDays:attDays.size,attendanceRate:attRate,totalStudyMinutes:Math.round(totalMin),awayMinutes:Math.round(seg.away),weeklyTrend:weeks.map(w=>Math.round(w.min))};
 
   let html=`<div class="card">
     <div class="card-ttl">📊 이번 달 요약</div>
-    <div class="stat-grid">
+    <div class="stat-grid${focusInfo?' c4':''}">
       <div class="stat-cell"><div class="stat-num">${attRate}%</div><div class="stat-lbl">출석률</div></div>
       <div class="stat-cell"><div class="stat-num">${attDays.size}일</div><div class="stat-lbl">출석일수</div></div>
       <div class="stat-cell"><div class="stat-num">${fmtMin(totalMin)}</div><div class="stat-lbl">누적 순공시간</div></div>
+      ${focusInfo?`<div class="stat-cell" style="cursor:pointer" onclick="showFocusDetail()"><div class="stat-num">${focusInfo.rate}%</div><div class="stat-lbl">집중도 <span style="opacity:.55">ⓘ</span></div></div>`:''}
     </div>
   </div>
 

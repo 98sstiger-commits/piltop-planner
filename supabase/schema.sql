@@ -245,3 +245,8 @@ create policy "public full access" on focus_log for all using (true) with check 
 -- 저장되지 않습니다. 시그널링(연결 정보 교환)만 Supabase Realtime
 -- Broadcast로 주고받아서, 별도 DB 테이블은 필요 없습니다.
 alter table study_rooms add column if not exists live_view_enabled boolean not null default false;
+
+-- ── 12. 집중도 분석 사유 (리포트에서 "왜 이 점수가 나왔는지" 설명용) ──
+-- focused만으로는 산만 판정의 이유(얼굴 안 보임/고개 돌림/졸음)를 알 수
+-- 없어서, 판정 사유를 같이 남깁니다.
+alter table focus_log add column if not exists reason text check (reason in ('focused','no_face','head_turned','eyes_closed'));

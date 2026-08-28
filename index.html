@@ -2258,23 +2258,25 @@ function focusSampleLoop(){
   if(!focusActive)return;
   try{
     const result=focusLandmarker.detectForVideo(focusVideo,performance.now());
-    const focused=classifyFocus(result);
-    sb('focus_log',{method:'POST',body:JSON.stringify({attendance_id:focusAttId,focused})});
+    const reason=classifyFocus(result);
+    sb('focus_log',{method:'POST',body:JSON.stringify({attendance_id:focusAttId,focused:reason==='focused',reason})});
   }catch(e){console.warn('집중도 프레임 분석 실패',e);}
   focusLoopId=setTimeout(focusSampleLoop,8000);
 }
+// 왜 산만으로 판정됐는지 리포트에서 설명해줄 수 있도록, 단순 true/false
+// 대신 구체적인 사유를 반환합니다.
 function classifyFocus(result){
-  if(!result.faceLandmarks||!result.faceLandmarks.length)return false; // 얼굴이 안 잡힘 = 자리 이탈/딴짓
+  if(!result.faceLandmarks||!result.faceLandmarks.length)return 'no_face'; // 얼굴이 안 잡힘 = 자리 이탈/딴짓
   const m=result.facialTransformationMatrixes?.[0]?.data;
   if(m&&m.length>=16){
     const yaw=Math.atan2(-m[2],Math.sqrt(m[6]*m[6]+m[10]*m[10]))*180/Math.PI;
     const pitch=Math.atan2(m[6],m[10])*180/Math.PI;
-    if(Math.abs(yaw)>25||Math.abs(pitch)>25)return false; // 고개를 많이 돌리거나 숙임/젖힘
+    if(Math.abs(yaw)>25||Math.abs(pitch)>25)return 'head_turned'; // 고개를 많이 돌리거나 숙임/젖힘
   }
   const cats=result.faceBlendshapes?.[0]?.categories||[];
   const score=n=>cats.find(c=>c.categoryName===n)?.score||0;
-  if((score('eyeBlinkLeft')+score('eyeBlinkRight'))/2>0.7)return false; // 눈 감김(졸음) 추정
-  return true;
+  if((score('eyeBlinkLeft')+score('eyeBlinkRight'))/2>0.7)return 'eyes_closed'; // 눈 감김(졸음) 추정
+  return 'focused';
 }
 function stopFocusTracking(){
   if(!focusActive)return;
