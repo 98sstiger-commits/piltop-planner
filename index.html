@@ -2457,11 +2457,12 @@ const lvClient = createClient(
   'https://zmtldohklivkzpfdyflc.supabase.co',
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InptdGxkb2hrbGl2a3pwZmR5ZmxjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI5NjgxMDQsImV4cCI6MjA4ODU0NDEwNH0.cv1WrvDzNedVZABWyRCS9ARRxf4Si9qgeUqEvhpHWlo'
 );
+// 무료 공개 TURN 서버(openrelay.metered.ca)가 실제 테스트에서 에러를
+// 내며 같은 와이파이 안의 직접 연결까지 불안정하게 만드는 걸 확인해서
+// 뺐습니다. 독서실은 학생 태블릿과 관리자 기기가 다 같은 와이파이 안에
+// 있는 구조라 STUN만으로 충분합니다.
 const LV_ICE_SERVERS=[
   {urls:'stun:stun.l.google.com:19302'},
-  {urls:'turn:openrelay.metered.ca:80',username:'openrelayproject',credential:'openrelayproject'},
-  {urls:'turn:openrelay.metered.ca:443',username:'openrelayproject',credential:'openrelayproject'},
-  {urls:'turn:openrelay.metered.ca:443?transport=tcp',username:'openrelayproject',credential:'openrelayproject'},
 ];
 let lvChannel=null,lvPc=null,lvCameraHeld=false,lvIceQueue=[];
 
