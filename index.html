@@ -2275,7 +2275,7 @@ function classifyFocus(result){
   }
   const cats=result.faceBlendshapes?.[0]?.categories||[];
   const score=n=>cats.find(c=>c.categoryName===n)?.score||0;
-  if((score('eyeBlinkLeft')+score('eyeBlinkRight'))/2>0.7)return 'eyes_closed'; // 눈 감김(졸음) 추정
+  if((score('eyeBlinkLeft')+score('eyeBlinkRight'))/2>0.5)return 'eyes_closed'; // 눈 감김(졸음) 추정
   return 'focused';
 }
 function stopFocusTracking(){
