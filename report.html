@@ -340,6 +340,7 @@ function showFocusDetail(){
 
 /* ── 상태 ── */
 const P=new URLSearchParams(location.search);
+const isAdmin=P.get('admin')==='1';
 const STATE={
   id:P.get('id')||'',
   type:P.get('type')||'daily',
@@ -349,6 +350,7 @@ let STUDENT=null,ROOM=null;
 
 function syncUrl(){
   const params=new URLSearchParams({id:STATE.id,type:STATE.type,date:dk(STATE.date)});
+  if(isAdmin)params.set('admin','1');
   history.replaceState(null,'',location.pathname+'?'+params);
 }
 
@@ -371,7 +373,6 @@ async function boot(){
   // 카카오톡/문자발송/링크복사 버튼을 보여줍니다. 그 버튼으로 만든
   // 공유 링크(buildShareUrl)에는 이 표시가 없어서, 학부모가 받은
   // 링크를 열면 인쇄 버튼만 있는 깔끔한 화면이 보여요.
-  const isAdmin=P.get('admin')==='1';
   document.getElementById(isAdmin?'sharebar':'sharebar-print-only').style.display='flex';
   switchType(STATE.type,true);
 }
