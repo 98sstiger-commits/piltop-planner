@@ -287,7 +287,7 @@ async function fetchFocusRate(attIds){
   const rows=await sb(`focus_log?attendance_id=in.(${ids.join(',')})&select=focused,reason`);
   if(!Array.isArray(rows)||!rows.length)return null;
   const total=rows.length;
-  const counts={focused:0,no_face:0,head_turned:0,eyes_closed:0,unknown:0};
+  const counts={focused:0,no_face:0,head_turned:0,eyes_closed:0,dozing:0,unknown:0};
   rows.forEach(r=>{
     const key=r.reason||(r.focused?'focused':'unknown');
     if(counts[key]===undefined)counts.unknown++;else counts[key]++;
@@ -296,9 +296,10 @@ async function fetchFocusRate(attIds){
 }
 const FOCUS_REASON_LABEL={
   focused:'집중함',
-  no_face:'얼굴이 안 보임 (자리 이탈 추정)',
-  head_turned:'고개를 돌리거나 숙임',
+  no_face:'화면에 안 보임 (자리 이탈 추정)',
+  head_turned:'고개를 많이 돌리거나 젖힘',
   eyes_closed:'눈을 감음 (졸음 추정)',
+  dozing:'고개를 푹 숙임 (졸음 추정)',
   unknown:'사유 기록 안 됨',
 };
 let LAST_FOCUS_INFO=null;

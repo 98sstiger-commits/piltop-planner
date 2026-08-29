@@ -255,3 +255,14 @@ alter table focus_log add column if not exists reason text check (reason in ('fo
 -- 방에서 집중도 분석을 켜면 그 방 학생 전체가 기본으로 대상이 되고,
 -- 관리자가 특정 학생만 골라서 빼둘 수 있게 합니다.
 alter table planner_students add column if not exists focus_tracking_opt_out boolean not null default false;
+
+-- ── 14. 집중도 분석 사유에 "졸음(고개 숙임)" 추가 ──
+-- 얼굴이 안 보인다고 무조건 자리 이탈로 보지 않고, 몸(어깨)은 보이는데
+-- 얼굴만 안 보이면(엎드려 졸 때 등) 졸음으로 따로 구분합니다.
+do $$
+begin
+  alter table focus_log drop constraint if exists focus_log_reason_check;
+  alter table focus_log add constraint focus_log_reason_check
+    check (reason in ('focused','no_face','head_turned','eyes_closed','dozing'));
+exception when others then null;
+end $$;

@@ -2195,7 +2195,7 @@ async function openRankSheet(){
    출석 상태가 '공부중'일 때만 카메라를 켜고, 몇 초 간격으로 프레임 하나만
    태블릿 안에서 즉시 분석·폐기합니다 — 영상 자체는 저장·전송하지 않고
    "그 순간 집중/산만" 판정 결과 한 줄만 focus_log에 남깁니다. */
-let focusPoller=null,focusLandmarker=null,focusVideo=null,focusLoopId=null,focusActive=false,focusAttId=null;
+let focusPoller=null,focusLandmarker=null,focusPoseLandmarker=null,focusVideo=null,focusLoopId=null,focusActive=false,focusAttId=null;
 
 /* 집중도 분석과 실시간 공부모습(라이브뷰) 둘 다 카메라가 필요할 수 있어서,
    실제 getUserMedia는 한 번만 열고 참조 카운트로 공유합니다. */
@@ -2248,6 +2248,15 @@ async function startFocusTracking(attendanceId){
         runningMode:'VIDEO',
         numFaces:1
       });
+      // 얼굴이 안 보일 때(고개를 푹 숙였을 때) 자리 이탈인지 졸음인지
+      // 구분하려고, 몸(어깨/상체)을 감지하는 보조 모델도 같이 준비합니다.
+      try{
+        focusPoseLandmarker=await vision.PoseLandmarker.createFromOptions(files,{
+          baseOptions:{modelAssetPath:'https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task'},
+          runningMode:'VIDEO',
+          numPoses:1
+        });
+      }catch(e){console.warn('자세 감지 보조 모델 로드 실패 — 얼굴 안 보일 때는 자리 이탈로만 판정됩니다',e);}
     }
   }catch(e){console.warn('집중도 분석 모델 로드 실패',e);stopFocusTracking();return;}
   focusVideo=document.createElement('video');
@@ -2258,8 +2267,9 @@ async function startFocusTracking(attendanceId){
 function focusSampleLoop(){
   if(!focusActive)return;
   try{
-    const result=focusLandmarker.detectForVideo(focusVideo,performance.now());
-    const reason=classifyFocus(result);
+    const ts=performance.now();
+    const result=focusLandmarker.detectForVideo(focusVideo,ts);
+    const reason=classifyFocus(result,ts);
     sb('focus_log',{method:'POST',body:JSON.stringify({attendance_id:focusAttId,focused:reason==='focused',reason})});
   }catch(e){console.warn('집중도 프레임 분석 실패',e);}
   focusLoopId=setTimeout(focusSampleLoop,8000);
@@ -2272,8 +2282,18 @@ function focusSampleLoop(){
 // (pitch, 독서 자세)을 같은 기준으로 걸러내면 안 됩니다. yaw는 좁게,
 // pitch는 훨씬 넓게 잡아서 "책 보는 자세"가 산만으로 오판되지 않게 합니다.
 const FOCUS_YAW_LIMIT=35,FOCUS_PITCH_LIMIT=50;
-function classifyFocus(result){
-  if(!result.faceLandmarks||!result.faceLandmarks.length)return 'no_face'; // 얼굴이 안 잡힘 = 자리 이탈/딴짓
+function classifyFocus(result,ts){
+  if(!result.faceLandmarks||!result.faceLandmarks.length){
+    // 얼굴을 못 찾았다고 바로 "자리 이탈"로 보진 않습니다 — 고개를 푹
+    // 숙이면(엎드려 졸 때 등) 얼굴 인식은 실패해도 몸(어깨)은 보일 수
+    // 있어서, 그런 경우는 조는 것으로 구분합니다. 몸까지 안 보이면
+    // 그때 진짜 자리 이탈로 봅니다.
+    try{
+      const poseResult=focusPoseLandmarker&&focusPoseLandmarker.detectForVideo(focusVideo,ts);
+      if(poseResult&&poseResult.landmarks&&poseResult.landmarks.length)return 'dozing';
+    }catch(e){}
+    return 'no_face';
+  }
   const m=result.facialTransformationMatrixes?.[0]?.data;
   if(m&&m.length>=16){
     const yaw=Math.atan2(-m[2],Math.sqrt(m[6]*m[6]+m[10]*m[10]))*180/Math.PI;
