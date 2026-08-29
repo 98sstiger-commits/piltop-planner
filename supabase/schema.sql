@@ -250,3 +250,8 @@ alter table study_rooms add column if not exists live_view_enabled boolean not n
 -- focused만으로는 산만 판정의 이유(얼굴 안 보임/고개 돌림/졸음)를 알 수
 -- 없어서, 판정 사유를 같이 남깁니다.
 alter table focus_log add column if not exists reason text check (reason in ('focused','no_face','head_turned','eyes_closed'));
+
+-- ── 13. 집중도 분석 학생별 제외 (일부 학부모/학생만 부담스러워하는 경우) ──
+-- 방에서 집중도 분석을 켜면 그 방 학생 전체가 기본으로 대상이 되고,
+-- 관리자가 특정 학생만 골라서 빼둘 수 있게 합니다.
+alter table planner_students add column if not exists focus_tracking_opt_out boolean not null default false;

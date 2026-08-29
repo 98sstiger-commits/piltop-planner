@@ -1035,7 +1035,7 @@ let S={
   school:P.get('school')||'',grade:P.get('grade')||'',
   sc:P.get('sc')||'',so:P.get('so')||'',
   academy:P.get('academy')||'piltop',
-  career:'',careerField:'',u1:'',d1:'',u2:'',d2:'',roomId:'',nickname:'',rankNameMode:'nickname',focusEnabled:false,
+  career:'',careerField:'',u1:'',d1:'',u2:'',d2:'',roomId:'',nickname:'',rankNameMode:'nickname',focusEnabled:false,focusOptOut:false,
   yearlyPlan:{},schoolSched:[],monthGoals:{},monthMemos:{},
   dayMemos:{},dayChecks:{},dayTl:{},dayStickers:{},dayColors:{},dayNotes:{},
   weekGoals:{},weekMemos:{},examScores:[],
@@ -1067,6 +1067,7 @@ async function loadDB(){
   if(r.career)S.career=r.career;
   if(r.career_field)S.careerField=r.career_field;
   if(r.room_id)S.roomId=r.room_id;
+  if(r.focus_tracking_opt_out)S.focusOptOut=true;
   if(r.nickname)S.nickname=r.nickname;
   if(r.univ1)S.u1=r.univ1;if(r.dept1)S.d1=r.dept1;
   if(r.univ2)S.u2=r.univ2;if(r.dept2)S.d2=r.dept2;
@@ -2214,7 +2215,7 @@ function releaseCamera(){
 }
 
 async function initFocusFeature(){
-  if(!S.roomId)return;
+  if(!S.roomId||S.focusOptOut)return;
   const rows=await sb(`study_rooms?id=eq.${S.roomId}&select=focus_tracking_enabled`);
   const room=Array.isArray(rows)&&rows[0];
   if(!room||!room.focus_tracking_enabled)return;

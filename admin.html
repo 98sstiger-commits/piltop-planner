@@ -647,7 +647,7 @@ body{font-family:'Pretendard','Noto Sans KR',sans-serif;color:var(--ink);min-hei
   </div>
 
   <div class="card">
-    <div class="card-hd"><div class="card-title">집중도 분석 (학생 태블릿 카메라)</div><div class="card-sub">학생 개인 좌석에 태블릿을 두고 그 학생 플래니 링크를 띄워둔 경우에만 의미가 있어요(지정자석 전제). 공부중 상태일 때만 카메라가 켜지고, 영상은 저장하지 않아요 — 그 순간 집중/산만 판정 결과만 남습니다. 학부모 동의를 받은 후에 켜주세요.</div></div>
+    <div class="card-hd"><div class="card-title">집중도 분석 (학생 태블릿 카메라)</div><div class="card-sub">학생 개인 좌석에 태블릿을 두고 그 학생 플래니 링크를 띄워둔 경우에만 의미가 있어요(지정자석 전제). 공부중 상태일 때만 카메라가 켜지고, 영상은 저장하지 않아요 — 그 순간 집중/산만 판정 결과만 남습니다. 학부모 동의를 받은 후에 켜주세요. 켜면 학생 전체가 대상이 되고, 부담스러워하는 학생만 [학생관리] 탭 카드에서 개별로 뺄 수 있어요.</div></div>
     <div class="card-bd">
       <div style="display:flex;gap:8px">
         <button class="mini-btn pri" id="focus-mode-off" style="flex:1" onclick="setFocusTracking(false)">🙈 사용 안 함</button>
@@ -913,6 +913,10 @@ function renderStudentList(){
     if(s.school_org)sparams.set('so',s.school_org);
     const slink=`${BASE}/index.html?${sparams}`;
     const roomOpts=`<option value="">독서실 미배정</option>`+ROOMS.map(r=>`<option value="${r.id}" ${s.room_id===r.id?'selected':''}>${r.name}</option>`).join('');
+    const room=ROOMS.find(r=>r.id===s.room_id);
+    const focusToggleBtn=room&&room.focus_tracking_enabled
+      ?`<button class="mini-btn${s.focus_tracking_opt_out?'':' pri'}" style="padding:3px 8px;font-size:10px" onclick="toggleFocusOptOut('${s.id}','${(s.name||'').replace(/'/g,"\\'")}',${!!s.focus_tracking_opt_out})">${s.focus_tracking_opt_out?'🚫 집중도 제외됨':'👁 집중도 분석중'}</button>`
+      :'';
     const subjects=Array.isArray(s.subjects)?s.subjects:[];
     const subjBadges=subjects.length
       ? subjects.map(k=>`<span class="subj-badge">${subjLabel(k)}</span>`).join('')
@@ -930,6 +934,7 @@ function renderStudentList(){
           <button class="mini-btn" style="padding:3px 8px;font-size:10px" onclick="window.open('${BASE}/report.html?id=${s.id}&type=weekly','_blank')">📊 리포트</button>
           <button class="mini-btn${s.is_paused?' pri':''}" style="padding:3px 8px;font-size:10px" onclick="togglePauseStudent('${s.id}','${(s.name||'').replace(/'/g,"\\'")}',${!!s.is_paused})">${s.is_paused?'▶ 재개':'⏸ 중단'}</button>
           <button class="mini-btn" style="padding:3px 8px;font-size:10px" onclick="openNotesSheet('${s.id}','${(s.name||'').replace(/'/g,"\\'")}')">📝 상담 메모</button>
+          ${focusToggleBtn}
         </div>
         <div class="stu-extra-row" onclick="event.stopPropagation();openSubjPop(event,'${s.id}')" style="cursor:pointer">
           <div class="subj-badges">${subjBadges}</div>
@@ -1066,6 +1071,15 @@ async function togglePauseStudent(id,name,currentlyPaused){
   const result=await sb(`planner_students?id=eq.${id}`,{method:'PATCH',body:JSON.stringify({is_paused:next})});
   if(!Array.isArray(result)||!result.length){showToast('처리에 실패했어요 — Supabase에 최신 SQL을 실행했는지 확인해주세요');return;}
   showToast(next?`${name} 학생을 중단 처리했어요`:`${name} 학생을 재개했어요`);
+  loadStudents();
+}
+
+async function toggleFocusOptOut(id,name,currentlyOptOut){
+  const next=!currentlyOptOut;
+  if(!confirm(next?`${name} 학생을 집중도 분석 대상에서 제외할까요?`:`${name} 학생을 다시 집중도 분석 대상에 포함할까요?`))return;
+  const result=await sb(`planner_students?id=eq.${id}`,{method:'PATCH',body:JSON.stringify({focus_tracking_opt_out:next})});
+  if(!Array.isArray(result)||!result.length){showToast('처리에 실패했어요 — Supabase에 최신 SQL을 실행했는지 확인해주세요');return;}
+  showToast(next?`${name} 학생을 집중도 분석에서 제외했어요`:`${name} 학생을 집중도 분석 대상에 다시 포함했어요`);
   loadStudents();
 }
 
