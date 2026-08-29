@@ -171,10 +171,13 @@ button{cursor:pointer;border:none;background:none;font-family:inherit}
     <div id="report-body"></div>
   </div>
 
-  <div class="sharebar">
+  <div class="sharebar" id="sharebar" style="display:none">
     <button class="share-btn kakao" onclick="openSharePicker('kakao')"><span class="ico">💬</span>카카오톡</button>
     <button class="share-btn sms" onclick="openSharePicker('sms')"><span class="ico">📱</span>문자발송</button>
     <button class="share-btn" onclick="openSharePicker('copy')"><span class="ico">🔗</span>링크복사</button>
+    <button class="share-btn" onclick="window.print()"><span class="ico">🖨️</span>인쇄/PDF</button>
+  </div>
+  <div class="sharebar" id="sharebar-print-only" style="display:none">
     <button class="share-btn" onclick="window.print()"><span class="ico">🖨️</span>인쇄/PDF</button>
   </div>
 </div>
@@ -364,6 +367,12 @@ async function boot(){
   document.getElementById('stu-sub').textContent=`${STUDENT.school_name||'학교 미정'} · ${STUDENT.grade||'?'}학년`;
   document.getElementById('loading').style.display='none';
   document.getElementById('app').style.display='block';
+  // 관리자가 admin.html [학생관리]의 "📊 리포트" 버튼으로 열었을 때만
+  // 카카오톡/문자발송/링크복사 버튼을 보여줍니다. 그 버튼으로 만든
+  // 공유 링크(buildShareUrl)에는 이 표시가 없어서, 학부모가 받은
+  // 링크를 열면 인쇄 버튼만 있는 깔끔한 화면이 보여요.
+  const isAdmin=P.get('admin')==='1';
+  document.getElementById(isAdmin?'sharebar':'sharebar-print-only').style.display='flex';
   switchType(STATE.type,true);
 }
 
