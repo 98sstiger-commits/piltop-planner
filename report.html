@@ -274,11 +274,18 @@ function sumSeg(atts){
 }
 /* 집중도 분석 기능을 켠 독서실에서만 focus_log가 쌓입니다 — 기록이
    하나도 없으면(기능 미사용) null을 반환해서 카드 자체를 숨깁니다.
-   판정 사유(reason)까지 같이 집계해서 "왜 이 점수가 나왔는지" 설명할 때 씁니다. */
-async function fetchFocusRate(attIds){
+   판정 사유(reason)까지 같이 집계해서 "왜 이 점수가 나왔는지" 설명할 때 씁니다.
+   attendance_id로만 걸러내면, 자정을 넘겨 계속 이어지는(체크아웃 안 한)
+   출석 하나가 어제·오늘 리포트 양쪽에 다 걸려서 그 세션 전체 샘플이
+   두 날짜에 똑같이 중복으로 나오는 문제가 있었습니다. start/end를
+   주면 그 기간에 실제로 찍힌(checked_at) 샘플만 정확히 걸러냅니다. */
+async function fetchFocusRate(attIds,start,end){
   const ids=attIds.filter(Boolean);
   if(!ids.length)return null;
-  const rows=await sb(`focus_log?attendance_id=in.(${ids.join(',')})&select=focused,reason`);
+  let q=`focus_log?attendance_id=in.(${ids.join(',')})&select=focused,reason`;
+  if(start)q+=`&checked_at=gte.${start}`;
+  if(end)q+=`&checked_at=lt.${end}`;
+  const rows=await sb(q);
   if(!Array.isArray(rows)||!rows.length)return null;
   const total=rows.length;
   const counts={focused:0,no_face:0,head_turned:0,eyes_closed:0,dozing:0,unknown:0};
@@ -293,7 +300,7 @@ async function fetchFocusRate(attIds){
 async function fetchFocusRateForRange(start,end){
   const rows=await sb(`attendance?student_id=eq.${STATE.id}&checkin_at=lt.${end}&or=(checkout_at.is.null,checkout_at.gte.${start})&select=id`);
   const ids=(Array.isArray(rows)?rows:[]).map(r=>r.id);
-  return fetchFocusRate(ids);
+  return fetchFocusRate(ids,start,end);
 }
 // 학부모가 숫자만 보고 바로 "좋아졌는지 나빠졌는지" 느낄 수 있게,
 // 퍼센트 대신 지난 기간과 비교한 한 줄 문장으로 보여줍니다.
@@ -423,7 +430,7 @@ async function renderDaily(){
   const att=await fetchAttWithSegments(`attendance?student_id=eq.${STATE.id}&checkin_at=lt.${end}&or=(checkout_at.is.null,checkout_at.gte.${start})&select=id,checkin_at,checkout_at,status,seat_number,seats(seat_number,label)&order=checkin_at.asc`,new Date(start),new Date(end));
   const seg=sumSeg(att);
   const flagNote=awayFlagNote(seg);
-  const focusInfo=await fetchFocusRate(att.map(a=>a.id));
+  const focusInfo=await fetchFocusRate(att.map(a=>a.id),start,end);
   if(focusInfo)LAST_FOCUS_INFO=focusInfo;
   const prevDay=addDays(d,-1);
   const prevFocusInfo=focusInfo?await fetchFocusRateForRange(`${dk(prevDay)}T00:00:00`,start):null;
@@ -516,7 +523,7 @@ async function renderWeekly(){
     return (e.type==='school-exam'||e.type==='suneung')&&ed>=nextWeekStart&&ed<=nextWeekEnd;
   }).sort((a,b)=>a.date.localeCompare(b.date));
 
-  const focusInfo=await fetchFocusRate(att.map(a=>a.id));
+  const focusInfo=await fetchFocusRate(att.map(a=>a.id),start,end);
   if(focusInfo)LAST_FOCUS_INFO=focusInfo;
   const prevMon=addDays(mon,-7);
   const prevFocusInfo=focusInfo?await fetchFocusRateForRange(`${dk(prevMon)}T00:00:00`,start):null;
@@ -596,7 +603,7 @@ async function renderMonthly(){
   }
   const maxW=Math.max(1,...weeks.map(w=>w.min));
 
-  const focusInfo=await fetchFocusRate(att.map(a=>a.id));
+  const focusInfo=await fetchFocusRate(att.map(a=>a.id),start,end);
   if(focusInfo)LAST_FOCUS_INFO=focusInfo;
   const prevFirst=new Date(y,m-1,1);
   const prevFocusInfo=focusInfo?await fetchFocusRateForRange(`${dk(prevFirst)}T00:00:00`,start):null;
