@@ -1611,6 +1611,11 @@ function startSeatResize(e,node,seat){
       return;
     }
     seat.width=w;seat.height=h;
+    // 일반 좌석 크기를 조정하면 그 크기를 기억해뒀다가, 이 독서실에
+    // 새 좌석을 추가할 때 매번 다시 맞추지 않아도 되게 그대로 적용합니다.
+    if(seat.kind!=='block'){
+      try{localStorage.setItem('seatDefaultSize:'+curSeatRoomId,JSON.stringify({w,h}));}catch(e){}
+    }
   }
   document.addEventListener('mousemove',move);document.addEventListener('mouseup',up);
   document.addEventListener('touchmove',move,{passive:false});document.addEventListener('touchend',up);
@@ -1766,7 +1771,12 @@ async function deleteSeat(id){
 async function addSeat(){
   if(!curSeatRoomId){showToast('독서실을 먼저 선택하세요');return;}
   const maxNum=SEATS.reduce((m,s)=>Math.max(m,s.seat_number),0);
-  await sb('seats',{method:'POST',body:JSON.stringify({room_id:curSeatRoomId,seat_number:maxNum+1,x:8+Math.random()*15,y:8+Math.random()*15,width:9,height:9,status:'empty'})});
+  let w=9,h=9;
+  try{
+    const saved=JSON.parse(localStorage.getItem('seatDefaultSize:'+curSeatRoomId));
+    if(saved&&saved.w&&saved.h){w=saved.w;h=saved.h;}
+  }catch(e){}
+  await sb('seats',{method:'POST',body:JSON.stringify({room_id:curSeatRoomId,seat_number:maxNum+1,x:8+Math.random()*15,y:8+Math.random()*15,width:w,height:h,status:'empty'})});
   if(!seatEditMode){seatEditMode=true;}
   refreshSeatData();
 }
