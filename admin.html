@@ -2544,7 +2544,8 @@ function ensureChannel(roomId){
   return lvSubscribePromise;
 }
 
-async function connectSeat(roomId,studentId){
+async function connectSeat(roomId,studentId,retryCount){
+  retryCount=retryCount||0;
   const [channel,iceServers]=await Promise.all([ensureChannel(roomId),getLvIceServers()]);
   const pc=new RTCPeerConnection({iceServers});
   lvPeers.set(studentId,pc);
@@ -2565,26 +2566,52 @@ async function connectSeat(roomId,studentId){
   pc.onconnectionstatechange=()=>{
     if(pc.connectionState==='connected'){
       clearInterval(pc._lvPoll);
-    } else if(['failed','disconnected','closed'].includes(pc.connectionState)){
+      clearTimeout(pc._lvReconnectTimer);
+    } else if(pc.connectionState==='disconnected'){
+      // Wi-Fi 신호가 잠깐 흔들리는 정도는 몇 초 안에 스스로 복구되는 경우가
+      // 많아서, 바로 끊긴 걸로 처리하지 않고 잠깐 기다려봅니다. 그 안에
+      // 복구가 안 되면 그때 새로 연결을 맺습니다 — 관리자가 매번 새로고침
+      // 해줘야만 다시 붙는 문제("켜놓기만 하면 계속 붙어있어야 하는데
+      // 됐다 안됐다 함")를 해결하기 위한 자동 재연결입니다.
       clearInterval(pc._lvPoll);
       const st=document.getElementById('lv-status-'+studentId);
-      if(st){st.textContent='연결 끊김';st.classList.remove('connected');}
+      if(st){st.textContent='연결 불안정...';st.classList.remove('connected');}
+      clearTimeout(pc._lvReconnectTimer);
+      pc._lvReconnectTimer=setTimeout(()=>{
+        if(lvPeers.get(studentId)===pc&&pc.connectionState!=='connected')scheduleLvReconnect(roomId,studentId,pc,retryCount);
+      },6000);
+    } else if(['failed','closed'].includes(pc.connectionState)){
+      clearInterval(pc._lvPoll);
+      clearTimeout(pc._lvReconnectTimer);
+      scheduleLvReconnect(roomId,studentId,pc,retryCount);
     }
   };
-  // 15초 안에 연결이 안 되면 "연결 중..."에 계속 멈춰있지 않고 실패로 표시
+  // 15초 안에 연결이 안 되면 "연결 중..."에 계속 멈춰있지 않고 자동으로
+  // 다시 시도합니다 (관리자가 직접 새로고침해야만 붙는 걸 방지).
   const pollStart=Date.now();
   pc._lvPoll=setInterval(()=>{
     const st=document.getElementById('lv-status-'+studentId);
     if(!st||pc.connectionState==='connected'){clearInterval(pc._lvPoll);return;}
     if(Date.now()-pollStart>=15000){
       clearInterval(pc._lvPoll);
-      st.textContent='연결 실패 (네트워크 확인)';
-      st.classList.remove('connected');
+      st.textContent='연결 실패 — 재시도 중...';
+      scheduleLvReconnect(roomId,studentId,pc,retryCount);
     }
   },1000);
   const offer=await pc.createOffer();
   await pc.setLocalDescription(offer);
   channel.send({type:'broadcast',event:'watch-request',payload:{targetStudentId:studentId,fromClientId:lvClientId,offer}});
+}
+function scheduleLvReconnect(roomId,studentId,oldPc,retryCount){
+  if(lvPeers.get(studentId)!==oldPc)return; // 이미 다른 연결로 교체됐으면 중복 재연결하지 않음
+  oldPc.close();
+  lvPeers.delete(studentId);
+  const nextRetry=Math.min((retryCount||0)+1,5);
+  const delay=Math.min(2000*nextRetry,10000);
+  setTimeout(()=>{
+    // 그 사이 학생이 퇴실하는 등으로 목록에서 빠졌으면 재연결하지 않음
+    if(lvSeats.some(s=>s.student_id===studentId))connectSeat(roomId,studentId,nextRetry);
+  },delay);
 }
 window.lvConnectSeats=(roomId,studentIds)=>{
   studentIds.forEach(id=>connectSeat(roomId,id));
@@ -2593,6 +2620,7 @@ window.lvDisconnectAll=()=>{
   lvPeers.forEach((pc,studentId)=>{
     if(lvChannel)lvChannel.send({type:'broadcast',event:'stop-watch',payload:{targetStudentId:studentId,fromClientId:lvClientId}});
     clearInterval(pc._lvPoll);
+    clearTimeout(pc._lvReconnectTimer);
     pc.close();
   });
   lvPeers.clear();
