@@ -670,7 +670,11 @@ function fallbackComment(type,stats){
 /* ── 공유 ── */
 const TYPE_LABEL={daily:'일간',weekly:'주간',monthly:'월간'};
 function buildShareUrl(type){
-  const params=new URLSearchParams({id:STATE.id,type,date:dk(STATE.date)});
+  // date를 넣지 않아야, 이 링크를 학부모가 나중에 다시 열거나 새로고침할
+  // 때마다 그날 기준 "오늘"(주간/월간이면 "이번 주"/"이번 달")로 항상
+  // 최신 상태를 보여줘요. date를 넣으면 관리자가 공유 버튼을 누른
+  // 순간의 날짜에 링크가 그대로 고정돼버려요.
+  const params=new URLSearchParams({id:STATE.id,type});
   return location.origin+location.pathname+'?'+params.toString();
 }
 function copyLink(type){
