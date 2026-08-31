@@ -1351,7 +1351,7 @@ window.refreshSeatData=refreshSeatData;
    한 번에 너무 많은 영상을 동시에 받으면 관리자 브라우저가 버벅이므로,
    한 페이지에 최대 LV_PAGE_SIZE명만 동시에 연결하고 페이지를 넘기면
    이전 페이지 연결은 바로 끊고 새 페이지만 새로 연결합니다. */
-const LV_PAGE_SIZE=8;
+const LV_PAGE_SIZE=12;
 let lvSeats=[],lvPage=0;
 function onLiveViewRoomChange(){
   curSeatRoomId=document.getElementById('lv-room-select').value;
