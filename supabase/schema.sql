@@ -269,3 +269,25 @@ end $$;
 
 -- ── 15. 좌석 배치도 회전 (제외구역 등을 도면 각도에 맞게 돌리기) ──
 alter table seats add column if not exists rotation numeric not null default 0;
+
+-- ── 16. 제외구역이 좌석 번호를 차지하던 문제를 기존 데이터에도 적용 ──
+-- 제외구역(kind='block')이 좌석(kind='seat')과 번호를 같이 나눠 쓰다 보니
+-- 제외구역이 하나 생길 때마다 실제 좌석 번호에 구멍이 생겼습니다.
+-- 이제부터 좌석은 방마다 1,2,3...으로 구멍 없이, 제외구역은 0 이하
+-- 번호로 따로 관리합니다. unique(room_id, seat_number) 제약 때문에
+-- 먼저 전부 큰 값으로 옮겨서 충돌을 피한 뒤 다시 정리합니다.
+update seats set seat_number = seat_number + 1000000;
+
+with ranked_seats as (
+  select id, row_number() over (partition by room_id order by seat_number) as rn
+  from seats where kind = 'seat'
+)
+update seats s set seat_number = ranked_seats.rn
+from ranked_seats where s.id = ranked_seats.id;
+
+with ranked_blocks as (
+  select id, row_number() over (partition by room_id order by seat_number) as rn
+  from seats where kind = 'block'
+)
+update seats s set seat_number = -ranked_blocks.rn
+from ranked_blocks where s.id = ranked_blocks.id;
