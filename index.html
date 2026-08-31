@@ -2202,7 +2202,15 @@ let focusPoller=null,focusLandmarker=null,focusPoseLandmarker=null,focusVideo=nu
 let sharedCameraStream=null,sharedCameraRefs=0;
 async function acquireCamera(){
   if(sharedCameraStream){sharedCameraRefs++;return sharedCameraStream;}
-  sharedCameraStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'user'},audio:false});
+  // 해상도를 지정하지 않으면 폰 카메라가 기본으로 1080p 이상을 잡아서,
+  // 실시간 공부모습(작은 썸네일로만 보여줌)이나 집중도 분석(얼굴 인식만
+  // 하면 충분)엔 낭비되는 화질이에요. 특히 여러 명을 동시에 관리자
+  // 화면으로 중계할 때 이 낭비가 그대로 TURN 중계 트래픽과 관리자 기기
+  // 부하로 이어져서, 화질을 작게 잡아 서버·네트워크 부담을 크게 줄입니다.
+  sharedCameraStream=await navigator.mediaDevices.getUserMedia({
+    video:{facingMode:'user',width:{ideal:480},height:{ideal:360},frameRate:{ideal:15,max:20}},
+    audio:false
+  });
   sharedCameraRefs=1;
   return sharedCameraStream;
 }
@@ -2548,6 +2556,19 @@ async function answerWatchRequest(payload){
   lvIceQueue=[];
   const answer=await lvPc.createAnswer();
   await lvPc.setLocalDescription(answer);
+  // 카메라 해상도를 낮춰도 브라우저가 순간적으로 화질을 높이면 대역폭이
+  // 다시 튈 수 있어서, 전송 비트레이트 자체에 상한을 걸어둡니다 — 여러
+  // 명을 동시에 중계할 때 네트워크/TURN 부담을 예측 가능하게 만들어서
+  // 연결이 끊기는 걸 줄이기 위한 안전장치입니다.
+  try{
+    const sender=lvPc.getSenders().find(s=>s.track&&s.track.kind==='video');
+    if(sender){
+      const params=sender.getParameters();
+      if(!params.encodings||!params.encodings.length)params.encodings=[{}];
+      params.encodings[0].maxBitrate=250000;
+      await sender.setParameters(params);
+    }
+  }catch(e){console.warn('비트레이트 제한 설정 실패',e);}
   lvChannel.send({type:'broadcast',event:'watch-answer',payload:{toClientId:payload.fromClientId,fromStudentId:window.S.id,answer}});
 }
 function stopLiveView(){
