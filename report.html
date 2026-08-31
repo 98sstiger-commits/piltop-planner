@@ -364,7 +364,12 @@ const STATE={
 let STUDENT=null,ROOM=null;
 
 function syncUrl(){
-  const params=new URLSearchParams({id:STATE.id,type:STATE.type,date:dk(STATE.date)});
+  // 탭(일간/주간/월간)이나 날짜를 옮겨 다녀도 주소창에는 반영하지
+  // 않습니다 — 여기 반영해두면 새로고침했을 때 그 주소를 그대로 다시
+  // 불러오면서 "새로고침하면 오늘 일간으로 돌아온다"는 기대와 달리
+  // 마지막으로 보고 있던 탭/날짜에 계속 머물게 돼서, 항상 id(+admin)만
+  // 남겨둡니다. 새로고침하면 항상 오늘 날짜의 일간으로 시작해요.
+  const params=new URLSearchParams({id:STATE.id});
   if(isAdmin)params.set('admin','1');
   history.replaceState(null,'',location.pathname+'?'+params);
 }
