@@ -2570,9 +2570,7 @@ async function connectSeat(roomId,studentId,retryCount){
     } else if(pc.connectionState==='disconnected'){
       // Wi-Fi 신호가 잠깐 흔들리는 정도는 몇 초 안에 스스로 복구되는 경우가
       // 많아서, 바로 끊긴 걸로 처리하지 않고 잠깐 기다려봅니다. 그 안에
-      // 복구가 안 되면 그때 새로 연결을 맺습니다 — 관리자가 매번 새로고침
-      // 해줘야만 다시 붙는 문제("켜놓기만 하면 계속 붙어있어야 하는데
-      // 됐다 안됐다 함")를 해결하기 위한 자동 재연결입니다.
+      // 복구가 안 되면 그때 새로 연결을 맺습니다.
       clearInterval(pc._lvPoll);
       const st=document.getElementById('lv-status-'+studentId);
       if(st){st.textContent='연결 불안정...';st.classList.remove('connected');}
@@ -2586,15 +2584,13 @@ async function connectSeat(roomId,studentId,retryCount){
       scheduleLvReconnect(roomId,studentId,pc,retryCount);
     }
   };
-  // 15초 안에 연결이 안 되면 "연결 중..."에 계속 멈춰있지 않고 자동으로
-  // 다시 시도합니다 (관리자가 직접 새로고침해야만 붙는 걸 방지).
+  // 15초 안에 연결이 안 되면 "연결 중..."에 계속 멈춰있지 않고 재시도합니다.
   const pollStart=Date.now();
   pc._lvPoll=setInterval(()=>{
     const st=document.getElementById('lv-status-'+studentId);
     if(!st||pc.connectionState==='connected'){clearInterval(pc._lvPoll);return;}
     if(Date.now()-pollStart>=15000){
       clearInterval(pc._lvPoll);
-      st.textContent='연결 실패 — 재시도 중...';
       scheduleLvReconnect(roomId,studentId,pc,retryCount);
     }
   },1000);
@@ -2602,16 +2598,28 @@ async function connectSeat(roomId,studentId,retryCount){
   await pc.setLocalDescription(offer);
   channel.send({type:'broadcast',event:'watch-request',payload:{targetStudentId:studentId,fromClientId:lvClientId,offer}});
 }
+// 연결이 안 되는 근본 원인(예: 방화벽/네트워크)이 있으면 아무리 재시도해도
+// 계속 실패하는데, 그럴 때 짧은 간격으로 계속 재연결을 시도하면 카메라를
+// 껐다 켰다 반복하게 되어 오히려 상태를 더 불안정하게 만듭니다. 그래서
+// 재시도 간격을 여유 있게 두고(5초→15초→30초), 3번 실패하면 더 이상
+// 자동으로 반복하지 않고 관리자가 직접 새로고침하도록 안내합니다.
+const LV_RETRY_DELAYS=[5000,15000,30000];
 function scheduleLvReconnect(roomId,studentId,oldPc,retryCount){
   if(lvPeers.get(studentId)!==oldPc)return; // 이미 다른 연결로 교체됐으면 중복 재연결하지 않음
   oldPc.close();
   lvPeers.delete(studentId);
-  const nextRetry=Math.min((retryCount||0)+1,5);
-  const delay=Math.min(2000*nextRetry,10000);
+  retryCount=retryCount||0;
+  if(retryCount>=LV_RETRY_DELAYS.length){
+    const st=document.getElementById('lv-status-'+studentId);
+    if(st){st.textContent='연결 실패 — 새로고침 해주세요';st.classList.remove('connected');}
+    return;
+  }
+  const st=document.getElementById('lv-status-'+studentId);
+  if(st){st.textContent='재연결 대기 중...';st.classList.remove('connected');}
   setTimeout(()=>{
     // 그 사이 학생이 퇴실하는 등으로 목록에서 빠졌으면 재연결하지 않음
-    if(lvSeats.some(s=>s.student_id===studentId))connectSeat(roomId,studentId,nextRetry);
-  },delay);
+    if(lvSeats.some(s=>s.student_id===studentId))connectSeat(roomId,studentId,retryCount+1);
+  },LV_RETRY_DELAYS[retryCount]);
 }
 window.lvConnectSeats=(roomId,studentIds)=>{
   studentIds.forEach(id=>connectSeat(roomId,id));
