@@ -1478,6 +1478,7 @@ function renderSeatMap(){
     if(selectedSeats.has(s.id))node.classList.add('selected');
     node.dataset.seatId=s.id;
     node.style.left=s.x+'%';node.style.top=s.y+'%';node.style.width=s.width+'%';node.style.height=s.height+'%';
+    if(isBlock&&s.rotation)node.style.transform='rotate('+s.rotation+'deg)';
     const nameHtml=occStu?`<span class="sn-name">${occStu.name}</span>`
       :assignedStu?`<span class="sn-name">${assignedStu.name}</span>`
       :(s.label?`<span class="sn-name">${s.label}</span>`:'');
@@ -1662,7 +1663,7 @@ function openSeatPop(e,seat){
   pop.className='seat-pop';
   const cx=e.clientX||window.innerWidth/2,cy=e.clientY||window.innerHeight/2;
   pop.style.left=Math.min(cx,window.innerWidth-220)+'px';
-  pop.style.top=Math.min(cy,window.innerHeight-(isBlock?170:295+(assignedMode?60:0)))+'px';
+  pop.style.top=Math.min(cy,window.innerHeight-(isBlock?210:295+(assignedMode?60:0)))+'px';
 
   // 공부중/학원수업중/외출중은 학생의 실제 체크인 상태를 나타내는 값이라,
   // 체크인 기록이 없는(비어있는) 좌석에는 애초에 성립하지 않는 상태입니다.
@@ -1692,7 +1693,8 @@ function openSeatPop(e,seat){
     <div class="seat-pop-field">
       <input type="text" id="seat-pop-label-input" placeholder="구역 이름 (예: 통로)" value="${(seat.label||'').replace(/"/g,'&quot;')}">
       <button class="seat-pop-save-btn" id="seat-pop-save-btn">저장</button>
-    </div>`:'';
+    </div>
+    <button data-act="rotate">↻ 45도 회전 (${seat.rotation||0}°)</button>`:'';
 
   const numberEditHtml=!isBlock?`
     <div class="seat-pop-sub">좌석 번호</div>
@@ -1742,6 +1744,8 @@ function openSeatPop(e,seat){
     };
   }
   pop.querySelector('[data-act="delete"]').onclick=()=>{closeSeatPop();deleteSeat(seat.id);};
+  const rotateBtn=pop.querySelector('[data-act="rotate"]');
+  if(rotateBtn)rotateBtn.onclick=()=>{closeSeatPop();rotateZone(seat);};
   const assignSel=pop.querySelector('#seat-pop-assign-select');
   if(assignSel)assignSel.onchange=()=>{closeSeatPop();assignSeatStudent(seat.id,assignSel.value);};
   setTimeout(()=>document.addEventListener('click',closeSeatPop,{once:true}),0);
@@ -1992,6 +1996,13 @@ async function addZone(){
   selectedSeats=new Set([result[0].id]);
   refreshSeatData();
   showToast('제외구역을 추가했어요 — 드래그로 위치를, 우측 하단 손잡이로 크기를 조정해보세요');
+}
+async function rotateZone(seat){
+  const next=((seat.rotation||0)+45)%360;
+  const result=await sb(`seats?id=eq.${seat.id}`,{method:'PATCH',body:JSON.stringify({rotation:next})});
+  if(!Array.isArray(result)||!result.length){showToast('회전 저장에 실패했어요 — Supabase에 최신 SQL을 실행했는지 확인해주세요');return;}
+  seat.rotation=next;
+  refreshSeatData();
 }
 
 /* ── 격자로 좌석 일괄 생성 ──

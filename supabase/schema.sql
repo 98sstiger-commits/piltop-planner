@@ -266,3 +266,6 @@ begin
     check (reason in ('focused','no_face','head_turned','eyes_closed','dozing'));
 exception when others then null;
 end $$;
+
+-- ── 15. 좌석 배치도 회전 (제외구역 등을 도면 각도에 맞게 돌리기) ──
+alter table seats add column if not exists rotation numeric not null default 0;
