@@ -485,6 +485,8 @@ body{font-family:'Pretendard','Noto Sans KR',sans-serif;color:var(--ink);min-hei
       <div class="seat-toolbar-right">
         <button class="mini-btn" id="seat-select-toggle" onclick="toggleSelectMode()">🖱️ 선택 모드</button>
         <button class="mini-btn" id="seat-select-clear" onclick="clearSelection()" style="display:none">선택 해제</button>
+        <button class="mini-btn" id="seat-select-shrink" onclick="resizeSelectedSeats(-1)" style="display:none">➖ 크기</button>
+        <button class="mini-btn" id="seat-select-grow" onclick="resizeSelectedSeats(1)" style="display:none">➕ 크기</button>
         <button class="mini-btn danger" id="seat-select-delete" onclick="deleteSelectedSeats()" style="display:none">선택 삭제</button>
         <div class="seat-toolbar-divider"></div>
         <button class="mini-btn" onclick="addZone()">🚫 제외구역 추가</button>
@@ -1439,6 +1441,8 @@ function renderSeatMap(){
   document.getElementById('seat-select-toggle').classList.toggle('pri',selectMode);
   document.getElementById('seat-select-toggle').textContent=selectMode?'✓ 선택 모드 끄기':'🖱️ 선택 모드';
   document.getElementById('seat-select-clear').style.display=selectedSeats.size?'':'none';
+  document.getElementById('seat-select-shrink').style.display=selectedSeats.size?'':'none';
+  document.getElementById('seat-select-grow').style.display=selectedSeats.size?'':'none';
   document.getElementById('seat-select-delete').style.display=selectedSeats.size?'':'none';
   document.getElementById('seat-select-delete').textContent=`선택 삭제 (${selectedSeats.size})`;
   const occ={};ACTIVE_ATT.forEach(a=>{if(a.seat_id)occ[a.seat_id]={name:a.planner_students?.name||'학생',status:a.status||'studying'};});
@@ -1804,6 +1808,29 @@ async function deleteSelectedSeats(){
   await sb(`seats?id=in.(${ids.join(',')})`,{method:'DELETE'});
   selectedSeats.clear();
   refreshSeatData();
+}
+async function resizeSelectedSeats(delta){
+  if(!selectedSeats.size)return;
+  const targets=SEATS.filter(s=>selectedSeats.has(s.id));
+  const updates=targets.map(s=>{
+    const maxSize=s.kind==='block'?96:40;
+    return {seat:s,w:Math.max(4,Math.min(maxSize,s.width+delta)),h:Math.max(4,Math.min(maxSize,s.height+delta))};
+  });
+  const results=await Promise.all(updates.map(u=>sb(`seats?id=eq.${u.seat.id}`,{method:'PATCH',body:JSON.stringify({width:u.w,height:u.h})})));
+  let lastNormalSize=null;
+  updates.forEach((u,i)=>{
+    if(!Array.isArray(results[i])||!results[i].length)return;
+    u.seat.width=u.w;u.seat.height=u.h;
+    if(u.seat.kind!=='block')lastNormalSize={w:u.w,h:u.h};
+  });
+  // 좌석 크기를 조정하면 그 크기를 기억해뒀다가, 이 독서실에 새 좌석을
+  // 추가할 때 매번 다시 맞추지 않아도 되게 그대로 적용합니다.
+  if(lastNormalSize){
+    try{localStorage.setItem('seatDefaultSize:'+curSeatRoomId,JSON.stringify(lastNormalSize));}catch(e){}
+  }
+  renderSeatMap();
+  const failCount=results.filter(r=>!Array.isArray(r)||!r.length).length;
+  if(failCount)showToast(`${failCount}개 크기 변경이 저장되지 않았어요 — 다시 시도해주세요`);
 }
 function handleWrapMouseDown(e){
   if(regionSelectMode){handleRegionSelectDrag(e);return;}
