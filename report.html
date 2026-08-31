@@ -53,6 +53,16 @@ button{cursor:pointer;border:none;background:none;font-family:inherit}
 .stat-num{font-size:19px;font-weight:800;color:var(--g);letter-spacing:-.3px;white-space:nowrap}
 .stat-lbl{font-size:11px;color:var(--ink2);margin-top:4px}
 
+/* 집중도 지난 기간 비교 배너 — 숫자 하나보다 "좋아졌다/비슷하다"는
+   느낌을 한눈에 알 수 있게 문장으로 보여줍니다. */
+.focus-compare{margin-top:10px;padding:12px 14px;border-radius:12px;font-size:14px;font-weight:700;display:flex;align-items:center;gap:7px;line-height:1.45;cursor:pointer}
+.focus-compare .fc-arrow{font-size:16px}
+.focus-compare .fc-now{font-weight:600;opacity:.75}
+.focus-compare.up{background:var(--gs);color:var(--g)}
+.focus-compare.down{background:#F3EADA;color:var(--gold2)}
+.focus-compare.flat{background:var(--bg);color:var(--ink2)}
+.focus-compare.none{background:var(--bg);color:var(--ink3);font-weight:600;font-size:12.5px}
+
 /* progress */
 .prog-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
 .prog-pct{font-size:20px;font-weight:800;color:var(--g)}
@@ -278,6 +288,23 @@ async function fetchFocusRate(attIds){
   });
   return{rate:Math.round(counts.focused/total*100),total,counts};
 }
+// 지난 기간과 비교해서 보여주기 위해, 같은 방식으로 이전 기간의
+// 집중도만 가볍게 다시 계산합니다 (출석 id만 select).
+async function fetchFocusRateForRange(start,end){
+  const rows=await sb(`attendance?student_id=eq.${STATE.id}&checkin_at=lt.${end}&or=(checkout_at.is.null,checkout_at.gte.${start})&select=id`);
+  const ids=(Array.isArray(rows)?rows:[]).map(r=>r.id);
+  return fetchFocusRate(ids);
+}
+// 학부모가 숫자만 보고 바로 "좋아졌는지 나빠졌는지" 느낄 수 있게,
+// 퍼센트 대신 지난 기간과 비교한 한 줄 문장으로 보여줍니다.
+function renderFocusCompare(cur,prev,prevLabel){
+  if(!cur)return '';
+  if(!prev)return `<div class="focus-compare none">집중도 ${cur.rate}% — ${prevLabel} 기록이 없어서 아직 비교할 수 없어요</div>`;
+  const diff=cur.rate-prev.rate;
+  if(Math.abs(diff)<3)return `<div class="focus-compare flat">${prevLabel}와 집중도가 비슷해요 (${cur.rate}%)</div>`;
+  const up=diff>0;
+  return `<div class="focus-compare ${up?'up':'down'}"><span class="fc-arrow">${up?'▲':'▼'}</span> ${prevLabel}보다 집중도가 <b>${Math.abs(diff)}%p</b> ${up?'올랐어요':'내려갔어요'} <span class="fc-now">(${cur.rate}%)</span></div>`;
+}
 const FOCUS_REASON_LABEL={
   focused:'집중함',
   no_face:'화면에 안 보임 (자리 이탈 추정)',
@@ -398,6 +425,8 @@ async function renderDaily(){
   const flagNote=awayFlagNote(seg);
   const focusInfo=await fetchFocusRate(att.map(a=>a.id));
   if(focusInfo)LAST_FOCUS_INFO=focusInfo;
+  const prevDay=addDays(d,-1);
+  const prevFocusInfo=focusInfo?await fetchFocusRateForRange(`${dk(prevDay)}T00:00:00`,start):null;
 
   let html=`<div class="card">
     <div class="card-ttl">📊 오늘 요약</div>
@@ -407,6 +436,7 @@ async function renderDaily(){
       <div class="stat-cell"><div class="stat-num">${fmtMin(seg.studying)}</div><div class="stat-lbl">독서실 순공시간</div></div>
       ${focusInfo?`<div class="stat-cell" style="cursor:pointer" onclick="showFocusDetail()"><div class="stat-num">${focusInfo.rate}%</div><div class="stat-lbl">집중도 <span style="opacity:.55">ⓘ</span></div></div>`:''}
     </div>
+    ${focusInfo?`<div onclick="showFocusDetail()">${renderFocusCompare(focusInfo,prevFocusInfo,'어제')}</div>`:''}
   </div>
 
   <div class="card">
@@ -488,6 +518,8 @@ async function renderWeekly(){
 
   const focusInfo=await fetchFocusRate(att.map(a=>a.id));
   if(focusInfo)LAST_FOCUS_INFO=focusInfo;
+  const prevMon=addDays(mon,-7);
+  const prevFocusInfo=focusInfo?await fetchFocusRateForRange(`${dk(prevMon)}T00:00:00`,start):null;
   const stats={attendanceDays:attDays.size,totalStudyMinutes:Math.round(attMin),awayMinutes:Math.round(seg.away),timelineItems:itemCnt,timelineDone:doneCnt,topSubjects:Object.entries(subjMin).sort((a,b)=>b[1]-a[1]).slice(0,2).map(([k,m])=>({subject:CATS.find(c=>c.k===k)?.l,minutes:Math.round(m)}))};
 
   let html=`<div class="card">
@@ -498,6 +530,7 @@ async function renderWeekly(){
       <div class="stat-cell"><div class="stat-num">${itemCnt?Math.round(doneCnt/itemCnt*100):0}%</div><div class="stat-lbl">일정 완료율</div></div>
       ${focusInfo?`<div class="stat-cell" style="cursor:pointer" onclick="showFocusDetail()"><div class="stat-num">${focusInfo.rate}%</div><div class="stat-lbl">집중도 <span style="opacity:.55">ⓘ</span></div></div>`:''}
     </div>
+    ${focusInfo?`<div onclick="showFocusDetail()">${renderFocusCompare(focusInfo,prevFocusInfo,'지난주')}</div>`:''}
   </div>
 
   ${(seg.away>=1||seg.in_class>=1||flagNote)?`<div class="card">
@@ -565,6 +598,8 @@ async function renderMonthly(){
 
   const focusInfo=await fetchFocusRate(att.map(a=>a.id));
   if(focusInfo)LAST_FOCUS_INFO=focusInfo;
+  const prevFirst=new Date(y,m-1,1);
+  const prevFocusInfo=focusInfo?await fetchFocusRateForRange(`${dk(prevFirst)}T00:00:00`,start):null;
   const stats={attendanceDays:attDays.size,attendanceRate:attRate,totalStudyMinutes:Math.round(totalMin),awayMinutes:Math.round(seg.away),weeklyTrend:weeks.map(w=>Math.round(w.min))};
 
   let html=`<div class="card">
@@ -575,6 +610,7 @@ async function renderMonthly(){
       <div class="stat-cell"><div class="stat-num">${fmtMin(totalMin)}</div><div class="stat-lbl">누적 순공시간</div></div>
       ${focusInfo?`<div class="stat-cell" style="cursor:pointer" onclick="showFocusDetail()"><div class="stat-num">${focusInfo.rate}%</div><div class="stat-lbl">집중도 <span style="opacity:.55">ⓘ</span></div></div>`:''}
     </div>
+    ${focusInfo?`<div onclick="showFocusDetail()">${renderFocusCompare(focusInfo,prevFocusInfo,'지난달')}</div>`:''}
   </div>
 
   <div class="card">
