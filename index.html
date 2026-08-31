@@ -2524,15 +2524,21 @@ async function initLiveViewFeature(){
   lvChannel.on('broadcast',{event:'stop-watch'},({payload})=>{
     if(payload.targetStudentId===S.id)stopLiveView();
   });
-  lvChannel.subscribe();
+  // 임시 진단용: 폰에서 개발자도구를 열기 어려워서, 신호가 어디까지
+  // 왔는지 화면에 짧게 표시해서 원인을 좁혀봅니다.
+  lvChannel.subscribe((status)=>{
+    if(status==='SUBSCRIBED')console.log('[실시간 공부모습] 신호 채널 연결됨');
+  });
 }
 async function answerWatchRequest(payload){
+  toast('📡 관리자가 화면 연결을 요청했어요');
   stopLiveView(); // 이전에 남아있던 연결이 있으면 먼저 정리
   lvIceQueue=[];
   let stream;
   try{ stream=await window.acquireCamera(); lvCameraHeld=true; }
   catch(e){
     console.warn('카메라 권한이 없어 실시간 공부모습에 응답할 수 없습니다',e);
+    toast('❌ 카메라를 열 수 없어요 — 권한을 확인해주세요');
     if(lvChannel)lvChannel.send({type:'broadcast',event:'camera-denied',payload:{toClientId:payload.fromClientId,fromStudentId:window.S.id}});
     return;
   }
@@ -2542,6 +2548,11 @@ async function answerWatchRequest(payload){
   lvPc.onicecandidate=(e)=>{
     if(e.candidate)lvChannel.send({type:'broadcast',event:'ice-candidate',payload:{to:payload.fromClientId,from:window.S.id,candidate:e.candidate}});
   };
+  lvPc.onconnectionstatechange=()=>{
+    console.log('[실시간 공부모습] 연결 상태:',lvPc.connectionState);
+    if(lvPc.connectionState==='connected')toast('✅ 관리자 화면과 연결됐어요');
+    else if(['failed','disconnected'].includes(lvPc.connectionState))toast('⚠️ 관리자 화면 연결이 끊겼어요: '+lvPc.connectionState);
+  };
   await lvPc.setRemoteDescription(payload.offer);
   // offer가 설정되기 전에 먼저 도착해서 버려지던 연결 후보들을 여기서 반영
   lvIceQueue.forEach(c=>lvPc.addIceCandidate(c).catch(()=>{}));
@@ -2549,6 +2560,7 @@ async function answerWatchRequest(payload){
   const answer=await lvPc.createAnswer();
   await lvPc.setLocalDescription(answer);
   lvChannel.send({type:'broadcast',event:'watch-answer',payload:{toClientId:payload.fromClientId,fromStudentId:window.S.id,answer}});
+  toast('📤 응답을 보냈어요 — 연결 대기 중');
 }
 function stopLiveView(){
   if(lvPc){lvPc.close();lvPc=null;}
