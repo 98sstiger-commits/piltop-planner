@@ -19,8 +19,11 @@ button{cursor:pointer;border:none;background:none;font-family:inherit}
 
 /* ── 상단 학원명 바 ── */
 .topbar{background:var(--g);padding:16px 20px;text-align:center}
+.topbar-logo{max-height:32px;max-width:70%;margin:0 auto 8px;display:block}
 .topbar-name{color:#fff;font-family:'Playfair Display',serif;font-size:18px;letter-spacing:-.2px}
 .topbar-sub{color:rgba(255,255,255,.55);font-size:11px;margin-top:2px}
+.topbar-phones{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:10px}
+.topbar-phone{display:inline-flex;align-items:center;gap:4px;padding:6px 12px;border-radius:20px;background:rgba(255,255,255,.14);color:#fff;font-size:11px;font-weight:700;border:1px solid rgba(255,255,255,.2);white-space:nowrap}
 
 .wrap{max-width:520px;margin:0 auto;padding:18px 16px 110px}
 
@@ -159,6 +162,10 @@ button{cursor:pointer;border:none;background:none;font-family:inherit}
   <div class="topbar">
     <div class="topbar-name" id="tb-academy">학원</div>
     <div class="topbar-sub">학습 리포트</div>
+    <div class="topbar-phones">
+      <a class="topbar-phone" href="tel:0312741334">📞 중등관 031-274-1334</a>
+      <a class="topbar-phone" href="tel:0312751435">📞 고등관 031-275-1435</a>
+    </div>
   </div>
 
   <div class="wrap">
@@ -194,9 +201,6 @@ button{cursor:pointer;border:none;background:none;font-family:inherit}
     <button class="share-btn kakao" onclick="shareKakao()"><span class="ico">💬</span>카카오톡</button>
     <button class="share-btn sms" onclick="shareSms()"><span class="ico">📱</span>문자발송</button>
     <button class="share-btn" onclick="copyLink()"><span class="ico">🔗</span>링크복사</button>
-    <button class="share-btn" onclick="window.print()"><span class="ico">🖨️</span>인쇄/PDF</button>
-  </div>
-  <div class="sharebar" id="sharebar-print-only" style="display:none">
     <button class="share-btn" onclick="window.print()"><span class="ico">🖨️</span>인쇄/PDF</button>
   </div>
 </div>
@@ -408,10 +412,11 @@ async function boot(){
   document.getElementById('loading').style.display='none';
   document.getElementById('app').style.display='block';
   // 관리자가 admin.html [학생관리]의 "📊 리포트" 버튼으로 열었을 때만
-  // 카카오톡/문자발송/링크복사 버튼을 보여줍니다. 그 버튼으로 만든
+  // 카카오톡/문자발송/링크복사/인쇄 버튼을 보여줍니다. 그 버튼으로 만든
   // 공유 링크(buildShareUrl)에는 이 표시가 없어서, 학부모가 받은
-  // 링크를 열면 인쇄 버튼만 있는 깔끔한 화면이 보여요.
-  document.getElementById(isAdmin?'sharebar':'sharebar-print-only').style.display='flex';
+  // 링크를 열면 버튼 없이 리포트만 깔끔하게 보여요 — 인쇄 버튼도
+  // 학부모에게는 딱히 쓸 일이 없어서(지저분하기만 함) 뺐습니다.
+  if(isAdmin)document.getElementById('sharebar').style.display='flex';
   switchType(STATE.type,true);
   loadLiveStatus();
   setInterval(loadLiveStatus,30000);
