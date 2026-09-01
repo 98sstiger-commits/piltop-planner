@@ -2195,7 +2195,7 @@ async function openRankSheet(){
    출석 상태가 '공부중'일 때만 카메라를 켜고, 몇 초 간격으로 프레임 하나만
    태블릿 안에서 즉시 분석·폐기합니다 — 영상 자체는 저장·전송하지 않고
    "그 순간 집중/산만" 판정 결과 한 줄만 focus_log에 남깁니다. */
-let focusPoller=null,focusLandmarker=null,focusPoseLandmarker=null,focusVideo=null,focusLoopId=null,focusActive=false,focusAttId=null;
+let focusPoller=null,focusLandmarker=null,focusPoseLandmarker=null,focusVideo=null,focusLoopId=null,focusActive=false,focusAttId=null,focusPrevReliableFace=false;
 
 /* 집중도 분석과 실시간 공부모습(라이브뷰) 둘 다 카메라가 필요할 수 있어서,
    실제 getUserMedia는 한 번만 열고 참조 카운트로 공유합니다. */
@@ -2232,7 +2232,7 @@ async function checkFocusEligibility(){
   else if(!shouldRun&&focusActive)stopFocusTracking();
 }
 async function startFocusTracking(attendanceId){
-  focusActive=true;focusAttId=attendanceId;
+  focusActive=true;focusAttId=attendanceId;focusPrevReliableFace=false;
   let stream;
   try{
     stream=await acquireCamera();
@@ -2290,7 +2290,15 @@ function classifyFocus(result,ts){
   // 얼굴에서 완전히 다른 곳으로 돌려놨는데도 "집중함"이 섞여 나오던
   // 원인이 이 경로였습니다.
   const m=(result.faceLandmarks&&result.faceLandmarks.length)?result.facialTransformationMatrixes?.[0]?.data:null;
-  const hasReliableFace=!!(m&&m.length>=16);
+  const detectedNow=!!(m&&m.length>=16);
+  // 카메라를 얼굴에서 완전히 돌려놨는데도 아주 가끔(조명·각도 등으로)
+  // 한 프레임만 잘못 얼굴로 잡히는 경우가 있습니다. 8초 간격으로 찍는
+  // 딱 한 프레임의 우연한 오탐이 리포트에 그대로 반영되지 않도록,
+  // 연속 두 번(직전 샘플도 얼굴 인식됨) 확인됐을 때만 진짜 얼굴로
+  // 인정합니다 — 학생이 진짜 앉아서 계속 공부 중이면 8초 뒤에도 계속
+  // 얼굴이 잡히니 실제 감지에는 지장이 없습니다.
+  const hasReliableFace=detectedNow&&focusPrevReliableFace;
+  focusPrevReliableFace=detectedNow;
   if(!hasReliableFace){
     // 얼굴을 못 찾았다고 바로 "자리 이탈"로 보진 않습니다 — 고개를 푹
     // 숙이면(엎드려 졸 때 등) 얼굴 인식은 실패해도 몸(어깨)은 보일 수
@@ -2320,7 +2328,7 @@ function classifyFocus(result,ts){
 }
 function stopFocusTracking(){
   if(!focusActive)return;
-  focusActive=false;focusAttId=null;
+  focusActive=false;focusAttId=null;focusPrevReliableFace=false;
   if(focusLoopId)clearTimeout(focusLoopId);focusLoopId=null;
   releaseCamera();
   focusVideo=null;
