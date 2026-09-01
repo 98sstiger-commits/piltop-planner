@@ -1121,7 +1121,7 @@ let S={
 const AC={'piltop':'필탑학원'};
 const acName=AC[S.academy]||decodeURIComponent(S.academy||'필탑학원');
 document.getElementById('ob-ac').textContent=acName;
-document.getElementById('pl-brand').textContent=acName;
+// pl-brand는 학원명이 아니라 PILTOP 워드마크 자리라 여기서 덮어쓰지 않습니다.
 
 /* ── Supabase ── */
 async function sb(path,opts={}){
@@ -2519,7 +2519,7 @@ buildProg();
         S.academy=p.academy||'piltop';
         const acName2={'piltop':'필탑학원'}[S.academy]||S.academy;
         document.getElementById('ob-ac').textContent=acName2;
-        document.getElementById('pl-brand').textContent=acName2;
+        // pl-brand는 PILTOP 워드마크 자리라 여기서 덮어쓰지 않습니다.
       }
     }
   }
