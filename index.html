@@ -106,6 +106,10 @@ textarea{resize:none}
 
 /* 사이드바 (PC) + 상단바 (모바일) */
 .pl-nav{background:var(--g);display:flex;flex-direction:column;flex-shrink:0}
+.pl-nav-row1{display:contents}
+.pl-nav-mobicons{display:none}
+.tw-pil{color:#C9A8F0}
+.tw-top{color:rgba(255,255,255,.94)}
 
 @media(min-width:768px){
   #pl{flex-direction:row}
@@ -125,15 +129,17 @@ textarea{resize:none}
 
 @media(max-width:767px){
   input,textarea,select{font-size:16px !important}
-  .pl-nav{flex-direction:row;padding:8px 14px 0;align-items:center;justify-content:space-between;gap:8px}
-  .pl-nav-top{flex:1;min-width:0;padding-bottom:6px}
-  .pl-nav-brand{display:none}
+  .pl-nav{flex-direction:column;padding:8px 14px 6px;align-items:stretch;gap:0}
+  .pl-nav-row1{display:flex;align-items:center;justify-content:space-between;gap:8px}
+  .pl-nav-top{flex:1;min-width:0}
+  .pl-nav-brand{display:block;font-size:10px;font-weight:900;letter-spacing:-.2px;margin-bottom:1px}
   .pl-nav-student{font-size:11px;font-weight:500;color:rgba(255,255,255,.85);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .pl-nav-tabs{display:flex;flex-direction:row;gap:1px;flex-shrink:0}
   .pl-tab{padding:6px 10px;border-radius:6px;font-size:12px;font-weight:600;color:rgba(255,255,255,.55);transition:all .15s;white-space:nowrap}
   .pl-tab.on{background:rgba(255,255,255,.2);color:#fff}
   .pl-tab-icon{display:none}
   .pl-nav-bottom{display:none}
+  .pl-nav-mobicons{display:flex;gap:8px;justify-content:flex-end;margin-top:8px}
   .pl-edit-btn{width:28px;height:28px;border-radius:7px;background:rgba(255,255,255,.12);color:rgba(255,255,255,.8);font-size:14px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
   .pl-content{flex:1;overflow:hidden;display:flex;flex-direction:column}
   .cdn{font-size:11px}
@@ -228,6 +234,7 @@ textarea{resize:none}
   .pl-tab.on{background:rgba(255,255,255,.2);color:#fff}
   .pl-tab-icon{display:none}
   .pl-nav-bottom{display:none}
+  .pl-nav-mobicons{display:flex;gap:6px}
   .pl-content{flex:1;overflow:hidden;display:flex;flex-direction:column}
   /* 콘텐츠 */
   .vpad{padding:8px 12px 50px}
@@ -624,15 +631,17 @@ textarea{resize:none}
 <!-- ═══ 플래너 ═══ -->
 <div id="pl">
   <div class="pl-nav">
-    <div class="pl-nav-top">
-      <div class="pl-nav-brand" id="pl-brand">필탑학원</div>
-      <div class="pl-nav-student" id="pl-student"></div>
-    </div>
-    <div class="pl-nav-tabs">
-      <button class="pl-tab" onclick="goView(0)"><span class="pl-tab-icon">📅</span>연간</button>
-      <button class="pl-tab" onclick="goView(1)"><span class="pl-tab-icon">🗓</span>월간</button>
-      <button class="pl-tab" onclick="goView(2)"><span class="pl-tab-icon">📋</span>주간</button>
-      <button class="pl-tab on" onclick="goView(3)"><span class="pl-tab-icon">✏️</span>일간</button>
+    <div class="pl-nav-row1">
+      <div class="pl-nav-top">
+        <div class="pl-nav-brand" id="pl-brand"><span class="tw-pil">PIL</span><span class="tw-top">TOP</span></div>
+        <div class="pl-nav-student" id="pl-student"></div>
+      </div>
+      <div class="pl-nav-tabs">
+        <button class="pl-tab" onclick="goView(0)"><span class="pl-tab-icon">📅</span>연간</button>
+        <button class="pl-tab" onclick="goView(1)"><span class="pl-tab-icon">🗓</span>월간</button>
+        <button class="pl-tab" onclick="goView(2)"><span class="pl-tab-icon">📋</span>주간</button>
+        <button class="pl-tab on" onclick="goView(3)"><span class="pl-tab-icon">✏️</span>일간</button>
+      </div>
     </div>
     <div class="pl-nav-bottom">
       <button class="pl-edit-btn" onclick="openScoreSheet()"><span>🎯</span>성적·전략</button>
@@ -641,10 +650,12 @@ textarea{resize:none}
       <button class="pl-edit-btn" id="pl-rank-btn" onclick="openRankSheet()" style="display:none"><span>🏆</span>순공 랭킹</button>
       <button class="pl-edit-btn" id="pwa-nav-btn" onclick="triggerInstall()" style="display:none"><span>⬇</span>앱 설치</button>
     </div>
-    <button class="pl-edit-btn" onclick="openScoreSheet()" style="display:none" id="mob-score">🎯</button>
-    <button class="pl-edit-btn" onclick="openProf()" style="display:none" id="mob-edit">✎</button>
-    <button class="pl-edit-btn" onclick="openSchedSheet()" style="display:none" id="mob-sched">🗓</button>
-    <button class="pl-edit-btn" onclick="openRankSheet()" style="display:none" id="mob-rank">🏆</button>
+    <div class="pl-nav-mobicons" id="pl-nav-mobicons">
+      <button class="pl-edit-btn" onclick="openScoreSheet()" style="display:none" id="mob-score">🎯</button>
+      <button class="pl-edit-btn" onclick="openProf()" style="display:none" id="mob-edit">✎</button>
+      <button class="pl-edit-btn" onclick="openSchedSheet()" style="display:none" id="mob-sched">🗓</button>
+      <button class="pl-edit-btn" onclick="openRankSheet()" style="display:none" id="mob-rank">🏆</button>
+    </div>
   </div>
 
   <div class="pl-content">
