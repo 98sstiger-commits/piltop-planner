@@ -238,6 +238,9 @@ body{font-family:'Pretendard','Noto Sans KR',sans-serif;color:var(--ink);min-hei
 .seat-node.selected{outline:2px dashed var(--green);outline-offset:2px}
 .seat-node.zone-block{background:repeating-linear-gradient(45deg,#EAE8E1,#EAE8E1 6px,#DEDBD2 6px,#DEDBD2 12px);color:var(--ink3);border-color:var(--line2)}
 .seat-node .sn-pin{position:absolute;top:-6px;right:-6px;font-size:11px;line-height:1;filter:drop-shadow(0 1px 1px rgba(0,0,0,.3))}
+.seat-node .sn-focus{position:absolute;top:-4px;left:-4px;width:9px;height:9px;border-radius:50%;background:transparent;border:1.5px solid rgba(255,255,255,.6);box-shadow:0 1px 2px rgba(0,0,0,.3)}
+.seat-node .sn-focus.on{background:#3FE07C;border-color:#fff}
+.seat-node .sn-focus.stale{background:#E8D48A;border-color:#fff}
 .seat-node.zone-block .sn-num{font-size:10px;font-weight:600}
 .marquee-box{position:absolute;border:1.5px dashed var(--green);background:rgba(26,71,49,.08);pointer-events:none;z-index:8}
 .seat-node .sn-num{font-size:13px;line-height:1.2}
@@ -1474,7 +1477,7 @@ function renderSeatMap(){
   document.getElementById('seat-select-grow').style.display=selectedSeats.size?'':'none';
   document.getElementById('seat-select-delete').style.display=selectedSeats.size?'':'none';
   document.getElementById('seat-select-delete').textContent=`선택 삭제 (${selectedSeats.size})`;
-  const occ={};ACTIVE_ATT.forEach(a=>{if(a.seat_id)occ[a.seat_id]={name:a.planner_students?.name||'학생',status:a.status||'studying'};});
+  const occ={};ACTIVE_ATT.forEach(a=>{if(a.seat_id)occ[a.seat_id]={name:a.planner_students?.name||'학생',status:a.status||'studying',attId:a.id};});
   wrap.innerHTML='';
   wrap.onmousedown=handleWrapMouseDown;
   wrap.ontouchstart=handleWrapMouseDown;
@@ -1518,9 +1521,12 @@ function renderSeatMap(){
     // 지정석인데 아직 입실 전인 좌석은 이름 앞에 핀 이모지를 붙이는 대신
     // 모서리에 따로 띄워서, 이름이 잘리지 않고 다 보이게 합니다.
     const pinHtml=(!isBlock&&!occStu&&assignedStu)?'<span class="sn-pin">📌</span>':'';
+    // 공부중인 학생만 집중도 배지 대상 — 실제 데이터는 refreshSeatFocusBadges()가
+    // 채워넣고, 여기서는 자리만 미리 만들어둡니다.
+    const focusHtml=(!isBlock&&occStu&&occStu.status==='studying')?`<span class="sn-focus" id="sn-focus-${s.id}"></span>`:'';
     node.innerHTML=isBlock
       ?`<span class="sn-num">${s.label||'제외구역'}</span>`
-      :`${pinHtml}<span class="sn-num">${s.seat_number}</span>${nameHtml}`;
+      :`${pinHtml}${focusHtml}<span class="sn-num">${s.seat_number}</span>${nameHtml}`;
     if(seatEditMode){
       if(selectMode){
         node.onmousedown=(e)=>startDrag(e,node,s);
@@ -1559,6 +1565,32 @@ function renderSeatMap(){
     chandle.addEventListener('click',e=>e.stopPropagation());
     wrap.appendChild(chandle);
   }
+  refreshSeatFocusBadges(occ);
+}
+// 좌석 카드에 집중도 분석이 실제로 지금도 기록되고 있는지 작은 점으로
+// 표시합니다 — 실시간 공부모습(영상)이랑 완전히 별개인 기능이라,
+// 영상이 안 나와도 이 점이 초록색이면 집중도는 정상 기록 중인 거예요.
+async function refreshSeatFocusBadges(occ){
+  const attIds=Object.values(occ).filter(o=>o.status==='studying').map(o=>o.attId);
+  if(!attIds.length)return;
+  const since=new Date(Date.now()-2*60000).toISOString();
+  const rows=await sb(`focus_log?attendance_id=in.(${attIds.join(',')})&checked_at=gte.${since}&select=attendance_id,checked_at&order=checked_at.desc&limit=500`);
+  const latestByAtt={};
+  (Array.isArray(rows)?rows:[]).forEach(r=>{
+    if(!latestByAtt[r.attendance_id])latestByAtt[r.attendance_id]=r.checked_at;
+  });
+  const now=Date.now();
+  Object.entries(occ).forEach(([seatId,o])=>{
+    const el=document.getElementById('sn-focus-'+seatId);
+    if(!el)return;
+    const t=latestByAtt[o.attId];
+    el.classList.remove('on','stale');
+    el.title='';
+    if(!t)return;
+    const ageSec=Math.round((now-new Date(t).getTime())/1000);
+    el.classList.add(ageSec<20?'on':'stale');
+    el.title=ageSec<20?'집중도 기록중':`마지막 기록 ${ageSec}초 전`;
+  });
 }
 
 function startDrag(e,node,seat){
