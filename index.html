@@ -362,6 +362,27 @@ textarea{resize:none}
 .add-cl input:focus{border-color:var(--g);background:#fff}
 .add-cl button{flex-shrink:0;padding:9px 13px;background:var(--g);color:#fff;border-radius:7px;font-size:15px;font-weight:700;white-space:nowrap}
 
+/* ── 학교·학원·과외 시간표 ── */
+.sched2-form{display:flex;flex-direction:column;gap:8px;padding-bottom:16px;margin-bottom:14px;border-bottom:1px solid var(--line)}
+.sched2-input{width:100%;padding:9px 11px;border:1px solid var(--line2);border-radius:7px;font-size:15px;background:var(--bg);color:var(--ink);box-sizing:border-box;font-family:inherit}
+.sched2-input:focus{border-color:var(--g);background:#fff}
+.dow-picker{display:flex;gap:5px}
+.dow-chip{flex:1;padding:9px 0;border-radius:7px;background:var(--bg);border:1.5px solid var(--line2);color:var(--ink2);font-size:12.5px;font-weight:700;font-family:inherit}
+.dow-chip.on{background:var(--g);border-color:var(--g);color:#fff}
+.tt-hint{font-size:10.5px;color:var(--ink3);margin-bottom:8px}
+.tt-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;border:1px solid var(--line);border-radius:10px}
+.tt-grid{display:flex;min-width:560px}
+.tt-timecol{width:30px;flex-shrink:0;border-right:1px solid var(--line)}
+.tt-day{flex:1;min-width:70px;border-right:1px solid var(--line)}
+.tt-day:last-child{border-right:none}
+.tt-day-hd{font-size:11px;font-weight:700;color:var(--ink2);text-align:center;padding:6px 0;background:var(--bg);border-bottom:1px solid var(--line)}
+.tt-day-body,.tt-timecol-body{position:relative}
+.tt-hr{position:absolute;left:0;right:0;font-size:9px;color:var(--ink3);border-top:1px dashed var(--line);padding-left:3px;box-sizing:border-box}
+.tt-day .tt-hr{border-top:1px dashed var(--line);color:transparent}
+.tt-block{position:absolute;left:2px;right:2px;background:var(--gs,#E6EFE9);border-left:3px solid var(--g);border-radius:4px;padding:2px 4px;overflow:hidden;font-size:9.5px;line-height:1.25;cursor:pointer}
+.tt-block-time{font-weight:700;color:var(--g);white-space:nowrap}
+.tt-block-label{color:var(--ink);white-space:nowrap;text-overflow:ellipsis;overflow:hidden}
+
 .dy-card{background:var(--surf);border:1px solid var(--line);border-radius:9px;overflow:hidden;margin-bottom:9px}
 .dy-card-h{padding:9px 13px;border-bottom:1px solid var(--line);font-size:9px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--ink2)}
 .dy-card-b{padding:10px 13px}
@@ -612,11 +633,13 @@ textarea{resize:none}
     <div class="pl-nav-bottom">
       <button class="pl-edit-btn" onclick="openScoreSheet()"><span>🎯</span>성적·전략</button>
       <button class="pl-edit-btn" onclick="openProf()"><span>✎</span>정보 수정</button>
+      <button class="pl-edit-btn" onclick="openSchedSheet()"><span>🗓</span>학교·학원</button>
       <button class="pl-edit-btn" id="pl-rank-btn" onclick="openRankSheet()" style="display:none"><span>🏆</span>순공 랭킹</button>
       <button class="pl-edit-btn" id="pwa-nav-btn" onclick="triggerInstall()" style="display:none"><span>⬇</span>앱 설치</button>
     </div>
     <button class="pl-edit-btn" onclick="openScoreSheet()" style="display:none" id="mob-score">🎯</button>
     <button class="pl-edit-btn" onclick="openProf()" style="display:none" id="mob-edit">✎</button>
+    <button class="pl-edit-btn" onclick="openSchedSheet()" style="display:none" id="mob-sched">🗓</button>
     <button class="pl-edit-btn" onclick="openRankSheet()" style="display:none" id="mob-rank">🏆</button>
   </div>
 
@@ -797,6 +820,39 @@ textarea{resize:none}
     <div class="sheet-ft">
       <button class="s-btn sec" onclick="closeMcSheet()">취소</button>
       <button class="s-btn pri" onclick="saveMcGoal()">저장</button>
+    </div>
+  </div>
+</div>
+
+<!-- 학교·학원·과외 시간표 시트 -->
+<div class="sheet-bg" id="sched2-bg" onclick="if(event.target===this)closeSchedSheet()">
+  <div class="sheet">
+    <div class="sheet-grip"></div>
+    <div class="sheet-hd">
+      <div><div class="sheet-ttl">학교·학원·과외 시간표</div><div class="sheet-sub">학원을 옮기거나 시간이 바뀔 때만 수정하면 돼요</div></div>
+      <button class="sheet-x" onclick="closeSchedSheet()">×</button>
+    </div>
+    <div class="sheet-bd">
+      <div class="sched2-form">
+        <div class="dow-picker" id="sched2-dow-picker">
+          <button class="dow-chip" type="button" data-dow="1" onclick="this.classList.toggle('on')">월</button>
+          <button class="dow-chip" type="button" data-dow="2" onclick="this.classList.toggle('on')">화</button>
+          <button class="dow-chip" type="button" data-dow="3" onclick="this.classList.toggle('on')">수</button>
+          <button class="dow-chip" type="button" data-dow="4" onclick="this.classList.toggle('on')">목</button>
+          <button class="dow-chip" type="button" data-dow="5" onclick="this.classList.toggle('on')">금</button>
+          <button class="dow-chip" type="button" data-dow="6" onclick="this.classList.toggle('on')">토</button>
+          <button class="dow-chip" type="button" data-dow="0" onclick="this.classList.toggle('on')">일</button>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <input type="time" class="sched2-input" id="sched2-start-input" value="09:00">
+          <span style="color:var(--ink3);font-size:12px">~</span>
+          <input type="time" class="sched2-input" id="sched2-end-input" value="16:00">
+        </div>
+        <input type="text" class="sched2-input" id="sched2-label-input" placeholder="예: 학교, 수학학원, 과외">
+        <button class="s-btn pri" id="sched2-add-btn" onclick="addSched2()" style="width:100%">요일 선택해서 추가</button>
+      </div>
+      <div class="tt-hint">칸을 탭하면 그 일정을 삭제해요 · 좌우로 밀어서 전체 요일을 볼 수 있어요</div>
+      <div class="tt-scroll"><div class="tt-grid" id="sched2-grid"></div></div>
     </div>
   </div>
 </div>
@@ -1332,7 +1388,8 @@ async function startPlanner(){
   // 모바일 편집 버튼
   const mobEdit=document.getElementById('mob-edit');
   const mobScore=document.getElementById('mob-score');
-  if(window.innerWidth<768){mobEdit.style.display='flex';mobScore.style.display='flex';}
+  const mobSched=document.getElementById('mob-sched');
+  if(window.innerWidth<768){mobEdit.style.display='flex';mobScore.style.display='flex';mobSched.style.display='flex';}
 
   // 먼저 현재 데이터로 즉시 렌더링 (빈 화면 방지)
   document.getElementById('pl-student').textContent=`${S.name} · ${S.school} · ${S.grade}학년`;
@@ -1440,6 +1497,78 @@ async function saveMcGoal(){
   if(!mcMonth)return;
   S.monthGoals[mcMonth]=document.getElementById('mc-goal-inp').value.trim();
   closeMcSheet();await saveDB();renderYr();toast('저장됐어요');
+}
+
+/* ── 학교·학원·과외 시간표 (요일 반복, 학원 바뀔 때만 수정) ── */
+function escapeHtml(s){
+  return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function fmtHM(min){return String(Math.floor(min/60)).padStart(2,'0')+':'+String(min%60).padStart(2,'0');}
+function timeToMin(v){const[h,m]=(v||'0:0').split(':').map(Number);return h*60+m;}
+const TT_START_MIN=7*60,TT_END_MIN=23*60,TT_PXMIN=0.75;
+function renderScheduleGrid(grid,items,deleteFnName){
+  const totalH=(TT_END_MIN-TT_START_MIN)*TT_PXMIN;
+  const DOWF=['일','월','화','수','목','금','토'];
+  const order=[1,2,3,4,5,6,0];
+  const hourLines=(from,to)=>{
+    let html='';
+    for(let h=from;h<=to;h++)html+=`<div class="tt-hr" style="top:${(h*60-TT_START_MIN)*TT_PXMIN}px">${h}</div>`;
+    return html;
+  };
+  const dayCols=order.map(d=>{
+    const dayItems=items.filter(it=>it.dow===d);
+    const blocks=dayItems.map(it=>{
+      const s=Math.max(it.start_min,TT_START_MIN),e=Math.min(it.end_min,TT_END_MIN);
+      if(e<=s)return '';
+      const top=(s-TT_START_MIN)*TT_PXMIN;
+      const height=Math.max(15,(e-s)*TT_PXMIN);
+      return `<div class="tt-block" style="top:${top}px;height:${height}px" onclick="${deleteFnName}('${it.id}')" title="탭해서 삭제: ${escapeHtml(it.label)}">
+        <div class="tt-block-time">${fmtHM(it.start_min)}</div>
+        <div class="tt-block-label">${escapeHtml(it.label)}</div>
+      </div>`;
+    }).join('');
+    return `<div class="tt-day"><div class="tt-day-hd">${DOWF[d]}</div><div class="tt-day-body" style="height:${totalH}px">${hourLines(7,23)}${blocks}</div></div>`;
+  }).join('');
+  grid.innerHTML=`
+    <div class="tt-timecol"><div class="tt-day-hd">&nbsp;</div><div class="tt-timecol-body" style="height:${totalH}px">${hourLines(7,23)}</div></div>
+    ${dayCols}`;
+}
+function openSchedSheet(){
+  document.querySelectorAll('#sched2-dow-picker .dow-chip').forEach(b=>b.classList.remove('on'));
+  document.getElementById('sched2-label-input').value='';
+  document.getElementById('sched2-bg').classList.add('open');
+  loadSched2();
+}
+function closeSchedSheet(){document.getElementById('sched2-bg').classList.remove('open');}
+async function loadSched2(){
+  const grid=document.getElementById('sched2-grid');
+  grid.innerHTML='<div style="padding:16px;text-align:center;color:var(--ink3);font-size:12px">불러오는 중...</div>';
+  const rows=await sb(`student_weekly_schedule?student_id=eq.${S.id}&select=*`);
+  renderScheduleGrid(grid,Array.isArray(rows)?rows:[],'deleteSched2');
+}
+async function addSched2(){
+  const dows=[...document.querySelectorAll('#sched2-dow-picker .dow-chip.on')].map(b=>parseInt(b.dataset.dow,10));
+  const startMin=timeToMin(document.getElementById('sched2-start-input').value);
+  const endMin=timeToMin(document.getElementById('sched2-end-input').value);
+  const label=document.getElementById('sched2-label-input').value.trim();
+  if(!dows.length){toast('요일을 하나 이상 선택해주세요');return;}
+  if(endMin<=startMin){toast('종료 시각이 시작 시각보다 늦어야 해요');return;}
+  if(!label){toast('학교/학원 이름을 입력해주세요');return;}
+  const btn=document.getElementById('sched2-add-btn');
+  btn.disabled=true;
+  const body=dows.map(dow=>({student_id:S.id,dow,start_min:startMin,end_min:endMin,label}));
+  const result=await sb('student_weekly_schedule',{method:'POST',body:JSON.stringify(body)});
+  btn.disabled=false;
+  if(!Array.isArray(result)||!result.length){toast('저장에 실패했어요');return;}
+  document.querySelectorAll('#sched2-dow-picker .dow-chip').forEach(b=>b.classList.remove('on'));
+  document.getElementById('sched2-label-input').value='';
+  toast('시간표에 추가했어요');
+  await loadSched2();
+}
+async function deleteSched2(id){
+  if(!confirm('이 시간표 항목을 삭제할까요?'))return;
+  await sb(`student_weekly_schedule?id=eq.${id}`,{method:'DELETE'});
+  await loadSched2();
 }
 
 /* ── MONTHLY ── */

@@ -152,6 +152,19 @@ body{font-family:'Pretendard','Noto Sans KR',sans-serif;color:var(--ink);min-hei
 .sched-item{background:#F6F5F2;border-radius:10px;padding:10px 14px;display:flex;align-items:center;gap:10px}
 .sched-time{font-size:12.5px;font-weight:700;color:var(--green);font-variant-numeric:tabular-nums;flex-shrink:0}
 .sched-label{flex:1;font-size:13px;color:#18170F}
+.tt-hint{font-size:10.5px;color:var(--ink3);margin-bottom:8px}
+.tt-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;border:1px solid var(--line);border-radius:10px}
+.tt-grid{display:flex;min-width:620px}
+.tt-timecol{width:34px;flex-shrink:0;border-right:1px solid var(--line)}
+.tt-day{flex:1;min-width:78px;border-right:1px solid var(--line)}
+.tt-day:last-child{border-right:none}
+.tt-day-hd{font-size:11px;font-weight:700;color:var(--ink2);text-align:center;padding:6px 0;background:#F6F5F2;border-bottom:1px solid var(--line)}
+.tt-day-body,.tt-timecol-body{position:relative}
+.tt-hr{position:absolute;left:0;right:0;font-size:9px;color:var(--ink3);border-top:1px dashed var(--line);padding-left:3px;box-sizing:border-box}
+.tt-day .tt-hr{border-top:1px dashed #EEECE6;color:transparent}
+.tt-block{position:absolute;left:2px;right:2px;background:var(--gs);border-left:3px solid var(--green);border-radius:4px;padding:2px 4px;overflow:hidden;font-size:9.5px;line-height:1.25;cursor:pointer}
+.tt-block-time{font-weight:700;color:var(--green);white-space:nowrap}
+.tt-block-label{color:#18170F;white-space:nowrap;text-overflow:ellipsis;overflow:hidden}
 .month-num{font-size:17px;font-weight:700;letter-spacing:-1px;color:var(--ink3);line-height:1}
 .month-kw{font-size:11px;font-weight:500;color:#18170F;margin-top:4px;line-height:1.45}
 .month-note{font-size:10px;color:var(--ink2);margin-top:2px;line-height:1.4}
@@ -770,7 +783,8 @@ body{font-family:'Pretendard','Noto Sans KR',sans-serif;color:var(--ink);min-hei
         <input type="text" class="f-input" id="sched-label-input" placeholder="예: 학교, 수학학원, 과외">
         <button class="gen-btn" id="sched-add-btn" onclick="addStudentSchedule()">요일 선택해서 추가</button>
       </div>
-      <div class="note-list" id="sched-list"></div>
+      <div class="tt-hint">칸을 탭하면 그 일정을 삭제해요 · 좌우로 밀어서 전체 요일을 볼 수 있어요</div>
+      <div class="tt-scroll"><div class="tt-grid" id="sched-grid"></div></div>
     </div>
   </div>
 </div>
@@ -1119,24 +1133,41 @@ function closeScheduleSheet(){document.getElementById('sched-bg').classList.remo
 function fmtHM(min){return String(Math.floor(min/60)).padStart(2,'0')+':'+String(min%60).padStart(2,'0');}
 function timeToMin(v){const[h,m]=(v||'0:0').split(':').map(Number);return h*60+m;}
 async function loadScheduleList(){
-  const list=document.getElementById('sched-list');
-  list.innerHTML='<div class="empty" style="padding:16px 0">불러오는 중...</div>';
+  const grid=document.getElementById('sched-grid');
+  grid.innerHTML='<div class="empty" style="padding:16px 0">불러오는 중...</div>';
   const rows=await sb(`student_weekly_schedule?student_id=eq.${curSchedStudentId}&select=*`);
-  const items=Array.isArray(rows)?rows:[];
-  if(!items.length){list.innerHTML='<div class="empty" style="padding:16px 0">등록된 시간표가 없어요</div>';return;}
+  renderScheduleGrid(grid,Array.isArray(rows)?rows:[],'deleteStudentSchedule');
+}
+// 월~일 실제 타임테이블처럼 시각적으로 보여줍니다. 07:00~23:00 범위를
+// 분 단위로 그려서, 각 일정을 그 시간 위치에 맞춰 절대 배치합니다.
+// 관리자용/학생용 화면 둘 다 이 함수를 그대로 씁니다.
+const TT_START_MIN=7*60,TT_END_MIN=23*60,TT_PXMIN=0.75;
+function renderScheduleGrid(grid,items,deleteFnName){
+  const totalH=(TT_END_MIN-TT_START_MIN)*TT_PXMIN;
   const DOWF=['일','월','화','수','목','금','토'];
-  const order=[1,2,3,4,5,6,0]; // 월요일부터 보여주기
-  list.innerHTML=order.map(d=>{
-    const dayItems=items.filter(it=>it.dow===d).sort((a,b)=>a.start_min-b.start_min);
-    if(!dayItems.length)return '';
-    const rowsHtml=dayItems.map(it=>`
-      <div class="sched-item">
-        <span class="sched-time">${fmtHM(it.start_min)}~${fmtHM(it.end_min)}</span>
-        <span class="sched-label">${escapeHtml(it.label)}</span>
-        <button class="note-del" onclick="deleteStudentSchedule('${it.id}')" title="삭제">×</button>
-      </div>`).join('');
-    return `<div class="note-date-group"><div class="note-date-hd">${DOWF[d]}요일</div>${rowsHtml}</div>`;
-  }).join('')||'<div class="empty" style="padding:16px 0">등록된 시간표가 없어요</div>';
+  const order=[1,2,3,4,5,6,0];
+  const hourLines=(from,to)=>{
+    let html='';
+    for(let h=from;h<=to;h++)html+=`<div class="tt-hr" style="top:${(h*60-TT_START_MIN)*TT_PXMIN}px">${h}</div>`;
+    return html;
+  };
+  const dayCols=order.map(d=>{
+    const dayItems=items.filter(it=>it.dow===d);
+    const blocks=dayItems.map(it=>{
+      const s=Math.max(it.start_min,TT_START_MIN),e=Math.min(it.end_min,TT_END_MIN);
+      if(e<=s)return '';
+      const top=(s-TT_START_MIN)*TT_PXMIN;
+      const height=Math.max(15,(e-s)*TT_PXMIN);
+      return `<div class="tt-block" style="top:${top}px;height:${height}px" onclick="${deleteFnName}('${it.id}')" title="탭해서 삭제: ${escapeHtml(it.label)}">
+        <div class="tt-block-time">${fmtHM(it.start_min)}</div>
+        <div class="tt-block-label">${escapeHtml(it.label)}</div>
+      </div>`;
+    }).join('');
+    return `<div class="tt-day"><div class="tt-day-hd">${DOWF[d]}</div><div class="tt-day-body" style="height:${totalH}px">${hourLines(7,23)}${blocks}</div></div>`;
+  }).join('');
+  grid.innerHTML=`
+    <div class="tt-timecol"><div class="tt-day-hd">&nbsp;</div><div class="tt-timecol-body" style="height:${totalH}px">${hourLines(7,23)}</div></div>
+    ${dayCols}`;
 }
 async function addStudentSchedule(){
   const dows=[...document.querySelectorAll('#sched-dow-picker .dow-chip.on')].map(b=>parseInt(b.dataset.dow,10));
