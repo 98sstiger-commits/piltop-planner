@@ -2288,9 +2288,17 @@ function classifyFocus(result,ts){
     // 숙이면(엎드려 졸 때 등) 얼굴 인식은 실패해도 몸(어깨)은 보일 수
     // 있어서, 그런 경우는 조는 것으로 구분합니다. 몸까지 안 보이면
     // 그때 진짜 자리 이탈로 봅니다.
+    //
+    // 주의: 자세 인식 모델은 사람이 전혀 없어도(천장 조명·몰딩처럼
+    // 사람 형태와 비슷한 패턴이 있으면) 낮은 확신도로 어깨 위치를
+    // 잘못 찍어내는 경우가 있습니다. landmarks 배열이 비어있지 않다고
+    // 무조건 "몸이 보인다"고 보면 안 되고, 실제로 어깨(왼쪽 11번/
+    // 오른쪽 12번)가 확실히 보이는지(visibility)까지 확인해야 합니다.
     try{
       const poseResult=focusPoseLandmarker&&focusPoseLandmarker.detectForVideo(focusVideo,ts);
-      if(poseResult&&poseResult.landmarks&&poseResult.landmarks.length)return 'dozing';
+      const lm=poseResult?.landmarks?.[0];
+      const shoulderVis=lm?Math.max(lm[11]?.visibility||0,lm[12]?.visibility||0):0;
+      if(shoulderVis>0.6)return 'dozing';
     }catch(e){}
     return 'no_face';
   }
