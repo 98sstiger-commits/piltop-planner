@@ -146,6 +146,12 @@ body{font-family:'Pretendard','Noto Sans KR',sans-serif;color:var(--ink);min-hei
 .note-text{flex:1;font-size:13px;line-height:1.6;color:#18170F;white-space:pre-wrap;word-break:break-word}
 .note-del{flex-shrink:0;width:22px;height:22px;border-radius:50%;background:none;border:1px solid var(--line2);color:var(--ink3);font-size:12px;display:flex;align-items:center;justify-content:center;transition:all .12s}
 .note-del:hover{background:#FEE8E8;border-color:#F3B0B0;color:#B91C1C}
+.dow-picker{display:flex;gap:5px}
+.dow-chip{flex:1;padding:9px 0;border-radius:8px;background:#F6F5F2;border:1.5px solid var(--line2);color:var(--ink2);font-size:12.5px;font-weight:700;font-family:inherit;transition:all .12s}
+.dow-chip.on{background:var(--green);border-color:var(--green);color:#fff}
+.sched-item{background:#F6F5F2;border-radius:10px;padding:10px 14px;display:flex;align-items:center;gap:10px}
+.sched-time{font-size:12.5px;font-weight:700;color:var(--green);font-variant-numeric:tabular-nums;flex-shrink:0}
+.sched-label{flex:1;font-size:13px;color:#18170F}
 .month-num{font-size:17px;font-weight:700;letter-spacing:-1px;color:var(--ink3);line-height:1}
 .month-kw{font-size:11px;font-weight:500;color:#18170F;margin-top:4px;line-height:1.45}
 .month-note{font-size:10px;color:var(--ink2);margin-top:2px;line-height:1.4}
@@ -736,6 +742,39 @@ body{font-family:'Pretendard','Noto Sans KR',sans-serif;color:var(--ink);min-hei
   </div>
 </div>
 
+<!-- 학교·학원 시간표 시트 -->
+<div class="sheet-bg" id="sched-bg" onclick="if(event.target===this)closeScheduleSheet()">
+  <div class="sheet">
+    <div class="sheet-grip"></div>
+    <div class="sheet-hd">
+      <div class="sheet-name" id="sched-name"></div>
+      <div class="sheet-sub">학교·학원·과외 시간표 — 학원을 옮기거나 시간이 바뀔 때만 수정하면 돼요</div>
+      <button class="sheet-close" onclick="closeScheduleSheet()">×</button>
+    </div>
+    <div class="sheet-body">
+      <div class="note-form">
+        <div class="dow-picker" id="sched-dow-picker">
+          <button class="dow-chip" type="button" data-dow="1" onclick="toggleDowChip(this)">월</button>
+          <button class="dow-chip" type="button" data-dow="2" onclick="toggleDowChip(this)">화</button>
+          <button class="dow-chip" type="button" data-dow="3" onclick="toggleDowChip(this)">수</button>
+          <button class="dow-chip" type="button" data-dow="4" onclick="toggleDowChip(this)">목</button>
+          <button class="dow-chip" type="button" data-dow="5" onclick="toggleDowChip(this)">금</button>
+          <button class="dow-chip" type="button" data-dow="6" onclick="toggleDowChip(this)">토</button>
+          <button class="dow-chip" type="button" data-dow="0" onclick="toggleDowChip(this)">일</button>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <input type="time" class="f-input" id="sched-start-input" value="09:00">
+          <span style="color:var(--ink3);font-size:12px">~</span>
+          <input type="time" class="f-input" id="sched-end-input" value="16:00">
+        </div>
+        <input type="text" class="f-input" id="sched-label-input" placeholder="예: 학교, 수학학원, 과외">
+        <button class="gen-btn" id="sched-add-btn" onclick="addStudentSchedule()">요일 선택해서 추가</button>
+      </div>
+      <div class="note-list" id="sched-list"></div>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -942,6 +981,7 @@ function renderStudentList(){
           <button class="mini-btn" style="padding:3px 8px;font-size:10px" onclick="window.open('${BASE}/report.html?id=${s.id}&type=weekly&admin=1','_blank')">📊 리포트</button>
           <button class="mini-btn${s.is_paused?' pri':''}" style="padding:3px 8px;font-size:10px" onclick="togglePauseStudent('${s.id}','${(s.name||'').replace(/'/g,"\\'")}',${!!s.is_paused})">${s.is_paused?'▶ 재개':'⏸ 중단'}</button>
           <button class="mini-btn" style="padding:3px 8px;font-size:10px" onclick="openNotesSheet('${s.id}','${(s.name||'').replace(/'/g,"\\'")}')">📝 상담 메모</button>
+          <button class="mini-btn" style="padding:3px 8px;font-size:10px" onclick="openScheduleSheet('${s.id}','${(s.name||'').replace(/'/g,"\\'")}')">🗓 학교·학원 시간표</button>
           ${focusToggleBtn}
         </div>
         <div class="stu-extra-row" onclick="event.stopPropagation();openSubjPop(event,'${s.id}')" style="cursor:pointer">
@@ -1060,6 +1100,67 @@ async function deleteStudentNote(id){
   if(!confirm('이 메모를 삭제할까요?'))return;
   await sb(`student_notes?id=eq.${id}`,{method:'DELETE'});
   await loadNotesList();
+}
+
+/* ── 학교·학원·과외 고정 시간표 ── 매일 다시 짜는 게 아니라, 학원을
+   옮기거나 시간이 바뀔 때만 가끔 수정하는 요일별 반복 일정이라
+   student_notes와 달리 날짜가 아니라 요일(dow)로 저장합니다. */
+let curSchedStudentId=null;
+function toggleDowChip(btn){btn.classList.toggle('on');}
+function openScheduleSheet(studentId,studentName){
+  curSchedStudentId=studentId;
+  document.getElementById('sched-name').textContent=studentName+' 학생';
+  document.querySelectorAll('#sched-dow-picker .dow-chip').forEach(b=>b.classList.remove('on'));
+  document.getElementById('sched-label-input').value='';
+  document.getElementById('sched-bg').classList.add('open');
+  loadScheduleList();
+}
+function closeScheduleSheet(){document.getElementById('sched-bg').classList.remove('open');}
+function fmtHM(min){return String(Math.floor(min/60)).padStart(2,'0')+':'+String(min%60).padStart(2,'0');}
+function timeToMin(v){const[h,m]=(v||'0:0').split(':').map(Number);return h*60+m;}
+async function loadScheduleList(){
+  const list=document.getElementById('sched-list');
+  list.innerHTML='<div class="empty" style="padding:16px 0">불러오는 중...</div>';
+  const rows=await sb(`student_weekly_schedule?student_id=eq.${curSchedStudentId}&select=*`);
+  const items=Array.isArray(rows)?rows:[];
+  if(!items.length){list.innerHTML='<div class="empty" style="padding:16px 0">등록된 시간표가 없어요</div>';return;}
+  const DOWF=['일','월','화','수','목','금','토'];
+  const order=[1,2,3,4,5,6,0]; // 월요일부터 보여주기
+  list.innerHTML=order.map(d=>{
+    const dayItems=items.filter(it=>it.dow===d).sort((a,b)=>a.start_min-b.start_min);
+    if(!dayItems.length)return '';
+    const rowsHtml=dayItems.map(it=>`
+      <div class="sched-item">
+        <span class="sched-time">${fmtHM(it.start_min)}~${fmtHM(it.end_min)}</span>
+        <span class="sched-label">${escapeHtml(it.label)}</span>
+        <button class="note-del" onclick="deleteStudentSchedule('${it.id}')" title="삭제">×</button>
+      </div>`).join('');
+    return `<div class="note-date-group"><div class="note-date-hd">${DOWF[d]}요일</div>${rowsHtml}</div>`;
+  }).join('')||'<div class="empty" style="padding:16px 0">등록된 시간표가 없어요</div>';
+}
+async function addStudentSchedule(){
+  const dows=[...document.querySelectorAll('#sched-dow-picker .dow-chip.on')].map(b=>parseInt(b.dataset.dow,10));
+  const startMin=timeToMin(document.getElementById('sched-start-input').value);
+  const endMin=timeToMin(document.getElementById('sched-end-input').value);
+  const label=document.getElementById('sched-label-input').value.trim();
+  if(!dows.length){showToast('요일을 하나 이상 선택해주세요');return;}
+  if(endMin<=startMin){showToast('종료 시각이 시작 시각보다 늦어야 해요');return;}
+  if(!label){showToast('학교/학원 이름을 입력해주세요');return;}
+  const btn=document.getElementById('sched-add-btn');
+  btn.disabled=true;
+  const body=dows.map(dow=>({student_id:curSchedStudentId,dow,start_min:startMin,end_min:endMin,label}));
+  const result=await sb('student_weekly_schedule',{method:'POST',body:JSON.stringify(body)});
+  btn.disabled=false;
+  if(!Array.isArray(result)||!result.length){showToast('저장에 실패했어요 — Supabase에 최신 SQL을 실행했는지 확인해주세요');return;}
+  document.querySelectorAll('#sched-dow-picker .dow-chip').forEach(b=>b.classList.remove('on'));
+  document.getElementById('sched-label-input').value='';
+  showToast('시간표에 추가했어요');
+  await loadScheduleList();
+}
+async function deleteStudentSchedule(id){
+  if(!confirm('이 시간표 항목을 삭제할까요?'))return;
+  await sb(`student_weekly_schedule?id=eq.${id}`,{method:'DELETE'});
+  await loadScheduleList();
 }
 
 function copyStudentLink(link, name){

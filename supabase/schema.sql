@@ -291,3 +291,24 @@ with ranked_blocks as (
 )
 update seats s set seat_number = -ranked_blocks.rn
 from ranked_blocks where s.id = ranked_blocks.id;
+
+-- ── 17. 학생별 학교/학원/과외 고정 시간표 ──
+-- 매일 새로 짜는 게 아니라, 학원을 옮기거나 시간표가 바뀔 때만 가끔
+-- 수정하는 "요일별 반복 일정"이에요. 그래서 날짜가 아니라 요일(dow,
+-- 0=일요일~6=토요일)과 시각(자정부터 몇 분째인지)로 저장해서, 특정
+-- 날짜/시간대(timestamptz)로 저장할 때 생기는 시간대 변환 문제를
+-- 아예 피합니다. 관리자는 이 시간표를 보고 그 학생이 독서실에서
+-- 순공할 수 있는 빈 시간을 파악할 수 있어요.
+create table if not exists student_weekly_schedule (
+  id uuid primary key default gen_random_uuid(),
+  student_id uuid not null references planner_students(id) on delete cascade,
+  dow smallint not null check (dow between 0 and 6),
+  start_min smallint not null check (start_min >= 0 and start_min < 1440),
+  end_min smallint not null check (end_min > start_min and end_min <= 1440),
+  label text not null,
+  created_at timestamptz not null default now()
+);
+create index if not exists idx_student_weekly_schedule_student on student_weekly_schedule(student_id);
+alter table student_weekly_schedule enable row level security;
+drop policy if exists "public full access" on student_weekly_schedule;
+create policy "public full access" on student_weekly_schedule for all using (true) with check (true);
