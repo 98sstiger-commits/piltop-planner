@@ -267,6 +267,7 @@ body{font-family:'Pretendard','Noto Sans KR',sans-serif;color:var(--ink);min-hei
 .lv-tile-seat{opacity:.75;font-weight:600}
 .lv-tile-status{position:absolute;top:6px;left:8px;font-size:10px;font-weight:700;color:rgba(255,255,255,.7);background:rgba(0,0,0,.4);border-radius:6px;padding:2px 7px}
 .lv-tile-status.connected{color:#7BE6A8}
+.lv-tile-focus{position:absolute;top:6px;right:8px;font-size:10px;font-weight:700;background:rgba(0,0,0,.4);border-radius:6px;padding:2px 7px;display:none}
 .seat-pop{position:fixed;background:#fff;border:1px solid var(--line2);border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,.15);padding:10px;z-index:60;min-width:220px}
 .seat-pop-ttl{font-size:12px;font-weight:700;padding:4px 8px 8px;border-bottom:1px solid var(--line);margin-bottom:8px}
 .seat-pop-sub{font-size:10px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--ink3);padding:6px 8px 4px}
@@ -1391,9 +1392,35 @@ async function loadLiveViewTab(forceRender){
   if(lvPage>maxPage)lvPage=maxPage;
   if(sameSet&&!forceRender){
     document.getElementById('lv-count').textContent=`지금 공부 중 ${lvSeats.length}명`;
+    refreshFocusBadges();
     return;
   }
   renderLiveViewPage();
+}
+// 실시간 공부모습(영상)이 안 나오거나 끊겨도 집중도 분석은 완전히
+// 별개로 계속 돌아가는데, 관리자 입장에선 "진짜 지금도 기록되고
+// 있는지" 확인할 방법이 없었습니다. 각 학생의 최근 focus_log 기록
+// 시각을 가져와서, 화면 우측 상단에 작게 표시해줍니다.
+async function refreshFocusBadges(){
+  const ids=lvSeats.map(s=>s.id);
+  if(!ids.length)return;
+  const since=new Date(Date.now()-2*60000).toISOString();
+  const rows=await sb(`focus_log?attendance_id=in.(${ids.join(',')})&checked_at=gte.${since}&select=attendance_id,checked_at&order=checked_at.desc&limit=500`);
+  const latestByAtt={};
+  (Array.isArray(rows)?rows:[]).forEach(r=>{
+    if(!latestByAtt[r.attendance_id])latestByAtt[r.attendance_id]=r.checked_at;
+  });
+  const now=Date.now();
+  lvSeats.forEach(s=>{
+    const el=document.getElementById('lv-focus-'+s.student_id);
+    if(!el)return;
+    const t=latestByAtt[s.id];
+    if(!t){el.style.display='none';return;}
+    const ageSec=Math.round((now-new Date(t).getTime())/1000);
+    el.style.display='block';
+    if(ageSec<20){el.textContent='🟢 집중도 기록중';el.style.color='#7BE6A8';}
+    else{el.textContent=`🟡 ${ageSec}초 전 기록`;el.style.color='#E8D48A';}
+  });
 }
 function lvChangePage(delta){
   const maxPage=Math.ceil(lvSeats.length/LV_PAGE_SIZE)-1;
@@ -1415,8 +1442,10 @@ function renderLiveViewPage(){
     <div class="lv-tile" data-student-id="${a.student_id}">
       <video autoplay playsinline muted></video>
       <div class="lv-tile-status" id="lv-status-${a.student_id}">연결 중…</div>
+      <div class="lv-tile-focus" id="lv-focus-${a.student_id}"></div>
       <div class="lv-tile-label"><span>${a.planner_students?.name||'학생'}</span><span class="lv-tile-seat">${a.seat_number?a.seat_number+'번':''}</span></div>
     </div>`).join('');
+  refreshFocusBadges();
   if(typeof window.lvConnectSeats==='function'){
     window.lvConnectSeats(curSeatRoomId,pageItems.map(a=>a.student_id));
   }
