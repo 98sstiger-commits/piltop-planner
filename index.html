@@ -2283,7 +2283,15 @@ function focusSampleLoop(){
 // pitch는 훨씬 넓게 잡아서 "책 보는 자세"가 산만으로 오판되지 않게 합니다.
 const FOCUS_YAW_LIMIT=35,FOCUS_PITCH_LIMIT=50;
 function classifyFocus(result,ts){
-  if(!result.faceLandmarks||!result.faceLandmarks.length){
+  // 얼굴 랜드마크가 잡혔어도, 자세(회전) 정보(facialTransformationMatrixes)가
+  // 같이 안 나오면 옆모습 일부나 화면 밖 다른 물체를 오인식한 낮은
+  // 확신도의 결과일 수 있습니다. 이런 애매한 결과는 "집중함"으로 바로
+  // 인정하지 않고, 얼굴이 아예 없을 때와 똑같이 취급합니다 — 카메라를
+  // 얼굴에서 완전히 다른 곳으로 돌려놨는데도 "집중함"이 섞여 나오던
+  // 원인이 이 경로였습니다.
+  const m=(result.faceLandmarks&&result.faceLandmarks.length)?result.facialTransformationMatrixes?.[0]?.data:null;
+  const hasReliableFace=!!(m&&m.length>=16);
+  if(!hasReliableFace){
     // 얼굴을 못 찾았다고 바로 "자리 이탈"로 보진 않습니다 — 고개를 푹
     // 숙이면(엎드려 졸 때 등) 얼굴 인식은 실패해도 몸(어깨)은 보일 수
     // 있어서, 그런 경우는 조는 것으로 구분합니다. 몸까지 안 보이면
@@ -2302,12 +2310,9 @@ function classifyFocus(result,ts){
     }catch(e){}
     return 'no_face';
   }
-  const m=result.facialTransformationMatrixes?.[0]?.data;
-  if(m&&m.length>=16){
-    const yaw=Math.atan2(-m[2],Math.sqrt(m[6]*m[6]+m[10]*m[10]))*180/Math.PI;
-    const pitch=Math.atan2(m[6],m[10])*180/Math.PI;
-    if(Math.abs(yaw)>FOCUS_YAW_LIMIT||Math.abs(pitch)>FOCUS_PITCH_LIMIT)return 'head_turned'; // 고개를 많이 돌리거나 완전히 젖힘
-  }
+  const yaw=Math.atan2(-m[2],Math.sqrt(m[6]*m[6]+m[10]*m[10]))*180/Math.PI;
+  const pitch=Math.atan2(m[6],m[10])*180/Math.PI;
+  if(Math.abs(yaw)>FOCUS_YAW_LIMIT||Math.abs(pitch)>FOCUS_PITCH_LIMIT)return 'head_turned'; // 고개를 많이 돌리거나 완전히 젖힘
   const cats=result.faceBlendshapes?.[0]?.categories||[];
   const score=n=>cats.find(c=>c.categoryName===n)?.score||0;
   if((score('eyeBlinkLeft')+score('eyeBlinkRight'))/2>0.5)return 'eyes_closed'; // 눈 감김(졸음) 추정
