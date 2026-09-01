@@ -1401,6 +1401,7 @@ async function startPlanner(){
 
   // 먼저 현재 데이터로 즉시 렌더링 (빈 화면 방지)
   document.getElementById('pl-student').textContent=`${S.name} · ${S.school} · ${S.grade}학년`;
+  if(S.name)document.title=`${S.name}학생 종합플래니`;
   document.getElementById('yr-year').textContent=YEAR;
   document.getElementById('yr-info').textContent=`${S.name} · ${S.career||S.careerField||'진로 탐색 중'}`;
   if(!S.schoolSched.length)S.schoolSched=await fetchNeis();

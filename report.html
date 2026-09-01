@@ -408,6 +408,7 @@ async function boot(){
   document.getElementById('tb-academy').textContent=(ROOM&&ROOM.academy_name)||'학원';
   document.getElementById('stu-avatar').textContent=(STUDENT.name||'?')[0];
   document.getElementById('stu-name').textContent=STUDENT.name+' 학생';
+  if(STUDENT.name)document.title=`${STUDENT.name}학생 실시간리포트`;
   document.getElementById('stu-sub').textContent=`${STUDENT.school_name||'학교 미정'} · ${STUDENT.grade||'?'}학년`;
   document.getElementById('loading').style.display='none';
   document.getElementById('app').style.display='block';
