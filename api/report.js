@@ -34,8 +34,8 @@ export default async function handler(req, res) {
       if (name) {
         const safeName = escapeHtml(name);
         html = html
-          .replace('<title>학습 리포트</title>', `<title>${safeName} 학생 실시간리포트</title>`)
-          .replace('content="플래니 학습 리포트"', `content="${safeName} 학생 실시간리포트"`)
+          .replace('<title>학습 리포트</title>', `<title>${safeName} 학생 학습리포트</title>`)
+          .replace('content="플래니 학습 리포트"', `content="${safeName} 학생 학습리포트"`)
           .replace('content="플래니에서 학습 리포트를 확인해보세요"', `content="${safeName} 학생의 오늘 학습 현황을 확인해보세요"`);
       }
     } catch (err) {

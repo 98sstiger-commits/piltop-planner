@@ -34,9 +34,9 @@ export default async function handler(req, res) {
       if (name) {
         const safeName = escapeHtml(name);
         html = html
-          .replace('<title>플래니</title>', `<title>${safeName} 학생 종합플래니</title>`)
-          .replace('content="플래니"', `content="${safeName} 학생 종합플래니"`)
-          .replace('content="필탑학원 자기주도학습 플래니"', `content="${safeName} 학생의 종합 플래니를 확인해보세요"`);
+          .replace('<title>플래니</title>', `<title>${safeName} 학생 플래니</title>`)
+          .replace('content="플래니"', `content="${safeName} 학생 플래니"`)
+          .replace('content="필탑학원 자기주도학습 플래니"', `content="${safeName} 학생의 플래니를 확인해보세요"`);
       }
     } catch (err) {
       console.error('plannie 메타 태그용 학생 이름 조회 실패:', err);
