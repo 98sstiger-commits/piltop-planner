@@ -257,6 +257,14 @@ button{cursor:pointer;border:none;background:none;font-family:inherit}
 <div class="toast" id="toast"></div>
 
 <script>
+// 예전 서비스워커가 fetch를 가로채다 실패해서 이 페이지를 포함한
+// 사이트 전체가 옛날 버전에 붙잡혀 있던 문제가 있었습니다. 이 페이지가
+// 뜨면 바로 등록을 지워서 더 이상 아무 요청도 가로채지 못하게 합니다.
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.getRegistrations().then(regs=>{
+    regs.forEach(reg=>reg.unregister());
+  }).catch(()=>{});
+}
 const SB="https://zmtldohklivkzpfdyflc.supabase.co";
 const SK="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InptdGxkb2hrbGl2a3pwZmR5ZmxjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI5NjgxMDQsImV4cCI6MjA4ODU0NDEwNH0.cv1WrvDzNedVZABWyRCS9ARRxf4Si9qgeUqEvhpHWlo";
 const OWNER='piltop';

@@ -2669,10 +2669,14 @@ document.addEventListener('touchend', e => {
 }, { passive: false });
 
 // ── PWA ──
+// 예전에 등록했던 서비스워커가 fetch를 가로채다 실패해서 페이지가
+// 옛날 버전에 계속 붙잡혀 있는 문제가 있었습니다. 서비스워커의 자체
+// 업데이트 주기를 기다리지 않고, 페이지를 열 때마다 곧바로 등록을
+// 지워서 더 이상 아무 요청도 가로채지 못하게 합니다.
 if('serviceWorker' in navigator){
-  window.addEventListener('load', ()=>{
-    navigator.serviceWorker.register('/sw.js').catch(()=>{});
-  });
+  navigator.serviceWorker.getRegistrations().then(regs=>{
+    regs.forEach(reg=>reg.unregister());
+  }).catch(()=>{});
 }
 
 let deferredPrompt = null;
