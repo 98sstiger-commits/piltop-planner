@@ -8,12 +8,21 @@
       "memory": 512,
       "maxDuration": 60,
       "includeFiles": "report.html"
+    },
+    "api/plannie.js": {
+      "memory": 512,
+      "maxDuration": 60,
+      "includeFiles": "index.html"
     }
   },
   "rewrites": [
     {
       "source": "/report.html",
       "destination": "/api/report"
+    },
+    {
+      "source": "/index.html",
+      "destination": "/api/plannie"
     }
   ],
   "crons": [
