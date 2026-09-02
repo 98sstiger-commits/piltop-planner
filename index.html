@@ -537,6 +537,10 @@ textarea{resize:none}
 .rank-sub{font-size:10.5px;color:var(--ink3);margin-top:1px}
 .rank-time{font-size:12px;font-weight:800;color:var(--g);flex-shrink:0}
 .rank-empty{text-align:center;color:var(--ink3);font-size:12.5px;padding:24px 0}
+.rank-tabs{display:flex;gap:6px;margin-bottom:14px}
+.rank-tab{flex:1;padding:8px 0;border-radius:8px;background:var(--bg);border:1.5px solid var(--line2);color:var(--ink2);font-size:12.5px;font-weight:700;font-family:inherit}
+.rank-tab.active{background:var(--g);border-color:var(--g);color:#fff}
+.rank-range{font-size:11px;color:var(--ink3);text-align:center;margin:-6px 0 12px}
 .rank-my-row{margin-top:10px;padding-top:10px;border-top:1px dashed var(--line2)}
 </style>
 </head>
@@ -992,7 +996,7 @@ textarea{resize:none}
   <div class="sheet">
     <div class="sheet-grip"></div>
     <div class="sheet-hd">
-      <div><div class="sheet-ttl">🏆 이번 주 순공 랭킹</div><div class="sheet-sub" id="rank-sheet-sub">학교/학년만 보여요</div></div>
+      <div><div class="sheet-ttl">🏆 순공 랭킹</div><div class="sheet-sub" id="rank-sheet-sub">학교/학년만 보여요</div></div>
       <button class="sheet-x" onclick="closeRankSheet()">×</button>
     </div>
     <div class="sheet-bd">
@@ -1003,6 +1007,11 @@ textarea{resize:none}
           <button class="s-btn pri" style="flex:0 0 auto;width:auto;padding:0 16px" onclick="saveNickname()">저장</button>
         </div>
       </div>
+      <div class="rank-tabs">
+        <button type="button" class="rank-tab active" data-period="week" onclick="setStuRankPeriod('week')">주간</button>
+        <button type="button" class="rank-tab" data-period="month" onclick="setStuRankPeriod('month')">월간</button>
+      </div>
+      <div class="rank-range" id="rank-range"></div>
       <div id="rank-list"></div>
       <div id="rank-my-row"></div>
     </div>
@@ -2260,17 +2269,23 @@ async function initRankFeature(){
   document.getElementById('pl-rank-btn').style.display='flex';
   if(window.innerWidth<768)document.getElementById('mob-rank').style.display='flex';
 }
-function computeStudyMinutes(att,logsForAtt){
+function computeStudyMinutes(att,logsForAtt,rangeStart,rangeEnd){
   const sorted=(logsForAtt||[]).slice().sort((a,b)=>new Date(a.changed_at)-new Date(b.changed_at));
-  const end=att.checkout_at?new Date(att.checkout_at):new Date();
-  if(!sorted.length)return Math.max(0,(end-new Date(att.checkin_at))/60000);
+  const sessionEnd=att.checkout_at?new Date(att.checkout_at):new Date();
+  const clipStart=rangeStart&&rangeStart>new Date(att.checkin_at)?rangeStart:new Date(att.checkin_at);
+  const clipEnd=rangeEnd&&rangeEnd<sessionEnd?rangeEnd:sessionEnd;
+  if(clipEnd<=clipStart)return 0;
+  if(!sorted.length)return Math.max(0,(clipEnd-clipStart)/60000);
   let mins=0,curStatus='studying',curTime=new Date(att.checkin_at);
   sorted.forEach(l=>{
     const t=new Date(l.changed_at);
-    if(t>curTime&&curStatus==='studying')mins+=(t-curTime)/60000;
+    const segFrom=curTime<clipStart?clipStart:curTime;
+    const segTo=t>clipEnd?clipEnd:t;
+    if(segTo>segFrom&&curStatus==='studying')mins+=(segTo-segFrom)/60000;
     curStatus=l.status;curTime=t;
   });
-  if(end>curTime&&curStatus==='studying')mins+=(end-curTime)/60000;
+  const segFrom=curTime<clipStart?clipStart:curTime;
+  if(clipEnd>segFrom&&curStatus==='studying')mins+=(clipEnd-segFrom)/60000;
   return mins;
 }
 function fmtMinRank(min){const m=Math.round(min);const h=Math.floor(m/60);return h?`${h}시간 ${m%60}분`:`${m}분`;}
@@ -2282,23 +2297,48 @@ async function saveNickname(){
   S.nickname=v;
   toast('닉네임이 저장됐어요');
 }
-async function openRankSheet(){
+let stuRankPeriod='week';
+function setStuRankPeriod(period){
+  stuRankPeriod=period;
+  document.querySelectorAll('#rank-bg .rank-tab').forEach(b=>b.classList.toggle('active',b.dataset.period===period));
+  loadStuRankList();
+}
+function openRankSheet(){
   const isRealname=S.rankNameMode==='realname';
   document.getElementById('pe-nickname-group').style.display=isRealname?'none':'flex';
   document.getElementById('rank-sheet-sub').textContent=isRealname?'이름 · 학교/학년이 보여요':'닉네임 · 학교/학년만 보여요 (실명은 안 보여요)';
   document.getElementById('pe-nickname').value=S.nickname||'';
   document.getElementById('rank-bg').classList.add('open');
+  stuRankPeriod='week';
+  document.querySelectorAll('#rank-bg .rank-tab').forEach(b=>b.classList.toggle('active',b.dataset.period==='week'));
+  loadStuRankList();
+}
+async function loadStuRankList(){
+  const isRealname=S.rankNameMode==='realname';
   const listEl=document.getElementById('rank-list');
   const myEl=document.getElementById('rank-my-row');
   listEl.innerHTML='<div class="rank-empty">불러오는 중...</div>';
   myEl.innerHTML='';
   if(!S.roomId)return;
-  const mon=getMonday(new Date());
-  const sun7=new Date(mon.getTime()+7*86400000);
-  const start=`${dk(mon)}T00:00:00`,end=`${dk(sun7)}T00:00:00`;
+  let start,end,rangeLabel;
+  if(stuRankPeriod==='month'){
+    const now=new Date();
+    const first=new Date(now.getFullYear(),now.getMonth(),1);
+    const nextFirst=new Date(now.getFullYear(),now.getMonth()+1,1);
+    const last=new Date(nextFirst.getTime()-86400000);
+    start=`${dk(first)}T00:00:00`;end=`${dk(nextFirst)}T00:00:00`;
+    rangeLabel=`${first.getMonth()+1}/${first.getDate()} ~ ${last.getMonth()+1}/${last.getDate()}`;
+  }else{
+    const mon=getMonday(new Date());
+    const sun7=new Date(mon.getTime()+7*86400000);
+    const sun=new Date(sun7.getTime()-86400000);
+    start=`${dk(mon)}T00:00:00`;end=`${dk(sun7)}T00:00:00`;
+    rangeLabel=`${mon.getMonth()+1}/${mon.getDate()} ~ ${sun.getMonth()+1}/${sun.getDate()}`;
+  }
+  document.getElementById('rank-range').textContent=rangeLabel;
   const attRes=await sb(`attendance?room_id=eq.${S.roomId}&checkin_at=lt.${end}&or=(checkout_at.is.null,checkout_at.gte.${start})&select=id,student_id,checkin_at,checkout_at,status,planner_students(name,nickname,school,grade)`);
   const att=Array.isArray(attRes)?attRes:[];
-  if(!att.length){listEl.innerHTML='<div class="rank-empty">이번주 기록이 아직 없어요</div>';return;}
+  if(!att.length){listEl.innerHTML=`<div class="rank-empty">${stuRankPeriod==='month'?'이번 달':'이번 주'} 기록이 아직 없어요</div>`;return;}
   const ids=att.map(a=>a.id);
   const logsRes=ids.length?await sb(`attendance_status_log?attendance_id=in.(${ids.join(',')})&select=attendance_id,status,changed_at`):[];
   const logs=Array.isArray(logsRes)?logsRes:[];
@@ -2306,7 +2346,7 @@ async function openRankSheet(){
   logs.forEach(l=>{(logsByAtt[l.attendance_id]=logsByAtt[l.attendance_id]||[]).push(l);});
   const byStu={};
   att.forEach(a=>{
-    const mins=computeStudyMinutes(a,logsByAtt[a.id]);
+    const mins=computeStudyMinutes(a,logsByAtt[a.id],new Date(start),new Date(end));
     if(!byStu[a.student_id])byStu[a.student_id]={
       name:a.planner_students?.name||'',
       nickname:a.planner_students?.nickname||'',
