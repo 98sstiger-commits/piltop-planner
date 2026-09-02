@@ -330,6 +330,9 @@ body{font-family:'Pretendard','Noto Sans KR',sans-serif;color:var(--ink);min-hei
 .att-stat-num.st-away{color:#7C4DE0}
 .att-stat-lbl{font-size:11px;color:var(--ink2);margin-top:4px}
 .rank-list{display:flex;flex-direction:column;gap:8px}
+.rank-range-row{display:flex;align-items:center;justify-content:center;gap:8px;margin-top:3px}
+.rank-nav{width:22px;height:22px;border-radius:50%;background:#F6F5F2;border:1px solid var(--line2);color:var(--ink2);font-size:10px;display:flex;align-items:center;justify-content:center;font-family:inherit;flex-shrink:0}
+.rank-nav:disabled{opacity:.35}
 .rank-tabs{display:flex;gap:6px;margin-top:10px}
 .rank-tab{padding:6px 14px;border-radius:20px;background:#F6F5F2;border:1.5px solid var(--line2);color:var(--ink2);font-size:12px;font-weight:700;font-family:inherit}
 .rank-tab.active{background:var(--green);border-color:var(--green);color:#fff}
@@ -586,7 +589,11 @@ body{font-family:'Pretendard','Noto Sans KR',sans-serif;color:var(--ink);min-hei
   <div class="card" style="margin-bottom:16px">
     <div class="card-hd">
       <div class="card-title">공부시간 랭킹</div>
-      <div class="card-sub" id="rank-range"></div>
+      <div class="rank-range-row">
+        <button type="button" class="rank-nav" onclick="navRankPeriod(-1)">◀</button>
+        <div class="card-sub" id="rank-range"></div>
+        <button type="button" class="rank-nav" id="rank-nav-next" onclick="navRankPeriod(1)">▶</button>
+      </div>
       <div class="rank-tabs">
         <button type="button" class="rank-tab active" data-period="week" onclick="setRankPeriod('week')">주간</button>
         <button type="button" class="rank-tab" data-period="month" onclick="setRankPeriod('month')">월간</button>
@@ -2383,10 +2390,16 @@ async function filterByFocusRate(statList,attRows,start,end){
     return (fs.focused/fs.total*100)>=RANK_MIN_FOCUS_RATE;
   });
 }
-let rankPeriod='week';
+let rankPeriod='week',rankOffset=0;
 function setRankPeriod(period){
   rankPeriod=period;
+  rankOffset=0;
   document.querySelectorAll('.rank-tab').forEach(b=>b.classList.toggle('active',b.dataset.period===period));
+  loadRankList();
+}
+function navRankPeriod(delta){
+  if(rankOffset+delta>0)return; // 미래로는 못 감
+  rankOffset+=delta;
   loadRankList();
 }
 async function loadRankList(){
@@ -2395,18 +2408,19 @@ async function loadRankList(){
   let start,end,rangeLabel;
   if(rankPeriod==='month'){
     const now=new Date();
-    const first=new Date(now.getFullYear(),now.getMonth(),1);
-    const nextFirst=new Date(now.getFullYear(),now.getMonth()+1,1);
+    const first=new Date(now.getFullYear(),now.getMonth()+rankOffset,1);
+    const nextFirst=new Date(now.getFullYear(),now.getMonth()+rankOffset+1,1);
     const last=addDaysA(nextFirst,-1);
     start=`${dk(first)}T00:00:00`;end=`${dk(nextFirst)}T00:00:00`;
     rangeLabel=`${first.getMonth()+1}/${first.getDate()} ~ ${last.getMonth()+1}/${last.getDate()}`;
   }else{
-    const mon=mondayOfA(new Date());
+    const mon=mondayOfA(addDaysA(new Date(),rankOffset*7));
     const sun=addDaysA(mon,6);
     start=`${dk(mon)}T00:00:00`;end=`${dk(addDaysA(mon,7))}T00:00:00`;
     rangeLabel=`${mon.getMonth()+1}/${mon.getDate()} ~ ${sun.getMonth()+1}/${sun.getDate()}`;
   }
   document.getElementById('rank-range').textContent=rangeLabel;
+  document.getElementById('rank-nav-next').disabled=rankOffset>=0;
   try{
     const rowsRes=await sb(`attendance?checkin_at=lt.${end}&or=(checkout_at.is.null,checkout_at.gte.${start})${filter}&select=id,student_id,checkin_at,checkout_at,planner_students(name,nickname)`);
     const rows=Array.isArray(rowsRes)?rowsRes:[];

@@ -2506,7 +2506,12 @@ const FOCUS_YAW_LIMIT=35,FOCUS_PITCH_LIMIT=50;
 // 사람만 이 좌석의 학생으로 인정하기 위해, 얼굴이 화면 폭의 일정 비율
 // 이상을 채울 때만 유효한 얼굴로 취급합니다. 뒷자리 학생은 카메라에서
 // 더 멀리 있어 화면에 작게 잡히므로 이 기준에 걸러집니다.
-const FOCUS_MIN_FACE_SPAN=0.16;
+// 기준값은 "카메라에서 약 80cm 이내는 무조건 이 좌석 학생으로 인정"을
+// 목표로 넉넉하게(태블릿 카메라 화각 차이를 감안해 여유있게) 잡았고,
+// 실제로는 1.5m 이상 떨어진 뒷자리 학생만 걸러내는 정도입니다. 기기별
+// 화각 차이가 있어서, 실사용 중 너무 엄격하다/느슨하다 싶으면 조정이
+// 필요할 수 있습니다.
+const FOCUS_MIN_FACE_SPAN=0.12;
 function faceBoundingSpan(landmarks){
   let minX=1,maxX=0,minY=1,maxY=0;
   for(const p of landmarks){
