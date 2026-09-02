@@ -1823,6 +1823,7 @@ function renderDy(){
 // 그대로 똑같이 보여야 하기 때문에(용도별로 다른 계산식을 쓰면
 // 화면마다 숫자가 달라 보여 혼란스럽습니다), 세 화면 모두 이 방식
 // 하나로 통일합니다.
+const MIN_FOCUS_SAMPLES=5;
 async function loadTodayFocus(){
   const el=document.getElementById('dy-focus');
   const todayKey=dk(new Date());
@@ -1834,6 +1835,14 @@ async function loadTodayFocus(){
     const logRows=await sb(`focus_log?attendance_id=in.(${ids.join(',')})&select=focused,checked_at&checked_at=gte.${todayKey}T00:00:00&order=checked_at.asc`);
     const logs=Array.isArray(logRows)?logRows:[];
     if(!logs.length){el.style.display='none';return;}
+    // 표본이 몇 개 안 될 때(방금 켜서 아직 자리 잡는 중일 때 등)는
+    // 그 중 하나만 잘못 잡혀도 비율이 크게 튀어서 신뢰할 수 없습니다.
+    // 최소 표본이 쌓이기 전에는 숫자 대신 "측정 중"으로 보여줍니다.
+    if(logs.length<MIN_FOCUS_SAMPLES){
+      document.getElementById('dy-focus-val').textContent='측정 중…';
+      el.style.display='flex';
+      return;
+    }
     // 표본 개수가 아니라 표본이 대표하는 시간(직전 표본 이후 지난 시간)
     // 으로 가중치를 줍니다 — 화면 꺼짐/백그라운드로 자리 비운 동안
     // 샘플링이 뜸해지면, 표본 개수만으로는 그 시간이 실제보다 훨씬

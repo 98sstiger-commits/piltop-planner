@@ -508,6 +508,7 @@ async function render(){
 }
 
 /* ══════════ 일간 ══════════ */
+const MIN_FOCUS_SAMPLES=5;
 async function renderDaily(gen){
   const d=STATE.date,ds=dk(d);
   document.getElementById('dn-label').textContent=`${d.getMonth()+1}월 ${d.getDate()}일 (${DOW[d.getDay()]})`;
@@ -531,8 +532,12 @@ async function renderDaily(gen){
   // 남습니다. 학생 플래니·관리자 화면과 동일한 계산식입니다.
   const focusInfo=await fetchFocusRate(att.map(a=>a.id),start,end);
   if(focusInfo&&gen===renderGen)LAST_FOCUS_INFO=focusInfo;
+  // 표본이 몇 개 안 될 때(막 켜서 자리 잡는 중일 때 등)는 그 중 하나만
+  // 잘못 잡혀도 비율이 크게 튀어서 신뢰할 수 없으므로, 최소 표본이
+  // 쌓이기 전에는 %를 보여주지 않고 "측정 중"으로 대신 표시합니다.
+  const focusReady=focusInfo&&focusInfo.total>=MIN_FOCUS_SAMPLES;
   const prevDay=addDays(d,-1);
-  const prevFocusInfo=focusInfo?await fetchFocusRateForRange(`${dk(prevDay)}T00:00:00`,start):null;
+  const prevFocusInfo=focusReady?await fetchFocusRateForRange(`${dk(prevDay)}T00:00:00`,start):null;
 
   let html=`<div class="card">
     <div class="card-ttl">📊 오늘 요약</div>
@@ -540,9 +545,9 @@ async function renderDaily(gen){
       <div class="stat-cell"><div class="stat-num">${fmtMin(totalMin)}</div><div class="stat-lbl">총 계획 시간</div></div>
       <div class="stat-cell"><div class="stat-num">${clRate}%</div><div class="stat-lbl">체크리스트 달성</div></div>
       <div class="stat-cell"><div class="stat-num">${fmtMin(seg.studying)}</div><div class="stat-lbl">독서실 순공시간</div></div>
-      ${focusInfo?`<div class="stat-cell" style="cursor:pointer" onclick="showFocusDetail()"><div class="stat-num">${focusInfo.rate}%</div><div class="stat-lbl">집중도 <span style="opacity:.55">ⓘ</span></div></div>`:''}
+      ${focusInfo?`<div class="stat-cell"${focusReady?' style="cursor:pointer" onclick="showFocusDetail()"':''}><div class="stat-num">${focusReady?focusInfo.rate+'%':'측정 중…'}</div><div class="stat-lbl">집중도 <span style="opacity:.55">ⓘ</span></div></div>`:''}
     </div>
-    ${focusInfo?`<div onclick="showFocusDetail()">${renderFocusCompare(focusInfo,prevFocusInfo,'어제')}</div>`:''}
+    ${focusReady?`<div onclick="showFocusDetail()">${renderFocusCompare(focusInfo,prevFocusInfo,'어제')}</div>`:''}
   </div>
 
   <div class="card">

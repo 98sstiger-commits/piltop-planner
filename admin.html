@@ -1578,6 +1578,7 @@ async function loadLiveViewTab(forceRender){
 // 입실 시점부터 지금까지 누적해서 시간 가중 평균을 냅니다 — 학생
 // 플래니·학부모 리포트와 동일한 계산식으로 통일해서, 어느 화면에서
 // 봐도 같은 숫자가 실시간으로 반영되게 합니다.
+const MIN_FOCUS_SAMPLES=5;
 async function computeTodayFocusRates(attIds){
   if(!attIds.length)return{};
   const todayStart=`${dk(new Date())}T00:00:00`;
@@ -1588,16 +1589,23 @@ async function computeTodayFocusRates(attIds){
   const MAX_GAP_MS=5*60*1000,DEFAULT_GAP_MS=8000;
   const byAtt={};
   (Array.isArray(rows)?rows:[]).forEach(f=>{
-    if(!byAtt[f.attendance_id])byAtt[f.attendance_id]={totalWeight:0,focusedWeight:0,prevTs:null};
+    if(!byAtt[f.attendance_id])byAtt[f.attendance_id]={totalWeight:0,focusedWeight:0,prevTs:null,count:0};
     const st=byAtt[f.attendance_id];
     const ts=new Date(f.checked_at).getTime();
     const gap=st.prevTs!==null?Math.min(ts-st.prevTs,MAX_GAP_MS):DEFAULT_GAP_MS;
     st.prevTs=ts;
     st.totalWeight+=gap;
+    st.count++;
     if(f.focused)st.focusedWeight+=gap;
   });
+  // 표본이 몇 개 안 될 때(막 켜서 자리 잡는 중일 때 등)는 그 중 하나만
+  // 잘못 잡혀도 비율이 크게 튀어서 신뢰할 수 없으므로, 최소 표본이
+  // 쌓이기 전에는 숫자 대신 'measuring'을 돌려줍니다.
   const result={};
-  Object.keys(byAtt).forEach(attId=>{result[attId]=Math.round(byAtt[attId].focusedWeight/byAtt[attId].totalWeight*100);});
+  Object.keys(byAtt).forEach(attId=>{
+    const st=byAtt[attId];
+    result[attId]=st.count<MIN_FOCUS_SAMPLES?'measuring':Math.round(st.focusedWeight/st.totalWeight*100);
+  });
   return result;
 }
 async function refreshFocusBadges(){
@@ -1620,7 +1628,7 @@ async function refreshFocusBadges(){
     if(!t){el.style.display='none';return;}
     const ageSec=Math.round((now-new Date(t).getTime())/1000);
     const pct=rates[s.id];
-    const pctTxt=pct!=null?` 집중도 ${pct}%`:'';
+    const pctTxt=pct==null?'':pct==='measuring'?' 집중도 측정 중…':` 집중도 ${pct}%`;
     el.style.display='block';
     if(ageSec<20){el.textContent=`🟢${pctTxt}`;el.style.color='#7BE6A8';}
     else{el.textContent=`🟡${pctTxt} (${ageSec}초 전 기록)`;el.style.color='#E8D48A';}
