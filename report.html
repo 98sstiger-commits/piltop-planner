@@ -278,9 +278,11 @@ function groupLogsByAttendance(logs){
   return m;
 }
 async function fetchAttWithSegments(query,rangeStart,rangeEnd){
-  const att=await sb(query)||[];
+  const attRes=await sb(query);
+  const att=Array.isArray(attRes)?attRes:[];
   const ids=att.map(a=>a.id);
-  const logs=ids.length?(await sb(`attendance_status_log?attendance_id=in.(${ids.join(',')})&select=attendance_id,status,changed_at`)||[]):[];
+  const logsRes=ids.length?await sb(`attendance_status_log?attendance_id=in.(${ids.join(',')})&select=attendance_id,status,changed_at`):[];
+  const logs=Array.isArray(logsRes)?logsRes:[];
   const logsByAtt=groupLogsByAttendance(logs);
   att.forEach(a=>{a._seg=computeAttSegments(a,logsByAtt[a.id],rangeStart,rangeEnd);});
   return att;

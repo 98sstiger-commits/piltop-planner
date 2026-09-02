@@ -954,7 +954,8 @@ let ALL_STUDENTS=[],STU_FILTER='all',STU_PAGE=1;
 const STU_PAGE_SIZE=10;
 
 async function loadStudents(){
-  ALL_STUDENTS=await sb('planner_students?select=*&order=created_at.desc')||[];
+  const studentsRes=await sb('planner_students?select=*&order=created_at.desc');
+  ALL_STUDENTS=Array.isArray(studentsRes)?studentsRes:[];
   document.getElementById('list-badge').textContent=ALL_STUDENTS.length+'명';
   renderStudentList();
 }
@@ -1342,7 +1343,8 @@ function requestKioskExit(){
 /* ── 독서실 목록 (셀렉트 공용) ── */
 let curSeatRoomId=null;
 async function loadRoomsForSelects(){
-  ROOMS=await sb(`study_rooms?owner_id=eq.piltop&select=*&order=created_at.asc`)||[];
+  const roomsRes=await sb(`study_rooms?owner_id=eq.piltop&select=*&order=created_at.asc`);
+  ROOMS=Array.isArray(roomsRes)?roomsRes:[];
   const opts=ROOMS.map(r=>`<option value="${r.id}">${r.name}</option>`).join('');
   document.getElementById('s-room').innerHTML=`<option value="">미배정</option>`+opts;
   document.getElementById('seat-room-select').innerHTML=opts||'<option value="">독서실 없음</option>';
