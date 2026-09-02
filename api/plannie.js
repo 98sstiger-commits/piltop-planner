@@ -28,6 +28,7 @@ export default async function handler(req, res) {
     try {
       const r = await fetch(`${SB_URL}/rest/v1/planner_students?id=eq.${encodeURIComponent(id)}&select=name`, {
         headers: { apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}` },
+        signal: AbortSignal.timeout(3000),
       });
       const rows = await r.json();
       const name = Array.isArray(rows) && rows[0]?.name;
