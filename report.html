@@ -339,7 +339,11 @@ async function fetchFocusRate(attIds,start,end){
   if(start)q+=`&checked_at=gte.${start}`;
   if(end)q+=`&checked_at=lt.${end}`;
   const rows=await sb(q);
-  fdbg(`focus_log 조회: ${Array.isArray(rows)?rows.length+'개 행':'오류 '+JSON.stringify(rows).slice(0,150)}`);
+  if(Array.isArray(rows)&&rows.length){
+    fdbg(`focus_log 조회: ${rows.length}개 행, 첫=${rows[0].checked_at} 끝=${rows[rows.length-1].checked_at} now=${new Date().toISOString()} q_start=${start} q_end=${end}`);
+  }else{
+    fdbg(`focus_log 조회: 0개 행 (q=${q.slice(0,200)})`);
+  }
   if(!Array.isArray(rows)||!rows.length)return null;
   // 표본 개수를 똑같은 비중으로 세면, 태블릿이 화면 꺼짐/백그라운드 등
   // 이유로 일시적으로 샘플링 간격이 벌어졌을 때(예: 자리를 오래 비운
