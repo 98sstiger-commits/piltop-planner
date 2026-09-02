@@ -2569,7 +2569,8 @@ function focusSampleLoop(){
     const ts=performance.now();
     const result=focusLandmarker.detectForVideo(focusVideo,ts);
     const reason=classifyFocus(result,ts);
-    sb('focus_log',{method:'POST',body:JSON.stringify({attendance_id:focusAttId,focused:reason==='focused',reason})});
+    sb('focus_log',{method:'POST',body:JSON.stringify({attendance_id:focusAttId,focused:reason==='focused',reason})})
+      .then(r=>{if(!Array.isArray(r))console.error('집중도 기록 저장 실패 — Supabase에 최신 schema.sql을 실행했는지 확인해주세요',r);});
   }catch(e){console.warn('집중도 프레임 분석 실패',e);}
   focusLoopId=setTimeout(focusSampleLoop,8000);
 }
