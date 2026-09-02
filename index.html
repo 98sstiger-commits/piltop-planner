@@ -2527,10 +2527,11 @@ async function initFocusFeature(){
 }
 async function checkFocusEligibility(){
   if(!S.focusEnabled)return;
-  const rows=await sb(`attendance?student_id=eq.${S.id}&checkout_at=is.null&select=id,status`);
-  const att=Array.isArray(rows)&&rows[0];
+  const rows=await sb(`attendance?student_id=eq.${S.id}&checkout_at=is.null&select=id,status,checkin_at&order=checkin_at.desc`);
+  const list=Array.isArray(rows)?rows:[];
+  const att=list[0];
   const shouldRun=!!(att&&att.status==='studying');
-  fdbg(`eligibility: status=${att&&att.status} shouldRun=${shouldRun} focusActive=${focusActive}`);
+  fdbg(`eligibility: 열린출석${list.length}개 id=${att&&att.id} checkin=${att&&att.checkin_at} status=${att&&att.status} focusActive=${focusActive}`);
   if(shouldRun&&!focusActive)startFocusTracking(att.id);
   else if(!shouldRun&&focusActive)stopFocusTracking();
 }
