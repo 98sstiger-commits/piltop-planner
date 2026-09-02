@@ -517,10 +517,19 @@ async function renderDaily(){
   const att=await fetchAttWithSegments(`attendance?student_id=eq.${STATE.id}&checkin_at=lt.${end}&or=(checkout_at.is.null,checkout_at.gte.${start})&select=id,checkin_at,checkout_at,status,seat_number,seats(seat_number,label)&order=checkin_at.asc`,new Date(start),new Date(end));
   const seg=sumSeg(att);
   const flagNote=awayFlagNote(seg);
-  const focusInfo=await fetchFocusRate(att.map(a=>a.id),start,end);
+  // 오늘 아직 퇴실 전(진행 중)이면, 하루 전체 누적 평균 대신 최근
+  // 15분만 보는 값으로 보여줍니다 — 몇 시간 잘 쌓인 상태에서는 방금
+  // 자리를 비운 게 전체 평균에 거의 반영이 안 돼서, 지금 이 순간을
+  // 보고 싶은 학부모 입장에서는 둔하게 느껴지기 때문입니다. 학생이
+  // 퇴실해서 하루가 마무리되면, 그 시점부터는 하루 전체를 공정하게
+  // 담은 누적 값이 그날의 최종 기록으로 고정됩니다.
+  const isOngoing=ds===dk(new Date())&&att.some(a=>!a.checkout_at);
+  const focusInfo=isOngoing
+    ?await fetchFocusRate(att.map(a=>a.id),new Date(Date.now()-15*60000).toISOString())
+    :await fetchFocusRate(att.map(a=>a.id),start,end);
   if(focusInfo)LAST_FOCUS_INFO=focusInfo;
   const prevDay=addDays(d,-1);
-  const prevFocusInfo=focusInfo?await fetchFocusRateForRange(`${dk(prevDay)}T00:00:00`,start):null;
+  const prevFocusInfo=(focusInfo&&!isOngoing)?await fetchFocusRateForRange(`${dk(prevDay)}T00:00:00`,start):null;
 
   let html=`<div class="card">
     <div class="card-ttl">📊 오늘 요약</div>
@@ -528,9 +537,10 @@ async function renderDaily(){
       <div class="stat-cell"><div class="stat-num">${fmtMin(totalMin)}</div><div class="stat-lbl">총 계획 시간</div></div>
       <div class="stat-cell"><div class="stat-num">${clRate}%</div><div class="stat-lbl">체크리스트 달성</div></div>
       <div class="stat-cell"><div class="stat-num">${fmtMin(seg.studying)}</div><div class="stat-lbl">독서실 순공시간</div></div>
-      ${focusInfo?`<div class="stat-cell" style="cursor:pointer" onclick="showFocusDetail()"><div class="stat-num">${focusInfo.rate}%</div><div class="stat-lbl">집중도 <span style="opacity:.55">ⓘ</span></div></div>`:''}
+      ${focusInfo?`<div class="stat-cell" style="cursor:pointer" onclick="showFocusDetail()"><div class="stat-num">${focusInfo.rate}%</div><div class="stat-lbl">집중도${isOngoing?' (최근 15분)':''} <span style="opacity:.55">ⓘ</span></div></div>`:''}
     </div>
-    ${focusInfo?`<div onclick="showFocusDetail()">${renderFocusCompare(focusInfo,prevFocusInfo,'어제')}</div>`:''}
+    ${focusInfo&&!isOngoing?`<div onclick="showFocusDetail()">${renderFocusCompare(focusInfo,prevFocusInfo,'어제')}</div>`:''}
+    ${focusInfo&&isOngoing?`<div class="focus-compare none" onclick="showFocusDetail()">아직 진행 중이에요 — 퇴실하면 오늘 전체 기준으로 확정돼요</div>`:''}
   </div>
 
   <div class="card">
