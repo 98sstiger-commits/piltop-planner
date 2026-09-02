@@ -2572,6 +2572,24 @@ async function loadDateRecord(){
 }
 
 /* ══ 설정 탭 ══ */
+// 방 ID만으로는 이 방에 실제 출석 기록이 쌓이고 있는지 알기 어려워서,
+// 이번 주 이 방 전체 순공시간 합계를 같이 보여줍니다 — 학생 프로필의
+// room_id가 엉뚱한(기록 없는) 방을 가리키고 있는지 바로 확인할 수 있게.
+async function renderRoomStudySummary(roomId){
+  const el=document.getElementById('set-room-id');
+  try{
+    const mon=mondayOfA(new Date());
+    const start=`${dk(mon)}T00:00:00`,end=`${dk(addDaysA(mon,7))}T00:00:00`;
+    const rowsRes=await sb(`attendance?room_id=eq.${roomId}&checkin_at=lt.${end}&or=(checkout_at.is.null,checkout_at.gte.${start})&select=id,checkin_at,checkout_at`);
+    const rows=Array.isArray(rowsRes)?rowsRes:[];
+    const ids=rows.map(a=>a.id);
+    const logsRes=ids.length?await sb(`attendance_status_log?attendance_id=in.(${ids.join(',')})&select=attendance_id,status,changed_at`):[];
+    const logsByAtt=groupLogsByAttendance(Array.isArray(logsRes)?logsRes:[]);
+    let totalMin=0;
+    rows.forEach(a=>{totalMin+=computeAttSegments(a,logsByAtt[a.id],new Date(start),new Date(end)).studying;});
+    el.textContent=`방 ID: ${roomId} · 이번 주 이 방 순공시간 합계: ${fmtMinA(totalMin)} (출석 ${rows.length}건)`;
+  }catch(e){}
+}
 function loadSettingsTab(){
   if(!ROOMS.length)return;
   const roomId=document.getElementById('set-room-select').value||ROOMS[0].id;
@@ -2579,6 +2597,7 @@ function loadSettingsTab(){
   const room=ROOMS.find(r=>r.id===roomId);
   if(!room)return;
   document.getElementById('set-room-id').textContent=`방 ID: ${room.id}`;
+  renderRoomStudySummary(roomId);
   document.getElementById('set-academy').value=room.academy_name||'';
   document.getElementById('set-room-name').value=room.name||'';
   document.getElementById('set-room-desc').value=room.description||'';
