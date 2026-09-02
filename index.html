@@ -531,7 +531,9 @@ textarea{resize:none}
 .rank-row{display:flex;align-items:center;gap:12px;padding:11px 12px;background:var(--bg);border-radius:10px;margin-bottom:7px}
 .rank-row.me{background:#E6F4EA;box-shadow:inset 0 0 0 1.5px var(--g)}
 .rank-no{width:24px;height:24px;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:var(--ink2);flex-shrink:0}
-.rank-no.top{background:var(--g);color:#fff}
+.rank-no.gold{background:#D4A017;color:#fff}
+.rank-no.silver{background:#9AA0A6;color:#fff}
+.rank-no.bronze{background:#B4763A;color:#fff}
 .rank-info{flex:1;min-width:0}
 .rank-name{font-size:13px;font-weight:700;color:var(--ink)}
 .rank-sub{font-size:10.5px;color:var(--ink3);margin-top:1px}
@@ -2388,9 +2390,10 @@ async function loadStuRankList(){
   const filtered=await filterByFocusRate(Object.entries(byStu).map(([id,v])=>({id,...v})),att,start,end);
   const ranked=filtered.sort((a,b)=>b.min-a.min);
   const top5=ranked.slice(0,5);
+  const rankMedal=i=>['gold','silver','bronze'][i]?` ${['gold','silver','bronze'][i]}`:'';
   listEl.innerHTML=top5.map((r,i)=>`
     <div class="rank-row${r.id===S.id?' me':''}">
-      <div class="rank-no${i<3?' top':''}">${i+1}</div>
+      <div class="rank-no${rankMedal(i)}">${i+1}</div>
       <div class="rank-info">
         <div class="rank-name">${displayName(r)}</div>
         <div class="rank-sub">${r.school||''}${r.school&&r.grade?' · ':''}${r.grade?r.grade+'학년':''}</div>

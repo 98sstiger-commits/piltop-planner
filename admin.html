@@ -338,7 +338,9 @@ body{font-family:'Pretendard','Noto Sans KR',sans-serif;color:var(--ink);min-hei
 .rank-tab.active{background:var(--green);border-color:var(--green);color:#fff}
 .rank-row{display:flex;align-items:center;gap:12px;padding:10px 12px;background:var(--surf);border:1px solid var(--line);border-radius:10px}
 .rank-no{width:22px;height:22px;border-radius:50%;background:var(--bg);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:var(--ink2);flex-shrink:0}
-.rank-no.top{background:var(--green);color:#fff}
+.rank-no.gold{background:#D4A017;color:#fff}
+.rank-no.silver{background:#9AA0A6;color:#fff}
+.rank-no.bronze{background:#B4763A;color:#fff}
 .rank-name{flex:1;font-size:13px;font-weight:600}
 .rank-time{font-size:12px;font-weight:700;color:var(--green)}
 .alert-list{display:flex;flex-direction:column;gap:6px}
@@ -2435,7 +2437,8 @@ async function loadRankList(){
       byStu[a.student_id].min+=mins;
     });
     const ranked=(await filterByFocusRate(Object.values(byStu),rows,start,end)).sort((a,b)=>b.min-a.min).slice(0,10);
-    document.getElementById('rank-list').innerHTML=ranked.length?ranked.map((r,i)=>`<div class="rank-row"><div class="rank-no ${i<3?'top':''}">${i+1}</div><div class="rank-name">${r.name}${r.nickname?` <span style="font-size:11px;font-weight:500;color:var(--ink2)">(${r.nickname})</span>`:''}</div><div class="rank-time">${fmtMinA(r.min)}</div></div>`).join(''):'<div class="empty">데이터가 없어요</div>';
+    const rankMedal=i=>['gold','silver','bronze'][i]||'';
+    document.getElementById('rank-list').innerHTML=ranked.length?ranked.map((r,i)=>`<div class="rank-row"><div class="rank-no ${rankMedal(i)}">${i+1}</div><div class="rank-name">${r.name}${r.nickname?` <span style="font-size:11px;font-weight:500;color:var(--ink2)">(${r.nickname})</span>`:''}</div><div class="rank-time">${fmtMinA(r.min)}</div></div>`).join(''):'<div class="empty">데이터가 없어요</div>';
   }catch(e){
     console.error('공부시간 랭킹을 불러오지 못했어요 — Supabase에 최신 schema.sql(attendance_status_log)을 실행했는지 확인해주세요:',e);
     document.getElementById('rank-list').innerHTML='<div class="empty">랭킹을 불러오지 못했어요</div>';
