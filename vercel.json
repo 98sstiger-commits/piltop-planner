@@ -1,9 +1,13 @@
 {
   "functions": {
-    "api/*.js": {
-      "memory": 512,
-      "maxDuration": 60
-    },
+    "api/admin-login.js": { "memory": 512, "maxDuration": 60 },
+    "api/detect-seats.js": { "memory": 512, "maxDuration": 60 },
+    "api/generate-plan.js": { "memory": 512, "maxDuration": 60 },
+    "api/generate-report-comment.js": { "memory": 512, "maxDuration": 60 },
+    "api/generate-study-strategy.js": { "memory": 512, "maxDuration": 60 },
+    "api/send-notify.js": { "memory": 512, "maxDuration": 60 },
+    "api/turn-credential.js": { "memory": 512, "maxDuration": 60 },
+    "api/weekly-report-cron.js": { "memory": 512, "maxDuration": 60 },
     "api/report.js": {
       "memory": 512,
       "maxDuration": 60,
