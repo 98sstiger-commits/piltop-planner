@@ -446,6 +446,13 @@ async function boot(){
   switchType(STATE.type,true);
   loadLiveStatus();
   setInterval(loadLiveStatus,30000);
+  // 학생 플래니 쪽 "오늘 집중도"는 30초마다 자동으로 갱신되는데,
+  // 여기는 탭을 만지거나 새로고침해야만 다시 계산돼서 학생 화면과
+  // 숫자가 안 맞아 보이는 문제가 있었습니다. 오늘 날짜의 일간 화면을
+  // 보고 있을 때는 여기도 똑같이 30초마다 자동으로 다시 불러옵니다.
+  setInterval(()=>{
+    if(STATE.type==='daily'&&dk(STATE.date)===dk(new Date()))render();
+  },30000);
 }
 // 학부모가 이 링크를 열 때마다(또는 켜둔 채로 기다리는 동안) 그 순간의
 // 진짜 상태를 보여줍니다 — 일간/주간/월간 통계는 지나간 기록이라,
