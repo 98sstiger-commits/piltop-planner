@@ -939,6 +939,13 @@ textarea{resize:none}
       <button class="sheet-x" onclick="closeProfSheet()">×</button>
     </div>
     <div class="sheet-bd">
+      <div class="prof-group" id="pe-nickname-group" style="margin-bottom:16px">
+        <div class="prof-lbl">내 닉네임 (순공 랭킹에 이 이름으로 표시돼요)</div>
+        <div style="display:flex;gap:7px">
+          <input class="prof-input" id="pe-nickname" placeholder="예: 열공왕" maxlength="12" style="flex:1">
+          <button class="s-btn pri" style="flex:0 0 auto;width:auto;padding:0 16px" onclick="saveNickname()">저장</button>
+        </div>
+      </div>
       <div class="prof-grid">
         <div class="prof-group">
           <div class="prof-lbl">진로 / 직업</div>
@@ -1002,13 +1009,6 @@ textarea{resize:none}
       <button class="sheet-x" onclick="closeRankSheet()">×</button>
     </div>
     <div class="sheet-bd">
-      <div class="prof-group" id="pe-nickname-group" style="margin-bottom:16px">
-        <div class="prof-lbl">내 닉네임 (랭킹에 이 이름으로 표시돼요)</div>
-        <div style="display:flex;gap:7px">
-          <input class="prof-input" id="pe-nickname" placeholder="예: 열공왕" maxlength="12" style="flex:1">
-          <button class="s-btn pri" style="flex:0 0 auto;width:auto;padding:0 16px" onclick="saveNickname()">저장</button>
-        </div>
-      </div>
       <div class="rank-tabs">
         <button type="button" class="rank-tab active" data-period="week" onclick="setStuRankPeriod('week')">주간</button>
         <button type="button" class="rank-tab" data-period="month" onclick="setStuRankPeriod('month')">월간</button>
@@ -2053,7 +2053,7 @@ async function saveDaySheet(){
 function goToDaySheet(){if(!modalDate)return;S.curDay=new Date(modalDate);closeDaySheet();goView(3);}
 
 /* ── 프로필 ── */
-function openProf(){document.getElementById('pe-career').value=S.career||S.careerField||'';document.getElementById('pe-u1').value=S.u1||'';document.getElementById('pe-d1').value=S.d1||'';document.getElementById('pe-u2').value=S.u2||'';document.getElementById('pe-d2').value=S.d2||'';document.getElementById('prof-bg').classList.add('open');}
+function openProf(){document.getElementById('pe-nickname-group').style.display=S.rankNameMode==='nickname'?'flex':'none';document.getElementById('pe-nickname').value=S.nickname||'';document.getElementById('pe-career').value=S.career||S.careerField||'';document.getElementById('pe-u1').value=S.u1||'';document.getElementById('pe-d1').value=S.d1||'';document.getElementById('pe-u2').value=S.u2||'';document.getElementById('pe-d2').value=S.d2||'';document.getElementById('prof-bg').classList.add('open');}
 function closeProfSheet(){document.getElementById('prof-bg').classList.remove('open');}
 
 /* ── 시험 성적 · 학습전략 ── */
@@ -2335,9 +2335,7 @@ function setStuRankPeriod(period){
 }
 function openRankSheet(){
   const isRealname=S.rankNameMode==='realname';
-  document.getElementById('pe-nickname-group').style.display=isRealname?'none':'flex';
   document.getElementById('rank-sheet-sub').textContent=isRealname?'이름 · 학교/학년이 보여요':'닉네임 · 학교/학년만 보여요 (실명은 안 보여요)';
-  document.getElementById('pe-nickname').value=S.nickname||'';
   document.getElementById('rank-bg').classList.add('open');
   stuRankPeriod='week';
   document.querySelectorAll('#rank-bg .rank-tab').forEach(b=>b.classList.toggle('active',b.dataset.period==='week'));
