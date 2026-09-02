@@ -1048,7 +1048,7 @@ textarea{resize:none}
 <script src="quotes.js"></script>
 <script>
 /* ── 상수 ── */
-const APP_BUILD='2026-09-02-rank2'; // 태블릿이 최신 코드를 받았는지 확인용(정보 수정 시트 하단에 표시)
+const APP_BUILD='2026-09-02-rank3'; // 태블릿이 최신 코드를 받았는지 확인용(정보 수정 시트 하단에 표시)
 const SB="https://zmtldohklivkzpfdyflc.supabase.co";
 const SK="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InptdGxkb2hrbGl2a3pwZmR5ZmxjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI5NjgxMDQsImV4cCI6MjA4ODU0NDEwNH0.cv1WrvDzNedVZABWyRCS9ARRxf4Si9qgeUqEvhpHWlo";
 const NEIS="6544e426d2dc47f58a653ff11abbe91a";
@@ -2377,9 +2377,15 @@ async function loadStuRankList(){
     rangeLabel=`${mon.getMonth()+1}/${mon.getDate()} ~ ${sun.getMonth()+1}/${sun.getDate()}`;
   }
   document.getElementById('rank-range').textContent=rangeLabel;
-  const attRes=await sb(`attendance?room_id=eq.${S.roomId}&checkin_at=lt.${end}&or=(checkout_at.is.null,checkout_at.gte.${start})&select=id,student_id,checkin_at,checkout_at,status,planner_students(name,nickname,school,grade)`);
+  let attRes,debugErr='';
+  try{
+    const url=`${SB}/rest/v1/attendance?room_id=eq.${S.roomId}&checkin_at=lt.${end}&or=(checkout_at.is.null,checkout_at.gte.${start})&select=id,student_id,checkin_at,checkout_at,status,planner_students(name,nickname,school,grade)`;
+    const r=await fetch(url,{headers:{'apikey':SK,'Authorization':'Bearer '+SK}});
+    attRes=await r.json();
+    if(!r.ok)debugErr=`HTTP ${r.status}: ${JSON.stringify(attRes)}`;
+  }catch(e){debugErr='fetch 실패: '+e.message;}
   const att=Array.isArray(attRes)?attRes:[];
-  if(!att.length){listEl.innerHTML=`<div class="rank-empty">${stuRankPeriod==='month'?'이번 달':'이번 주'} 기록이 아직 없어요<br><span style="font-size:9px;opacity:.55;word-break:break-all">(디버그) 방:${S.roomId} / ${start}~${end}</span></div>`;return;}
+  if(!att.length){listEl.innerHTML=`<div class="rank-empty">${stuRankPeriod==='month'?'이번 달':'이번 주'} 기록이 아직 없어요<br><span style="font-size:9px;opacity:.55;word-break:break-all">(디버그) 방:${S.roomId} / ${start}~${end}${debugErr?'<br>오류: '+debugErr:''}</span></div>`;return;}
   const ids=att.map(a=>a.id);
   const logsRes=ids.length?await sb(`attendance_status_log?attendance_id=in.(${ids.join(',')})&select=attendance_id,status,changed_at`):[];
   const logs=Array.isArray(logsRes)?logsRes:[];
