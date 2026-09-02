@@ -1825,10 +1825,23 @@ async function loadTodayFocus(){
     const attRows=await sb(`attendance?student_id=eq.${S.id}&checkin_at=gte.${todayKey}T00:00:00&select=id`);
     const ids=(Array.isArray(attRows)?attRows:[]).map(a=>a.id);
     if(!ids.length){el.style.display='none';return;}
-    const logRows=await sb(`focus_log?attendance_id=in.(${ids.join(',')})&select=focused&checked_at=gte.${todayKey}T00:00:00`);
+    const logRows=await sb(`focus_log?attendance_id=in.(${ids.join(',')})&select=focused,checked_at&checked_at=gte.${todayKey}T00:00:00&order=checked_at.asc`);
     const logs=Array.isArray(logRows)?logRows:[];
     if(!logs.length){el.style.display='none';return;}
-    const rate=Math.round(logs.filter(r=>r.focused).length/logs.length*100);
+    // 표본 개수가 아니라 표본이 대표하는 시간(직전 표본 이후 지난 시간)
+    // 으로 가중치를 줍니다 — 화면 꺼짐/백그라운드로 자리 비운 동안
+    // 샘플링이 뜸해지면, 표본 개수만으로는 그 시간이 실제보다 훨씬
+    // 적게 반영돼 집중도가 부풀려져 보이는 문제가 있었습니다.
+    const MAX_GAP_MS=5*60*1000,DEFAULT_GAP_MS=8000;
+    let totalWeight=0,focusedWeight=0,prevTs=null;
+    logs.forEach(r=>{
+      const ts=new Date(r.checked_at).getTime();
+      const gap=prevTs!==null?Math.min(ts-prevTs,MAX_GAP_MS):DEFAULT_GAP_MS;
+      prevTs=ts;
+      totalWeight+=gap;
+      if(r.focused)focusedWeight+=gap;
+    });
+    const rate=Math.round(focusedWeight/totalWeight*100);
     document.getElementById('dy-focus-val').textContent=rate+'%';
     el.style.display='flex';
   }catch(e){el.style.display='none';}
@@ -2338,19 +2351,29 @@ async function filterByFocusRate(statList,attRows,start,end){
   const attToStu={};attRows.forEach(a=>{attToStu[a.id]=a.student_id;});
   let focusRows;
   try{
-    focusRows=await sb(`focus_log?attendance_id=in.(${ids.join(',')})&select=attendance_id,focused&checked_at=gte.${start}&checked_at=lt.${end}`);
+    focusRows=await sb(`focus_log?attendance_id=in.(${ids.join(',')})&select=attendance_id,focused,checked_at&checked_at=gte.${start}&checked_at=lt.${end}&order=checked_at.asc`);
   }catch(e){return statList;}
+  // 표본 개수가 아니라 표본이 대표하는 시간(직전 표본 이후 지난 시간)
+  // 으로 가중치를 줍니다 — 화면 꺼짐/백그라운드로 자리 비운 동안
+  // 샘플링이 뜸해지면, 표본 개수만으로는 그 시간이 실제보다 훨씬
+  // 적게 반영돼 집중도가 부풀려져 보이는 문제가 있었습니다.
+  const MAX_GAP_MS=5*60*1000,DEFAULT_GAP_MS=8000;
   const focusByStu={};
   (Array.isArray(focusRows)?focusRows:[]).forEach(f=>{
     const sid=attToStu[f.attendance_id];if(!sid)return;
-    if(!focusByStu[sid])focusByStu[sid]={total:0,focused:0};
-    focusByStu[sid].total++;
-    if(f.focused)focusByStu[sid].focused++;
+    if(!focusByStu[sid])focusByStu[sid]={totalSamples:0,totalWeight:0,focusedWeight:0,prevTs:null};
+    const st=focusByStu[sid];
+    const ts=new Date(f.checked_at).getTime();
+    const gap=st.prevTs!==null?Math.min(ts-st.prevTs,MAX_GAP_MS):DEFAULT_GAP_MS;
+    st.prevTs=ts;
+    st.totalSamples++;
+    st.totalWeight+=gap;
+    if(f.focused)st.focusedWeight+=gap;
   });
   return statList.filter(r=>{
     const fs=focusByStu[r.id];
-    if(!fs||fs.total<RANK_MIN_FOCUS_SAMPLES)return true;
-    return (fs.focused/fs.total*100)>=RANK_MIN_FOCUS_RATE;
+    if(!fs||fs.totalSamples<RANK_MIN_FOCUS_SAMPLES)return true;
+    return (fs.focusedWeight/fs.totalWeight*100)>=RANK_MIN_FOCUS_RATE;
   });
 }
 let stuRankPeriod='week';

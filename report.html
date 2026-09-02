@@ -318,18 +318,29 @@ function sumSeg(atts){
 async function fetchFocusRate(attIds,start,end){
   const ids=attIds.filter(Boolean);
   if(!ids.length)return null;
-  let q=`focus_log?attendance_id=in.(${ids.join(',')})&select=focused,reason`;
+  let q=`focus_log?attendance_id=in.(${ids.join(',')})&select=focused,reason,checked_at&order=checked_at.asc`;
   if(start)q+=`&checked_at=gte.${start}`;
   if(end)q+=`&checked_at=lt.${end}`;
   const rows=await sb(q);
   if(!Array.isArray(rows)||!rows.length)return null;
-  const total=rows.length;
+  // 표본 개수를 똑같은 비중으로 세면, 태블릿이 화면 꺼짐/백그라운드 등
+  // 이유로 일시적으로 샘플링 간격이 벌어졌을 때(예: 자리를 오래 비운
+  // 동안 오히려 샘플이 뜸하게 찍히는 경우) 그 시간대가 실제 경과
+  // 시간보다 훨씬 적은 비중으로 반영돼서 집중도가 실제보다 좋게
+  // 나오는 문제가 있었습니다. 표본 개수가 아니라 "그 표본이 대표하는
+  // (직전 표본 이후 지난) 시간"으로 가중치를 줘서 계산합니다.
+  const MAX_GAP_MS=5*60*1000,DEFAULT_GAP_MS=8000;
   const counts={focused:0,no_face:0,head_turned:0,eyes_closed:0,dozing:0,unknown:0};
+  let totalWeight=0,prevTs=null;
   rows.forEach(r=>{
+    const ts=new Date(r.checked_at).getTime();
+    const gap=prevTs!==null?Math.min(ts-prevTs,MAX_GAP_MS):DEFAULT_GAP_MS;
+    prevTs=ts;
+    totalWeight+=gap;
     const key=r.reason||(r.focused?'focused':'unknown');
-    if(counts[key]===undefined)counts.unknown++;else counts[key]++;
+    if(counts[key]===undefined)counts.unknown+=gap;else counts[key]+=gap;
   });
-  return{rate:Math.round(counts.focused/total*100),total,counts};
+  return{rate:Math.round(counts.focused/totalWeight*100),total:rows.length,totalWeight,counts};
 }
 // 지난 기간과 비교해서 보여주기 위해, 같은 방식으로 이전 기간의
 // 집중도만 가볍게 다시 계산합니다 (출석 id만 select).
@@ -359,7 +370,7 @@ const FOCUS_REASON_LABEL={
 let LAST_FOCUS_INFO=null;
 function showFocusDetail(){
   if(!LAST_FOCUS_INFO)return;
-  const{total,counts}=LAST_FOCUS_INFO;
+  const{total,totalWeight,counts}=LAST_FOCUS_INFO;
   const rows=Object.keys(FOCUS_REASON_LABEL)
     .map(k=>({key:k,cnt:counts[k]||0}))
     .filter(r=>r.cnt>0)
@@ -374,7 +385,7 @@ function showFocusDetail(){
     <div style="font-size:16px;font-weight:800;margin-bottom:4px">집중도 판정 내역</div>
     <div style="font-size:12px;color:var(--ink2);margin-bottom:16px">8초마다 찍은 ${total}번의 샘플을 기준으로 계산했어요.</div>
     ${rows.map(r=>{
-      const pct=Math.round(r.cnt/total*100);
+      const pct=Math.round(r.cnt/totalWeight*100);
       return`<div style="margin-bottom:10px">
         <div style="display:flex;justify-content:space-between;font-size:13px;font-weight:600;margin-bottom:4px">
           <span>${FOCUS_REASON_LABEL[r.key]}</span><span>${pct}%</span>
