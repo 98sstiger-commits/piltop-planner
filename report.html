@@ -229,6 +229,7 @@ const SK="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6I
 async function sb(path,opts={}){
   try{
     const r=await fetch(SB+'/rest/v1/'+path,{
+      cache:'no-store',
       headers:{'apikey':SK,'Authorization':'Bearer '+SK,'Content-Type':'application/json','Prefer':'return=representation',...(opts.headers||{})},
       ...opts
     });
