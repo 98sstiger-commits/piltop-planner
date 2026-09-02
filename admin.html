@@ -330,6 +330,9 @@ body{font-family:'Pretendard','Noto Sans KR',sans-serif;color:var(--ink);min-hei
 .att-stat-num.st-away{color:#7C4DE0}
 .att-stat-lbl{font-size:11px;color:var(--ink2);margin-top:4px}
 .rank-list{display:flex;flex-direction:column;gap:8px}
+.rank-tabs{display:flex;gap:6px;margin-top:10px}
+.rank-tab{padding:6px 14px;border-radius:20px;background:#F6F5F2;border:1.5px solid var(--line2);color:var(--ink2);font-size:12px;font-weight:700;font-family:inherit}
+.rank-tab.active{background:var(--green);border-color:var(--green);color:#fff}
 .rank-row{display:flex;align-items:center;gap:12px;padding:10px 12px;background:var(--surf);border:1px solid var(--line);border-radius:10px}
 .rank-no{width:22px;height:22px;border-radius:50%;background:var(--bg);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:var(--ink2);flex-shrink:0}
 .rank-no.top{background:var(--green);color:#fff}
@@ -581,7 +584,14 @@ body{font-family:'Pretendard','Noto Sans KR',sans-serif;color:var(--ink);min-hei
   </div>
 
   <div class="card" style="margin-bottom:16px">
-    <div class="card-hd"><div class="card-title">이번 주 공부시간 랭킹</div></div>
+    <div class="card-hd">
+      <div class="card-title">공부시간 랭킹</div>
+      <div class="card-sub" id="rank-range"></div>
+      <div class="rank-tabs">
+        <button type="button" class="rank-tab active" data-period="week" onclick="setRankPeriod('week')">주간</button>
+        <button type="button" class="rank-tab" data-period="month" onclick="setRankPeriod('month')">월간</button>
+      </div>
+    </div>
     <div class="card-bd"><div class="rank-list" id="rank-list"><div class="empty">데이터가 없어요</div></div></div>
   </div>
 
@@ -663,7 +673,7 @@ body{font-family:'Pretendard','Noto Sans KR',sans-serif;color:var(--ink);min-hei
   </div>
 
   <div class="card">
-    <div class="card-hd"><div class="card-title">학생에게 순공 랭킹 공개</div><div class="card-sub">켜면 학생 플래너 화면에 이번 주 순공시간 TOP5가 떠요. 별명공개를 선택해도 관리자 화면(이번 주 공부시간 랭킹)에는 항상 실명이 같이 보여서 누군지 헷갈릴 일은 없어요.</div></div>
+    <div class="card-hd"><div class="card-title">학생에게 순공 랭킹 공개</div><div class="card-sub">켜면 학생 플래너 화면에 이번 주 순공시간 TOP5가 떠요. 별명공개를 선택해도 관리자 화면(공부시간 랭킹)에는 항상 실명이 같이 보여서 누군지 헷갈릴 일은 없어요.</div></div>
     <div class="card-bd">
       <div style="display:flex;gap:8px">
         <button class="mini-btn pri" id="rank-mode-off" style="flex:1" onclick="setRankMode('off')">🙈 비공개</button>
@@ -2341,6 +2351,52 @@ async function uploadFloorImage(file){
   }catch(e){showToast('업로드 실패 — Supabase Storage의 floorplans 버킷을 확인하세요');}
 }
 
+/* ══ 공부시간 랭킹 (주간/월간) ══ */
+let rankPeriod='week';
+function setRankPeriod(period){
+  rankPeriod=period;
+  document.querySelectorAll('.rank-tab').forEach(b=>b.classList.toggle('active',b.dataset.period===period));
+  loadRankList();
+}
+async function loadRankList(){
+  const roomId=document.getElementById('att-room-select').value;
+  const filter=roomId?`&room_id=eq.${roomId}`:'';
+  let start,end,rangeLabel;
+  if(rankPeriod==='month'){
+    const now=new Date();
+    const first=new Date(now.getFullYear(),now.getMonth(),1);
+    const nextFirst=new Date(now.getFullYear(),now.getMonth()+1,1);
+    const last=addDaysA(nextFirst,-1);
+    start=`${dk(first)}T00:00:00`;end=`${dk(nextFirst)}T00:00:00`;
+    rangeLabel=`${first.getMonth()+1}/${first.getDate()} ~ ${last.getMonth()+1}/${last.getDate()}`;
+  }else{
+    const mon=mondayOfA(new Date());
+    const sun=addDaysA(mon,6);
+    start=`${dk(mon)}T00:00:00`;end=`${dk(addDaysA(mon,7))}T00:00:00`;
+    rangeLabel=`${mon.getMonth()+1}/${mon.getDate()} ~ ${sun.getMonth()+1}/${sun.getDate()}`;
+  }
+  document.getElementById('rank-range').textContent=rangeLabel;
+  try{
+    const rowsRes=await sb(`attendance?checkin_at=lt.${end}&or=(checkout_at.is.null,checkout_at.gte.${start})${filter}&select=id,student_id,checkin_at,checkout_at,planner_students(name,nickname)`);
+    const rows=Array.isArray(rowsRes)?rowsRes:[];
+    const ids=rows.map(a=>a.id);
+    const logsRes=ids.length?await sb(`attendance_status_log?attendance_id=in.(${ids.join(',')})&select=attendance_id,status,changed_at`):[];
+    const logs=Array.isArray(logsRes)?logsRes:[];
+    const logsByAtt=groupLogsByAttendance(logs);
+    const byStu={};
+    rows.forEach(a=>{
+      const mins=computeAttSegments(a,logsByAtt[a.id],new Date(start),new Date(end)).studying;
+      if(!byStu[a.student_id])byStu[a.student_id]={name:a.planner_students?.name||'?',nickname:a.planner_students?.nickname||'',min:0};
+      byStu[a.student_id].min+=mins;
+    });
+    const ranked=Object.values(byStu).sort((a,b)=>b.min-a.min).slice(0,10);
+    document.getElementById('rank-list').innerHTML=ranked.length?ranked.map((r,i)=>`<div class="rank-row"><div class="rank-no ${i<3?'top':''}">${i+1}</div><div class="rank-name">${r.name}${r.nickname?` <span style="font-size:11px;font-weight:500;color:var(--ink2)">(${r.nickname})</span>`:''}</div><div class="rank-time">${fmtMinA(r.min)}</div></div>`).join(''):'<div class="empty">데이터가 없어요</div>';
+  }catch(e){
+    console.error('공부시간 랭킹을 불러오지 못했어요 — Supabase에 최신 schema.sql(attendance_status_log)을 실행했는지 확인해주세요:',e);
+    document.getElementById('rank-list').innerHTML='<div class="empty">랭킹을 불러오지 못했어요</div>';
+  }
+}
+
 /* ══ 출석기록 탭 ══ */
 async function loadAttendanceTab(){
   if(!ROOMS.length)return;
@@ -2357,30 +2413,10 @@ async function loadAttendanceTab(){
   document.getElementById('att-away').textContent=today.filter(a=>a.status==='away').length;
   document.getElementById('att-out').textContent=today.filter(a=>a.checkout_at).length;
 
-  // 아래 두 구간은 서로 독립적으로 실패할 수 있게 분리합니다 —
+  // 랭킹 계산은 출석 현황 계산과 서로 독립적으로 실패할 수 있게 분리합니다 —
   // 한쪽 계산(예: attendance_status_log 미반영)이 오류나도
   // 날짜별 출석 기록(학생 이름 포함)까지 함께 멈추면 안 되기 때문입니다.
-  try{
-    const mon=mondayOfA(new Date());
-    const wStart=`${dk(mon)}T00:00:00`,wEnd=`${dk(addDaysA(mon,7))}T00:00:00`;
-    const weekRes=await sb(`attendance?checkin_at=lt.${wEnd}&or=(checkout_at.is.null,checkout_at.gte.${wStart})${filter}&select=id,student_id,checkin_at,checkout_at,planner_students(name,nickname)`);
-    const week=Array.isArray(weekRes)?weekRes:[];
-    const weekIds=week.map(a=>a.id);
-    const weekLogsRes=weekIds.length?await sb(`attendance_status_log?attendance_id=in.(${weekIds.join(',')})&select=attendance_id,status,changed_at`):[];
-    const weekLogs=Array.isArray(weekLogsRes)?weekLogsRes:[];
-    const weekLogsByAtt=groupLogsByAttendance(weekLogs);
-    const byStu={};
-    week.forEach(a=>{
-      const mins=computeAttSegments(a,weekLogsByAtt[a.id],new Date(wStart),new Date(wEnd)).studying;
-      if(!byStu[a.student_id])byStu[a.student_id]={name:a.planner_students?.name||'?',nickname:a.planner_students?.nickname||'',min:0};
-      byStu[a.student_id].min+=mins;
-    });
-    const ranked=Object.values(byStu).sort((a,b)=>b.min-a.min).slice(0,10);
-    document.getElementById('rank-list').innerHTML=ranked.length?ranked.map((r,i)=>`<div class="rank-row"><div class="rank-no ${i<3?'top':''}">${i+1}</div><div class="rank-name">${r.name}${r.nickname?` <span style="font-size:11px;font-weight:500;color:var(--ink2)">(${r.nickname})</span>`:''}</div><div class="rank-time">${fmtMinA(r.min)}</div></div>`).join(''):'<div class="empty">데이터가 없어요</div>';
-  }catch(e){
-    console.error('공부시간 랭킹을 불러오지 못했어요 — Supabase에 최신 schema.sql(attendance_status_log)을 실행했는지 확인해주세요:',e);
-    document.getElementById('rank-list').innerHTML='<div class="empty">랭킹을 불러오지 못했어요</div>';
-  }
+  loadRankList();
 
   try{
     const d7Start=`${dk(addDaysA(new Date(),-7))}T00:00:00`;
