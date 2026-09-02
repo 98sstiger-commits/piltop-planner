@@ -312,3 +312,13 @@ create index if not exists idx_student_weekly_schedule_student on student_weekly
 alter table student_weekly_schedule enable row level security;
 drop policy if exists "public full access" on student_weekly_schedule;
 create policy "public full access" on student_weekly_schedule for all using (true) with check (true);
+
+-- ── 18. planner_students RLS 보완 ──
+-- 이 테이블은 이 파일이 만들어지기 전부터 이미 존재하던 테이블이라
+-- RLS 설정이 이 파일에 없었어요(Supabase 보안 스캐너가 "Table
+-- publicly accessible"로 잡은 테이블). anon key로 다른 테이블들과
+-- 동일하게 접근하는 구조라, 다른 테이블과 같은 수준(전체 허용)으로
+-- 맞춰서 RLS를 켭니다.
+alter table planner_students enable row level security;
+drop policy if exists "public full access" on planner_students;
+create policy "public full access" on planner_students for all using (true) with check (true);
