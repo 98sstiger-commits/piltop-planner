@@ -1575,11 +1575,40 @@ async function loadLiveViewTab(forceRender){
 // 별개로 계속 돌아가는데, 관리자 입장에선 "진짜 지금도 기록되고
 // 있는지" 확인할 방법이 없었습니다. 각 학생의 최근 focus_log 기록
 // 시각을 가져와서, 화면 우측 상단에 작게 표시해줍니다.
+// 학생 플래니의 "오늘 집중도"와 같은 방식(표본 개수가 아니라 표본이
+// 대표하는 시간으로 가중치)으로 오늘 하루 누적 집중도%를 계산합니다.
+// 관리자가 이 화면만 보고도 집중도가 떨어진 학생을 바로 알아채서
+// 가서 관리할 수 있게 하기 위함입니다.
+async function computeTodayFocusRates(attIds){
+  if(!attIds.length)return{};
+  const todayStart=`${dk(new Date())}T00:00:00`;
+  let rows;
+  try{
+    rows=await sb(`focus_log?attendance_id=in.(${attIds.join(',')})&checked_at=gte.${todayStart}&select=attendance_id,focused,checked_at&order=checked_at.asc`);
+  }catch(e){return{};}
+  const MAX_GAP_MS=5*60*1000,DEFAULT_GAP_MS=8000;
+  const byAtt={};
+  (Array.isArray(rows)?rows:[]).forEach(f=>{
+    if(!byAtt[f.attendance_id])byAtt[f.attendance_id]={totalWeight:0,focusedWeight:0,prevTs:null};
+    const st=byAtt[f.attendance_id];
+    const ts=new Date(f.checked_at).getTime();
+    const gap=st.prevTs!==null?Math.min(ts-st.prevTs,MAX_GAP_MS):DEFAULT_GAP_MS;
+    st.prevTs=ts;
+    st.totalWeight+=gap;
+    if(f.focused)st.focusedWeight+=gap;
+  });
+  const result={};
+  Object.keys(byAtt).forEach(attId=>{result[attId]=Math.round(byAtt[attId].focusedWeight/byAtt[attId].totalWeight*100);});
+  return result;
+}
 async function refreshFocusBadges(){
   const ids=lvSeats.map(s=>s.id);
   if(!ids.length)return;
   const since=new Date(Date.now()-2*60000).toISOString();
-  const rows=await sb(`focus_log?attendance_id=in.(${ids.join(',')})&checked_at=gte.${since}&select=attendance_id,checked_at&order=checked_at.desc&limit=500`);
+  const [rows,rates]=await Promise.all([
+    sb(`focus_log?attendance_id=in.(${ids.join(',')})&checked_at=gte.${since}&select=attendance_id,checked_at&order=checked_at.desc&limit=500`),
+    computeTodayFocusRates(ids)
+  ]);
   const latestByAtt={};
   (Array.isArray(rows)?rows:[]).forEach(r=>{
     if(!latestByAtt[r.attendance_id])latestByAtt[r.attendance_id]=r.checked_at;
@@ -1591,9 +1620,11 @@ async function refreshFocusBadges(){
     const t=latestByAtt[s.id];
     if(!t){el.style.display='none';return;}
     const ageSec=Math.round((now-new Date(t).getTime())/1000);
+    const pct=rates[s.id];
+    const pctTxt=pct!=null?` 집중도 ${pct}%`:'';
     el.style.display='block';
-    if(ageSec<20){el.textContent='🟢 집중도 기록중';el.style.color='#7BE6A8';}
-    else{el.textContent=`🟡 ${ageSec}초 전 기록`;el.style.color='#E8D48A';}
+    if(ageSec<20){el.textContent=`🟢${pctTxt}`;el.style.color='#7BE6A8';}
+    else{el.textContent=`🟡${pctTxt} (${ageSec}초 전 기록)`;el.style.color='#E8D48A';}
   });
 }
 function lvChangePage(delta){
