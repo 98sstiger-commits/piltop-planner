@@ -322,6 +322,10 @@ textarea{resize:none}
 .dy-ai-ico{color:rgba(255,255,255,.6);font-size:14px;margin-top:1px;flex-shrink:0}
 .dy-ai-lbl{font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:rgba(255,255,255,.4);margin-bottom:3px}
 .dy-ai-txt{font-size:12px;color:rgba(255,255,255,.88);line-height:1.6}
+.dy-focus{background:var(--g);border-radius:9px;padding:11px 14px;margin-bottom:12px;display:flex;gap:10px;align-items:center}
+.dy-focus-ico{font-size:18px;flex-shrink:0}
+.dy-focus-lbl{font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:rgba(255,255,255,.4)}
+.dy-focus-val{font-size:19px;font-weight:800;color:#fff;margin-top:2px}
 
 /* 오늘의 명언 */
 .dy-quote{background:var(--g);border-radius:10px;padding:14px 16px;margin-bottom:10px}
@@ -754,6 +758,14 @@ textarea{resize:none}
             <div>
               <div class="dy-ai-lbl">이달 플래너</div>
               <div class="dy-ai-txt" id="dy-ai-txt"></div>
+            </div>
+          </div>
+          <!-- 오늘 실시간 집중도 -->
+          <div class="dy-focus" id="dy-focus" style="display:none">
+            <div class="dy-focus-ico">🎯</div>
+            <div>
+              <div class="dy-focus-lbl">오늘 집중도</div>
+              <div class="dy-focus-val" id="dy-focus-val">-</div>
             </div>
           </div>
           <div class="tl-hd">
@@ -1426,6 +1438,7 @@ async function startPlanner(){
   goView(3);
   initRankFeature();
   initFocusFeature();
+  setInterval(loadTodayFocus,30000);
   if(typeof window.initLiveViewFeature==='function')window.initLiveViewFeature();
   else setTimeout(()=>{if(typeof window.initLiveViewFeature==='function')window.initLiveViewFeature();},1000);
   requestWakeLock();
@@ -1799,6 +1812,26 @@ function renderDy(){
   const ta=document.getElementById('dy-memo');
   ta.value=S.dayMemos[dk(d)]||'';
   ta.oninput=()=>{S.dayMemos[dk(S.curDay)]=ta.value;saveDB();};
+  loadTodayFocus();
+}
+// 오늘 화면을 보고 있는 동안만 의미가 있어서, 오늘이 아닌 날짜를 보고
+// 있으면 숨깁니다. 집중도 분석을 켠 학생만 대상이라, 꺼져있거나
+// 데이터가 아직 없으면 자연스럽게 숨겨집니다.
+async function loadTodayFocus(){
+  const el=document.getElementById('dy-focus');
+  const todayKey=dk(new Date());
+  if(!S.focusEnabled||S.focusOptOut||dk(S.curDay)!==todayKey){el.style.display='none';return;}
+  try{
+    const attRows=await sb(`attendance?student_id=eq.${S.id}&checkin_at=gte.${todayKey}T00:00:00&select=id`);
+    const ids=(Array.isArray(attRows)?attRows:[]).map(a=>a.id);
+    if(!ids.length){el.style.display='none';return;}
+    const logRows=await sb(`focus_log?attendance_id=in.(${ids.join(',')})&select=focused&checked_at=gte.${todayKey}T00:00:00`);
+    const logs=Array.isArray(logRows)?logRows:[];
+    if(!logs.length){el.style.display='none';return;}
+    const rate=Math.round(logs.filter(r=>r.focused).length/logs.length*100);
+    document.getElementById('dy-focus-val').textContent=rate+'%';
+    el.style.display='flex';
+  }catch(e){el.style.display='none';}
 }
 
 /* ── 타임라인 ── */
