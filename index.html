@@ -2417,13 +2417,26 @@ async function loadStuRankList(){
 let focusPoller=null,focusLandmarker=null,focusPoseLandmarker=null,focusVideo=null,focusLoopId=null,focusActive=false,focusAttId=null,focusPrevReliableFace=false;
 
 /* 집중도 분석과 실시간 공부모습(라이브뷰) 둘 다 카메라가 필요할 수 있어서,
-   실제 getUserMedia는 한 번만 열고 참조 카운트로 공유합니다. */
-let sharedCameraStream=null,sharedCameraRefs=0;
+   실제 getUserMedia는 한 번만 열고 참조 카운트로 공유합니다.
+   두 기능이 거의 동시에(예: 페이지 새로고침 직후 집중도 분석이 카메라를
+   여는 중에 관리자가 실시간 보기를 요청하는 경우) 카메라를 요청하면,
+   아직 sharedCameraStream이 세팅되기 전이라 둘 다 getUserMedia를 각자
+   호출하게 됩니다. 태블릿에 따라 카메라를 동시에 두 번 열면 두 번째
+   요청이 "권한 없음"과 비슷한 오류로 실패할 수 있어서, 진행 중인
+   getUserMedia 호출 자체를 캐시해 모든 호출이 같은 요청 하나를
+   공유하도록 합니다. */
+let sharedCameraStream=null,sharedCameraRefs=0,sharedCameraPromise=null;
 async function acquireCamera(){
   if(sharedCameraStream){sharedCameraRefs++;return sharedCameraStream;}
-  sharedCameraStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'user'},audio:false});
-  sharedCameraRefs=1;
-  return sharedCameraStream;
+  if(!sharedCameraPromise){
+    sharedCameraPromise=navigator.mediaDevices.getUserMedia({video:{facingMode:'user'},audio:false})
+      .catch(e=>{sharedCameraPromise=null;throw e;});
+  }
+  const stream=await sharedCameraPromise;
+  sharedCameraStream=stream;
+  sharedCameraPromise=null;
+  sharedCameraRefs++;
+  return stream;
 }
 function releaseCamera(){
   sharedCameraRefs=Math.max(0,sharedCameraRefs-1);
