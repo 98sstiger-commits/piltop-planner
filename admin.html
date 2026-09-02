@@ -336,6 +336,10 @@ body{font-family:'Pretendard','Noto Sans KR',sans-serif;color:var(--ink);min-hei
 .rank-tabs{display:flex;gap:6px;margin-top:10px}
 .rank-tab{padding:6px 14px;border-radius:20px;background:#F6F5F2;border:1.5px solid var(--line2);color:var(--ink2);font-size:12px;font-weight:700;font-family:inherit}
 .rank-tab.active{background:var(--green);border-color:var(--green);color:#fff}
+.rank-excluded-hd{font-size:11px;font-weight:700;color:var(--ink3);margin:12px 0 6px}
+.rank-excluded-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 12px;background:var(--bg);border-radius:8px;margin-bottom:6px;font-size:12px}
+.rank-excluded-name{color:var(--ink2);font-weight:600}
+.rank-excluded-detail{color:var(--ink3);flex-shrink:0}
 .rank-row{display:flex;align-items:center;gap:12px;padding:10px 12px;background:var(--surf);border:1px solid var(--line);border-radius:10px}
 .rank-no{width:22px;height:22px;border-radius:50%;background:var(--bg);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:var(--ink2);flex-shrink:0}
 .rank-no.gold{background:#D4A017;color:#fff}
@@ -604,6 +608,7 @@ body{font-family:'Pretendard','Noto Sans KR',sans-serif;color:var(--ink);min-hei
     <div class="card-bd">
       <div class="rank-list" id="rank-list"><div class="empty">데이터가 없어요</div></div>
       <div class="card-sub" style="margin-top:10px">집중도 분석을 켠 학생 중, 그 기간 집중도 평균이 50% 미만이면 순공시간과 무관하게 랭킹에서 빠져요</div>
+      <div id="rank-excluded"></div>
     </div>
   </div>
 
@@ -2381,14 +2386,16 @@ async function uploadFloorImage(file){
 // 학생/방(샘플이 거의 없는 경우 포함)은 판단할 근거가 없으니 그대로
 // 순공시간만으로 순위에 남겨둡니다.
 const RANK_MIN_FOCUS_RATE=50,RANK_MIN_FOCUS_SAMPLES=5;
+// 순공시간은 많은데 랭킹에 안 보이는 학생에 대해 관리자가 근거를
+// 바로 설명할 수 있도록, 제외된 학생과 그 집중도%를 따로 돌려줍니다.
 async function filterByFocusRate(statList,attRows,start,end){
   const ids=attRows.map(a=>a.id);
-  if(!ids.length)return statList;
+  if(!ids.length)return{included:statList,excluded:[]};
   const attToStu={};attRows.forEach(a=>{attToStu[a.id]=a.student_id;});
   let focusRows;
   try{
     focusRows=await sb(`focus_log?attendance_id=in.(${ids.join(',')})&select=attendance_id,focused&checked_at=gte.${start}&checked_at=lt.${end}`);
-  }catch(e){return statList;}
+  }catch(e){return{included:statList,excluded:[]};}
   const focusByStu={};
   (Array.isArray(focusRows)?focusRows:[]).forEach(f=>{
     const sid=attToStu[f.attendance_id];if(!sid)return;
@@ -2396,11 +2403,15 @@ async function filterByFocusRate(statList,attRows,start,end){
     focusByStu[sid].total++;
     if(f.focused)focusByStu[sid].focused++;
   });
-  return statList.filter(r=>{
+  const included=[],excluded=[];
+  statList.forEach(r=>{
     const fs=focusByStu[r.id];
-    if(!fs||fs.total<RANK_MIN_FOCUS_SAMPLES)return true;
-    return (fs.focused/fs.total*100)>=RANK_MIN_FOCUS_RATE;
+    if(!fs||fs.total<RANK_MIN_FOCUS_SAMPLES){included.push(r);return;}
+    const focusRate=Math.round(fs.focused/fs.total*100);
+    if(focusRate>=RANK_MIN_FOCUS_RATE)included.push(r);
+    else excluded.push({...r,focusRate});
   });
+  return{included,excluded};
 }
 let rankPeriod='week',rankOffset=0;
 function setRankPeriod(period){
@@ -2446,9 +2457,11 @@ async function loadRankList(){
       if(!byStu[a.student_id])byStu[a.student_id]={id:a.student_id,name:a.planner_students?.name||'?',nickname:a.planner_students?.nickname||'',min:0};
       byStu[a.student_id].min+=mins;
     });
-    const ranked=(await filterByFocusRate(Object.values(byStu),rows,start,end)).sort((a,b)=>b.min-a.min).slice(0,10);
+    const{included,excluded}=await filterByFocusRate(Object.values(byStu),rows,start,end);
+    const ranked=included.sort((a,b)=>b.min-a.min).slice(0,10);
     const rankMedal=i=>['gold','silver','bronze'][i]||'';
     document.getElementById('rank-list').innerHTML=ranked.length?ranked.map((r,i)=>`<div class="rank-row"><div class="rank-no ${rankMedal(i)}">${i+1}</div><div class="rank-name">${r.name}${r.nickname?` <span style="font-size:11px;font-weight:500;color:var(--ink2)">(${r.nickname})</span>`:''}</div><div class="rank-time">${fmtMinA(r.min)}</div></div>`).join(''):'<div class="empty">데이터가 없어요</div>';
+    document.getElementById('rank-excluded').innerHTML=excluded.length?`<div class="rank-excluded-hd">집중도 기준 미달로 제외됨 (${excluded.length}명)</div>`+excluded.sort((a,b)=>b.min-a.min).map(r=>`<div class="rank-excluded-row"><span class="rank-excluded-name">${r.name}${r.nickname?` (${r.nickname})`:''}</span><span class="rank-excluded-detail">순공 ${fmtMinA(r.min)} · 집중도 ${r.focusRate}%</span></div>`).join(''):'';
   }catch(e){
     console.error('공부시간 랭킹을 불러오지 못했어요 — Supabase에 최신 schema.sql(attendance_status_log)을 실행했는지 확인해주세요:',e);
     document.getElementById('rank-list').innerHTML='<div class="empty">랭킹을 불러오지 못했어요</div>';
