@@ -626,6 +626,7 @@ body{font-family:'Pretendard','Noto Sans KR',sans-serif;color:var(--ink);min-hei
   <div class="room-select-row">
     <select class="f-select" id="set-room-select" onchange="loadSettingsTab()"></select>
   </div>
+  <div id="set-room-id" style="font-size:11px;color:var(--ink3);margin:-12px 0 16px;word-break:break-all"></div>
 
   <div class="card">
     <div class="card-hd">
@@ -2577,6 +2578,7 @@ function loadSettingsTab(){
   document.getElementById('set-room-select').value=roomId;
   const room=ROOMS.find(r=>r.id===roomId);
   if(!room)return;
+  document.getElementById('set-room-id').textContent=`방 ID: ${room.id}`;
   document.getElementById('set-academy').value=room.academy_name||'';
   document.getElementById('set-room-name').value=room.name||'';
   document.getElementById('set-room-desc').value=room.description||'';
