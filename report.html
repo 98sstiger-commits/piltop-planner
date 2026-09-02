@@ -464,7 +464,18 @@ function navDate(dir){
   render();
 }
 
-function render(){
+// 탭을 눌러 이동할 때마다 학생 쪽에서 방금 저장한 타임라인/체크리스트
+// 변경사항이 바로 보이도록, 매번 최신 학생 데이터를 다시 불러온 뒤
+// 그리립니다 — boot() 때 한 번만 받아온 STUDENT를 계속 재사용하면
+// 새로고침 전까지 옛날 내용이 그대로 보이게 됩니다.
+async function refreshStudent(){
+  try{
+    const rows=await sb(`planner_students?id=eq.${STATE.id}&select=*`);
+    if(Array.isArray(rows)&&rows[0])STUDENT=rows[0];
+  }catch(e){}
+}
+async function render(){
+  await refreshStudent();
   if(STATE.type==='daily')renderDaily();
   else if(STATE.type==='weekly')renderWeekly();
   else renderMonthly();
