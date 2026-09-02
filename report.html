@@ -545,6 +545,8 @@ async function renderDaily(gen){
   items.forEach(it=>{if(it.st&&it.et){const[sh,sm]=it.st.split(':').map(Number),[eh,em]=it.et.split(':').map(Number);totalMin+=Math.max(0,(eh*60+em)-(sh*60+sm));}});
 
   const start=`${ds}T00:00:00+09:00`,end=`${dk(addDays(d,1))}T00:00:00+09:00`;
+  const allAtt=await sb(`attendance?student_id=eq.${STATE.id}&select=id,checkin_at,checkout_at&order=checkin_at.desc&limit=5`);
+  fdbg(`전체출석(필터없음): ${JSON.stringify(allAtt).slice(0,300)}`);
   const att=await fetchAttWithSegments(`attendance?student_id=eq.${STATE.id}&checkin_at=lt.${end}&or=(checkout_at.is.null,checkout_at.gte.${start})&select=id,checkin_at,checkout_at,status,seat_number,seats(seat_number,label)&order=checkin_at.asc`,new Date(start),new Date(end));
   fdbg(`daily att=${att.length}개 ids=${att.map(a=>a.id).join(',')||'없음'} start=${start} end=${end}`);
   const seg=sumSeg(att);
