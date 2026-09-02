@@ -93,8 +93,7 @@ body{font-family:'Pretendard','Noto Sans KR',sans-serif;color:var(--ink);min-hei
 .stu-page-btn:disabled{opacity:.35;cursor:default}
 
 .student-list{display:flex;flex-direction:column;gap:8px}
-.stu-card{background:var(--surf);border:1px solid var(--line);border-radius:10px;padding:14px 16px;display:flex;align-items:center;gap:12px;cursor:pointer;transition:all .15s;box-shadow:0 6px 18px rgba(0,0,0,.16)}
-.stu-card:hover{border-color:var(--line2);box-shadow:0 8px 22px rgba(0,0,0,.22);transform:translateY(-1px)}
+.stu-card{background:var(--surf);border:1px solid var(--line);border-radius:10px;padding:14px 16px;display:flex;align-items:center;gap:12px;transition:all .15s;box-shadow:0 6px 18px rgba(0,0,0,.16)}
 .stu-avatar{width:38px;height:38px;border-radius:50%;background:var(--green);color:#fff;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:700;flex-shrink:0;letter-spacing:-.5px}
 .stu-info{flex:1;min-width:0}
 .stu-name{font-size:14px;font-weight:600;color:#18170F;letter-spacing:-.2px}
@@ -126,15 +125,6 @@ body{font-family:'Pretendard','Noto Sans KR',sans-serif;color:var(--ink);min-hei
 .sheet-close{position:absolute;top:16px;right:16px;width:28px;height:28px;border-radius:50%;border:1px solid var(--line2);background:none;cursor:pointer;font-size:16px;color:var(--ink2);display:flex;align-items:center;justify-content:center}
 .sheet-body{padding:18px 20px 0}
 
-.info-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:18px}
-.info-cell{background:#F6F5F2;border-radius:8px;padding:11px 12px}
-.info-cell-lbl{font-size:9px;font-weight:700;letter-spacing:.7px;text-transform:uppercase;color:var(--ink3);margin-bottom:4px}
-.info-cell-val{font-size:13px;font-weight:500;color:#18170F;line-height:1.4}
-
-.sec-lbl{font-size:9px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3);margin-bottom:10px}
-.month-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
-.month-cell{background:#F6F5F2;border-radius:8px;padding:10px 11px}
-
 /* ── 상담 메모 ── */
 .note-form{display:flex;flex-direction:column;gap:8px;padding-bottom:18px;margin-bottom:18px;border-bottom:1px solid var(--line)}
 .note-textarea{resize:vertical;min-height:64px;line-height:1.5}
@@ -165,9 +155,6 @@ body{font-family:'Pretendard','Noto Sans KR',sans-serif;color:var(--ink);min-hei
 .tt-block{position:absolute;left:2px;right:2px;background:var(--gs);border-left:3px solid var(--green);border-radius:4px;padding:2px 4px;overflow:hidden;font-size:9.5px;line-height:1.25;cursor:pointer}
 .tt-block-time{font-weight:700;color:var(--green);white-space:nowrap}
 .tt-block-label{color:#18170F;white-space:nowrap;text-overflow:ellipsis;overflow:hidden}
-.month-num{font-size:17px;font-weight:700;letter-spacing:-1px;color:var(--ink3);line-height:1}
-.month-kw{font-size:11px;font-weight:500;color:#18170F;margin-top:4px;line-height:1.45}
-.month-note{font-size:10px;color:var(--ink2);margin-top:2px;line-height:1.4}
 
 /* toast */
 .toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%) translateY(6px);background:#18170F;color:#fff;padding:10px 22px;border-radius:20px;font-size:12px;font-weight:500;opacity:0;transition:all .2s;pointer-events:none;z-index:999;white-space:nowrap}
@@ -749,19 +736,6 @@ body{font-family:'Pretendard','Noto Sans KR',sans-serif;color:var(--ink);min-hei
   <iframe id="checkin-iframe" title="학생 입출입" allow="screen-wake-lock; camera"></iframe>
 </div>
 
-<!-- 염탐 시트 -->
-<div class="sheet-bg" id="spy-bg" onclick="if(event.target===this)closeSpy()">
-  <div class="sheet">
-    <div class="sheet-grip"></div>
-    <div class="sheet-hd">
-      <div class="sheet-name" id="spy-name"></div>
-      <div class="sheet-sub" id="spy-sub"></div>
-      <button class="sheet-close" onclick="closeSpy()">×</button>
-    </div>
-    <div class="sheet-body" id="spy-body"></div>
-  </div>
-</div>
-
 <!-- 상담 메모 시트 -->
 <div class="sheet-bg" id="notes-bg" onclick="if(event.target===this)closeNotesSheet()">
   <div class="sheet">
@@ -1054,7 +1028,6 @@ function renderStudentList(){
         : `<button class="stu-link-btn" onclick="event.stopPropagation();copyStudentLink('${slink}','${s.name}')">링크 복사</button>`
       }
       <button class="stu-del" onclick="event.stopPropagation();deleteStudent('${s.id}','${s.name}')">×</button>`;
-    card.onclick=()=>openSpy(s);
     list.appendChild(card);
   });
 
@@ -1077,34 +1050,6 @@ function renderStudentList(){
     pager.appendChild(next);
   }
 }
-
-/* 염탐 */
-function openSpy(s){
-  document.getElementById('spy-name').textContent=s.name+' 학생';
-  document.getElementById('spy-sub').textContent=`${s.school_name||''}  ·  ${s.grade||'?'}학년`;
-  const MON_EN=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-  const plan=s.yearly_plan||{};
-  let html=`<div class="info-grid">
-    <div class="info-cell"><div class="info-cell-lbl">진로</div><div class="info-cell-val">${s.career||s.career_field||'미정'}</div></div>
-    <div class="info-cell"><div class="info-cell-lbl">희망 대학/학과</div><div class="info-cell-val">${[s.univ1,s.dept1].filter(Boolean).join(' / ')||'미정'}</div></div>
-  </div>`;
-  if(Object.keys(plan).length){
-    html+=`<div class="sec-lbl" style="margin-bottom:10px">연간 플래너</div><div class="month-grid">`;
-    Object.values(plan).forEach(m=>{
-      html+=`<div class="month-cell">
-        <div class="month-num">${m.month}<span style="font-size:9px;font-weight:400;color:#A8A49C;margin-left:2px">${MON_EN[(m.month||1)-1]}</span></div>
-        <div class="month-kw">${m.keyword||''}</div>
-        <div class="month-note">${m.note||''}</div>
-      </div>`;
-    });
-    html+=`</div>`;
-  }else{
-    html+=`<div class="empty" style="padding:20px 0">아직 플래너를 작성하지 않았어요</div>`;
-  }
-  document.getElementById('spy-body').innerHTML=html;
-  document.getElementById('spy-bg').classList.add('open');
-}
-function closeSpy(){document.getElementById('spy-bg').classList.remove('open');}
 
 /* ── 상담 메모 ── */
 let curNoteStudentId=null,curNoteStudentName=null;
