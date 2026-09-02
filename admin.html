@@ -1537,7 +1537,7 @@ async function loadLiveViewTab(forceRender){
 const MIN_FOCUS_SAMPLES=5;
 async function computeTodayFocusRates(attIds){
   if(!attIds.length)return{};
-  const todayStart=`${dk(new Date())}T00:00:00+09:00`;
+  const todayStart=`${dk(new Date())}T00:00:00%2B09:00`;
   let rows;
   try{
     rows=await sb(`focus_log?attendance_id=in.(${attIds.join(',')})&checked_at=gte.${todayStart}&select=attendance_id,focused,checked_at&order=checked_at.asc`);
@@ -2438,12 +2438,12 @@ async function loadRankList(){
     const first=new Date(now.getFullYear(),now.getMonth()+rankOffset,1);
     const nextFirst=new Date(now.getFullYear(),now.getMonth()+rankOffset+1,1);
     const last=addDaysA(nextFirst,-1);
-    start=`${dk(first)}T00:00:00+09:00`;end=`${dk(nextFirst)}T00:00:00+09:00`;
+    start=`${dk(first)}T00:00:00%2B09:00`;end=`${dk(nextFirst)}T00:00:00%2B09:00`;
     rangeLabel=`${first.getMonth()+1}/${first.getDate()} ~ ${last.getMonth()+1}/${last.getDate()}`;
   }else{
     const mon=mondayOfA(addDaysA(new Date(),rankOffset*7));
     const sun=addDaysA(mon,6);
-    start=`${dk(mon)}T00:00:00+09:00`;end=`${dk(addDaysA(mon,7))}T00:00:00+09:00`;
+    start=`${dk(mon)}T00:00:00%2B09:00`;end=`${dk(addDaysA(mon,7))}T00:00:00%2B09:00`;
     rangeLabel=`${mon.getMonth()+1}/${mon.getDate()} ~ ${sun.getMonth()+1}/${sun.getDate()}`;
   }
   document.getElementById('rank-range').textContent=rangeLabel;
@@ -2478,7 +2478,7 @@ async function loadAttendanceTab(){
   const roomId=document.getElementById('att-room-select').value;
   const filter=roomId?`&room_id=eq.${roomId}`:'';
   const todayStr=dk(new Date());
-  const start=`${todayStr}T00:00:00+09:00`,end=`${dk(addDaysA(new Date(),1))}T00:00:00+09:00`;
+  const start=`${todayStr}T00:00:00%2B09:00`,end=`${dk(addDaysA(new Date(),1))}T00:00:00%2B09:00`;
   // 전날 체크인해서 아직 퇴실을 안 누른(자정을 넘긴) 학생도 "오늘" 현황에 포함시킵니다.
   const todayRes=await sb(`attendance?checkin_at=lt.${end}&or=(checkout_at.is.null,checkout_at.gte.${start})${filter}&select=*`);
   const today=Array.isArray(todayRes)?todayRes:[];
@@ -2494,7 +2494,7 @@ async function loadAttendanceTab(){
   loadRankList();
 
   try{
-    const d7Start=`${dk(addDaysA(new Date(),-7))}T00:00:00+09:00`;
+    const d7Start=`${dk(addDaysA(new Date(),-7))}T00:00:00%2B09:00`;
     const recentRes=await sb(`attendance?checkin_at=gte.${d7Start}&checkin_at=lt.${end}${filter}&select=student_id,checkin_at,planner_students(name)`);
     const recent=Array.isArray(recentRes)?recentRes:[];
     const byStu2={};
@@ -2520,7 +2520,7 @@ async function loadDateRecord(){
   const roomId=document.getElementById('att-room-select').value;
   const date=document.getElementById('att-date-picker').value||dk(new Date());
   const filter=roomId?`&room_id=eq.${roomId}`:'';
-  const start=`${date}T00:00:00+09:00`,end=`${dk(addDaysA(parseDkA(date),1))}T00:00:00+09:00`;
+  const start=`${date}T00:00:00%2B09:00`,end=`${dk(addDaysA(parseDkA(date),1))}T00:00:00%2B09:00`;
   const body=document.getElementById('date-record-body');
   const absentBox=document.getElementById('date-absent-box');
   // 전날 체크인해서 이 날짜까지 이어진(자정을 넘겨 아직 퇴실 안 한) 세션도 함께 보여줍니다.

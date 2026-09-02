@@ -544,7 +544,7 @@ async function renderDaily(gen){
   let totalMin=0;
   items.forEach(it=>{if(it.st&&it.et){const[sh,sm]=it.st.split(':').map(Number),[eh,em]=it.et.split(':').map(Number);totalMin+=Math.max(0,(eh*60+em)-(sh*60+sm));}});
 
-  const start=`${ds}T00:00:00+09:00`,end=`${dk(addDays(d,1))}T00:00:00+09:00`;
+  const start=`${ds}T00:00:00%2B09:00`,end=`${dk(addDays(d,1))}T00:00:00%2B09:00`;
   const allAtt=await sb(`attendance?student_id=eq.${STATE.id}&select=id,checkin_at,checkout_at&order=checkin_at.desc&limit=3`);
   (Array.isArray(allAtt)?allAtt:[]).forEach((a,i)=>fdbg(`출석${i}: in=${a.checkin_at} out=${a.checkout_at||'null'}`));
   const att=await fetchAttWithSegments(`attendance?student_id=eq.${STATE.id}&checkin_at=lt.${end}&or=(checkout_at.is.null,checkout_at.gte.${start})&select=id,checkin_at,checkout_at,status,seat_number,seats(seat_number,label)&order=checkin_at.asc`,new Date(start),new Date(end));
@@ -563,7 +563,7 @@ async function renderDaily(gen){
   // 쌓이기 전에는 %를 보여주지 않고 "측정 중"으로 대신 표시합니다.
   const focusReady=focusInfo&&focusInfo.total>=MIN_FOCUS_SAMPLES;
   const prevDay=addDays(d,-1);
-  const prevFocusInfo=focusReady?await fetchFocusRateForRange(`${dk(prevDay)}T00:00:00+09:00`,start):null;
+  const prevFocusInfo=focusReady?await fetchFocusRateForRange(`${dk(prevDay)}T00:00:00%2B09:00`,start):null;
 
   let html=`<div class="card">
     <div class="card-ttl">📊 오늘 요약</div>
@@ -633,7 +633,7 @@ async function renderWeekly(gen){
     });
   });
 
-  const start=`${dayKeys[0]}T00:00:00+09:00`,end=`${dk(addDays(sun,1))}T00:00:00+09:00`;
+  const start=`${dayKeys[0]}T00:00:00%2B09:00`,end=`${dk(addDays(sun,1))}T00:00:00%2B09:00`;
   const att=await fetchAttWithSegments(`attendance?student_id=eq.${STATE.id}&checkin_at=lt.${end}&or=(checkout_at.is.null,checkout_at.gte.${start})&select=id,checkin_at,checkout_at,status&order=checkin_at.asc`,new Date(start),new Date(end));
   const attDays=new Set(att.map(a=>dk(new Date(a.checkin_at))));
   const seg=sumSeg(att);
@@ -657,7 +657,7 @@ async function renderWeekly(gen){
   const focusInfo=await fetchFocusRate(att.map(a=>a.id),start,end);
   if(focusInfo)LAST_FOCUS_INFO=focusInfo;
   const prevMon=addDays(mon,-7);
-  const prevFocusInfo=focusInfo?await fetchFocusRateForRange(`${dk(prevMon)}T00:00:00+09:00`,start):null;
+  const prevFocusInfo=focusInfo?await fetchFocusRateForRange(`${dk(prevMon)}T00:00:00%2B09:00`,start):null;
   const stats={attendanceDays:attDays.size,totalStudyMinutes:Math.round(attMin),awayMinutes:Math.round(seg.away),timelineItems:itemCnt,timelineDone:doneCnt,topSubjects:Object.entries(subjMin).sort((a,b)=>b[1]-a[1]).slice(0,2).map(([k,m])=>({subject:CATS.find(c=>c.k===k)?.l,minutes:Math.round(m)}))};
 
   let html=`<div class="card">
@@ -712,7 +712,7 @@ async function renderMonthly(gen){
   body.innerHTML='<div class="empty-note">불러오는 중...</div>';
 
   const first=new Date(y,m,1),last=new Date(y,m+1,0);
-  const start=`${dk(first)}T00:00:00+09:00`,end=`${dk(addDays(last,1))}T00:00:00+09:00`;
+  const start=`${dk(first)}T00:00:00%2B09:00`,end=`${dk(addDays(last,1))}T00:00:00%2B09:00`;
   const att=await fetchAttWithSegments(`attendance?student_id=eq.${STATE.id}&checkin_at=lt.${end}&or=(checkout_at.is.null,checkout_at.gte.${start})&select=id,checkin_at,checkout_at,status&order=checkin_at.asc`,new Date(start),new Date(end));
   const attDays=new Set(att.map(a=>dk(new Date(a.checkin_at))));
   const seg=sumSeg(att);
@@ -738,7 +738,7 @@ async function renderMonthly(gen){
   const focusInfo=await fetchFocusRate(att.map(a=>a.id),start,end);
   if(focusInfo)LAST_FOCUS_INFO=focusInfo;
   const prevFirst=new Date(y,m-1,1);
-  const prevFocusInfo=focusInfo?await fetchFocusRateForRange(`${dk(prevFirst)}T00:00:00+09:00`,start):null;
+  const prevFocusInfo=focusInfo?await fetchFocusRateForRange(`${dk(prevFirst)}T00:00:00%2B09:00`,start):null;
   const stats={attendanceDays:attDays.size,attendanceRate:attRate,totalStudyMinutes:Math.round(totalMin),awayMinutes:Math.round(seg.away),weeklyTrend:weeks.map(w=>Math.round(w.min))};
 
   let html=`<div class="card">
