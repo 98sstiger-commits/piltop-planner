@@ -3,8 +3,19 @@
     "api/*.js": {
       "memory": 512,
       "maxDuration": 60
+    },
+    "api/report.js": {
+      "memory": 512,
+      "maxDuration": 60,
+      "includeFiles": "report.html"
     }
   },
+  "rewrites": [
+    {
+      "source": "/report.html",
+      "destination": "/api/report"
+    }
+  ],
   "crons": [
     {
       "path": "/api/weekly-report-cron",
