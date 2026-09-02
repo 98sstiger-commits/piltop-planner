@@ -966,7 +966,6 @@ textarea{resize:none}
           </div>
         </div>
       </div>
-      <div id="pe-debug" style="margin-top:18px;padding-top:12px;border-top:1px dashed var(--line2);font-size:10.5px;color:var(--ink3);line-height:1.8;word-break:break-all"></div>
     </div>
     <div class="sheet-ft">
       <button class="s-btn sec" onclick="closeProfSheet()">취소</button>
@@ -2055,18 +2054,7 @@ async function saveDaySheet(){
 function goToDaySheet(){if(!modalDate)return;S.curDay=new Date(modalDate);closeDaySheet();goView(3);}
 
 /* ── 프로필 ── */
-function openProf(){document.getElementById('pe-nickname-group').style.display=S.rankNameMode==='nickname'?'flex':'none';document.getElementById('pe-nickname').value=S.nickname||'';document.getElementById('pe-career').value=S.career||S.careerField||'';document.getElementById('pe-u1').value=S.u1||'';document.getElementById('pe-d1').value=S.d1||'';document.getElementById('pe-u2').value=S.u2||'';document.getElementById('pe-d2').value=S.d2||'';document.getElementById('prof-bg').classList.add('open');renderProfDebug();}
-async function renderProfDebug(){
-  const el=document.getElementById('pe-debug');
-  let camPerm='확인 불가';
-  try{
-    if(navigator.permissions&&navigator.permissions.query){
-      const st=await navigator.permissions.query({name:'camera'});
-      camPerm=st.state; // granted / denied / prompt
-    }
-  }catch(e){}
-  el.innerHTML=`앱 버전: ${APP_BUILD}<br>학생 ID: ${S.id||'-'}<br>소속 방 ID: ${S.roomId||'(없음)'}<br>카메라 권한: ${camPerm}<br>집중도 분석: ${S.focusEnabled?(S.focusOptOut?'제외됨':'사용중'):'꺼짐'}`;
-}
+function openProf(){document.getElementById('pe-nickname-group').style.display=S.rankNameMode==='nickname'?'flex':'none';document.getElementById('pe-nickname').value=S.nickname||'';document.getElementById('pe-career').value=S.career||S.careerField||'';document.getElementById('pe-u1').value=S.u1||'';document.getElementById('pe-d1').value=S.d1||'';document.getElementById('pe-u2').value=S.u2||'';document.getElementById('pe-d2').value=S.d2||'';document.getElementById('prof-bg').classList.add('open');}
 function closeProfSheet(){document.getElementById('prof-bg').classList.remove('open');}
 
 /* ── 시험 성적 · 학습전략 ── */
@@ -2377,15 +2365,9 @@ async function loadStuRankList(){
     rangeLabel=`${mon.getMonth()+1}/${mon.getDate()} ~ ${sun.getMonth()+1}/${sun.getDate()}`;
   }
   document.getElementById('rank-range').textContent=rangeLabel;
-  let attRes,debugErr='';
-  try{
-    const url=`${SB}/rest/v1/attendance?room_id=eq.${S.roomId}&checkin_at=lt.${end}&or=(checkout_at.is.null,checkout_at.gte.${start})&select=id,student_id,checkin_at,checkout_at,status,planner_students(name,nickname,school,grade)`;
-    const r=await fetch(url,{headers:{'apikey':SK,'Authorization':'Bearer '+SK}});
-    attRes=await r.json();
-    if(!r.ok)debugErr=`HTTP ${r.status}: ${JSON.stringify(attRes)}`;
-  }catch(e){debugErr='fetch 실패: '+e.message;}
+  const attRes=await sb(`attendance?room_id=eq.${S.roomId}&checkin_at=lt.${end}&or=(checkout_at.is.null,checkout_at.gte.${start})&select=id,student_id,checkin_at,checkout_at,status,planner_students(name,nickname,school,grade)`);
   const att=Array.isArray(attRes)?attRes:[];
-  if(!att.length){listEl.innerHTML=`<div class="rank-empty">${stuRankPeriod==='month'?'이번 달':'이번 주'} 기록이 아직 없어요<br><span style="font-size:9px;opacity:.55;word-break:break-all">(디버그) 방:${S.roomId} / ${start}~${end}${debugErr?'<br>오류: '+debugErr:''}</span></div>`;return;}
+  if(!att.length){listEl.innerHTML=`<div class="rank-empty">${stuRankPeriod==='month'?'이번 달':'이번 주'} 기록이 아직 없어요</div>`;return;}
   const ids=att.map(a=>a.id);
   const logsRes=ids.length?await sb(`attendance_status_log?attendance_id=in.(${ids.join(',')})&select=attendance_id,status,changed_at`):[];
   const logs=Array.isArray(logsRes)?logsRes:[];
