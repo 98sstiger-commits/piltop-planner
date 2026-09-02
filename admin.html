@@ -1575,16 +1575,19 @@ async function loadLiveViewTab(forceRender){
 // 별개로 계속 돌아가는데, 관리자 입장에선 "진짜 지금도 기록되고
 // 있는지" 확인할 방법이 없었습니다. 각 학생의 최근 focus_log 기록
 // 시각을 가져와서, 화면 우측 상단에 작게 표시해줍니다.
-// 학생 플래니의 "오늘 집중도"와 같은 방식(표본 개수가 아니라 표본이
-// 대표하는 시간으로 가중치)으로 오늘 하루 누적 집중도%를 계산합니다.
-// 관리자가 이 화면만 보고도 집중도가 떨어진 학생을 바로 알아채서
-// 가서 관리할 수 있게 하기 위함입니다.
+// 하루 전체 누적 평균으로 계산하면, 이미 몇 시간 잘 쌓인 상태에서
+// 방금 자리를 비운 것만으로는 평균이 거의 안 움직여서 "지금 이
+// 순간"을 보여주는 실시간 모니터링 목적에 안 맞습니다. 그래서 최근
+// 15분만 보는 지표로 계산합니다 — 학생 플래니의 "최근 집중도"
+// 위젯과 같은 개념입니다(리포트의 "오늘 집중도"는 하루 전체를
+// 공정하게 평가하는 용도라 그대로 누적으로 둡니다).
+const RECENT_FOCUS_WINDOW_MS=15*60*1000;
 async function computeTodayFocusRates(attIds){
   if(!attIds.length)return{};
-  const todayStart=`${dk(new Date())}T00:00:00`;
+  const since=new Date(Date.now()-RECENT_FOCUS_WINDOW_MS).toISOString();
   let rows;
   try{
-    rows=await sb(`focus_log?attendance_id=in.(${attIds.join(',')})&checked_at=gte.${todayStart}&select=attendance_id,focused,checked_at&order=checked_at.asc`);
+    rows=await sb(`focus_log?attendance_id=in.(${attIds.join(',')})&checked_at=gte.${since}&select=attendance_id,focused,checked_at&order=checked_at.asc`);
   }catch(e){return{};}
   const MAX_GAP_MS=5*60*1000,DEFAULT_GAP_MS=8000;
   const byAtt={};
@@ -1621,7 +1624,7 @@ async function refreshFocusBadges(){
     if(!t){el.style.display='none';return;}
     const ageSec=Math.round((now-new Date(t).getTime())/1000);
     const pct=rates[s.id];
-    const pctTxt=pct!=null?` 집중도 ${pct}%`:'';
+    const pctTxt=pct!=null?` 최근 ${pct}%`:'';
     el.style.display='block';
     if(ageSec<20){el.textContent=`🟢${pctTxt}`;el.style.color='#7BE6A8';}
     else{el.textContent=`🟡${pctTxt} (${ageSec}초 전 기록)`;el.style.color='#E8D48A';}

@@ -764,7 +764,7 @@ textarea{resize:none}
           <div class="dy-focus" id="dy-focus" style="display:none">
             <div class="dy-focus-ico">🧠</div>
             <div>
-              <div class="dy-focus-lbl">오늘 집중도</div>
+              <div class="dy-focus-lbl">최근 집중도 (15분)</div>
               <div class="dy-focus-val" id="dy-focus-val">-</div>
             </div>
           </div>
@@ -1817,6 +1817,14 @@ function renderDy(){
 // 오늘 화면을 보고 있는 동안만 의미가 있어서, 오늘이 아닌 날짜를 보고
 // 있으면 숨깁니다. 집중도 분석을 켠 학생만 대상이라, 꺼져있거나
 // 데이터가 아직 없으면 자연스럽게 숨겨집니다.
+//
+// 하루 전체 누적 평균으로 계산하면, 이미 몇 시간 잘 쌓인 상태에서
+// 방금 몇 분 자리를 비운 것만으로는 전체 평균이 거의 안 움직여서
+// "지금 자리를 비우면 바로 확 떨어져야 한다"는 실시간 모니터링
+// 목적에 안 맞았습니다. 그래서 이 위젯은 최근 15분만 보는 지표로
+// 계산합니다(리포트의 "오늘 집중도"는 하루 전체를 공정하게 평가하는
+// 용도라 그대로 누적으로 둡니다 — 용도가 다릅니다).
+const RECENT_FOCUS_WINDOW_MS=15*60*1000;
 async function loadTodayFocus(){
   const el=document.getElementById('dy-focus');
   const todayKey=dk(new Date());
@@ -1825,7 +1833,8 @@ async function loadTodayFocus(){
     const attRows=await sb(`attendance?student_id=eq.${S.id}&checkin_at=gte.${todayKey}T00:00:00&select=id`);
     const ids=(Array.isArray(attRows)?attRows:[]).map(a=>a.id);
     if(!ids.length){el.style.display='none';return;}
-    const logRows=await sb(`focus_log?attendance_id=in.(${ids.join(',')})&select=focused,checked_at&checked_at=gte.${todayKey}T00:00:00&order=checked_at.asc`);
+    const since=new Date(Date.now()-RECENT_FOCUS_WINDOW_MS).toISOString();
+    const logRows=await sb(`focus_log?attendance_id=in.(${ids.join(',')})&select=focused,checked_at&checked_at=gte.${since}&order=checked_at.asc`);
     const logs=Array.isArray(logRows)?logRows:[];
     if(!logs.length){el.style.display='none';return;}
     // 표본 개수가 아니라 표본이 대표하는 시간(직전 표본 이후 지난 시간)
