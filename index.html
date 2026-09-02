@@ -966,6 +966,7 @@ textarea{resize:none}
           </div>
         </div>
       </div>
+      <div id="pe-debug" style="margin-top:18px;padding-top:12px;border-top:1px dashed var(--line2);font-size:10.5px;color:var(--ink3);line-height:1.8;word-break:break-all"></div>
     </div>
     <div class="sheet-ft">
       <button class="s-btn sec" onclick="closeProfSheet()">취소</button>
@@ -1047,6 +1048,7 @@ textarea{resize:none}
 <script src="quotes.js"></script>
 <script>
 /* ── 상수 ── */
+const APP_BUILD='2026-09-02-cam1'; // 태블릿이 최신 코드를 받았는지 확인용(정보 수정 시트 하단에 표시)
 const SB="https://zmtldohklivkzpfdyflc.supabase.co";
 const SK="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InptdGxkb2hrbGl2a3pwZmR5ZmxjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI5NjgxMDQsImV4cCI6MjA4ODU0NDEwNH0.cv1WrvDzNedVZABWyRCS9ARRxf4Si9qgeUqEvhpHWlo";
 const NEIS="6544e426d2dc47f58a653ff11abbe91a";
@@ -2053,7 +2055,18 @@ async function saveDaySheet(){
 function goToDaySheet(){if(!modalDate)return;S.curDay=new Date(modalDate);closeDaySheet();goView(3);}
 
 /* ── 프로필 ── */
-function openProf(){document.getElementById('pe-nickname-group').style.display=S.rankNameMode==='nickname'?'flex':'none';document.getElementById('pe-nickname').value=S.nickname||'';document.getElementById('pe-career').value=S.career||S.careerField||'';document.getElementById('pe-u1').value=S.u1||'';document.getElementById('pe-d1').value=S.d1||'';document.getElementById('pe-u2').value=S.u2||'';document.getElementById('pe-d2').value=S.d2||'';document.getElementById('prof-bg').classList.add('open');}
+function openProf(){document.getElementById('pe-nickname-group').style.display=S.rankNameMode==='nickname'?'flex':'none';document.getElementById('pe-nickname').value=S.nickname||'';document.getElementById('pe-career').value=S.career||S.careerField||'';document.getElementById('pe-u1').value=S.u1||'';document.getElementById('pe-d1').value=S.d1||'';document.getElementById('pe-u2').value=S.u2||'';document.getElementById('pe-d2').value=S.d2||'';document.getElementById('prof-bg').classList.add('open');renderProfDebug();}
+async function renderProfDebug(){
+  const el=document.getElementById('pe-debug');
+  let camPerm='확인 불가';
+  try{
+    if(navigator.permissions&&navigator.permissions.query){
+      const st=await navigator.permissions.query({name:'camera'});
+      camPerm=st.state; // granted / denied / prompt
+    }
+  }catch(e){}
+  el.innerHTML=`앱 버전: ${APP_BUILD}<br>학생 ID: ${S.id||'-'}<br>소속 방 ID: ${S.roomId||'(없음)'}<br>카메라 권한: ${camPerm}<br>집중도 분석: ${S.focusEnabled?(S.focusOptOut?'제외됨':'사용중'):'꺼짐'}`;
+}
 function closeProfSheet(){document.getElementById('prof-bg').classList.remove('open');}
 
 /* ── 시험 성적 · 학습전략 ── */
