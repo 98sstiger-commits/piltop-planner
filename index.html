@@ -2400,9 +2400,9 @@ async function loadStuRankList(){
   const displayName=r=>isRealname?(r.name||'?'):(r.nickname||'닉네임 미설정');
   const filtered=await filterByFocusRate(Object.entries(byStu).map(([id,v])=>({id,...v})),att,start,end);
   const ranked=filtered.sort((a,b)=>b.min-a.min);
-  const top5=ranked.slice(0,5);
+  const top3=ranked.slice(0,3);
   const rankMedal=i=>['gold','silver','bronze'][i]?` ${['gold','silver','bronze'][i]}`:'';
-  listEl.innerHTML=top5.map((r,i)=>`
+  listEl.innerHTML=top3.map((r,i)=>`
     <div class="rank-row${r.id===S.id?' me':''}">
       <div class="rank-no${rankMedal(i)}">${i+1}</div>
       <div class="rank-info">
@@ -2412,7 +2412,7 @@ async function loadStuRankList(){
       <div class="rank-time">${fmtMinRank(r.min)}</div>
     </div>`).join('');
   const myRank=ranked.findIndex(r=>r.id===S.id);
-  if(myRank>=5){
+  if(myRank>=3){
     const me=ranked[myRank];
     myEl.innerHTML=`<div class="rank-row me">
       <div class="rank-no">${myRank+1}</div>
