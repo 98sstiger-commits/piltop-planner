@@ -1014,6 +1014,7 @@ textarea{resize:none}
       <div class="rank-range" id="rank-range"></div>
       <div id="rank-list"></div>
       <div id="rank-my-row"></div>
+      <div style="font-size:10.5px;color:var(--ink3);text-align:center;margin-top:10px;line-height:1.5">집중도 분석 대상 학생은 그 기간 집중도가 너무 낮으면 순공시간과 무관하게 랭킹에서 빠져요</div>
     </div>
   </div>
 </div>
@@ -2297,6 +2298,33 @@ async function saveNickname(){
   S.nickname=v;
   toast('닉네임이 저장됐어요');
 }
+// 순공시간(체크인/체크아웃 기준)만으로는 카메라를 피해서 딴짓하는 걸
+// 걸러낼 수 없습니다. 집중도 분석을 켠 학생에 한해, 그 기간 집중도
+// 평균이 너무 낮으면 순공시간이 아무리 길어도 랭킹에서 제외합니다.
+// 집중도 분석을 안 쓰는 학생/방(샘플이 거의 없는 경우 포함)은 판단할
+// 근거가 없으니 그대로 순공시간만으로 순위에 남겨둡니다.
+const RANK_MIN_FOCUS_RATE=50,RANK_MIN_FOCUS_SAMPLES=5;
+async function filterByFocusRate(statList,attRows,start,end){
+  const ids=attRows.map(a=>a.id);
+  if(!ids.length)return statList;
+  const attToStu={};attRows.forEach(a=>{attToStu[a.id]=a.student_id;});
+  let focusRows;
+  try{
+    focusRows=await sb(`focus_log?attendance_id=in.(${ids.join(',')})&select=attendance_id,focused&checked_at=gte.${start}&checked_at=lt.${end}`);
+  }catch(e){return statList;}
+  const focusByStu={};
+  (Array.isArray(focusRows)?focusRows:[]).forEach(f=>{
+    const sid=attToStu[f.attendance_id];if(!sid)return;
+    if(!focusByStu[sid])focusByStu[sid]={total:0,focused:0};
+    focusByStu[sid].total++;
+    if(f.focused)focusByStu[sid].focused++;
+  });
+  return statList.filter(r=>{
+    const fs=focusByStu[r.id];
+    if(!fs||fs.total<RANK_MIN_FOCUS_SAMPLES)return true;
+    return (fs.focused/fs.total*100)>=RANK_MIN_FOCUS_RATE;
+  });
+}
 let stuRankPeriod='week';
 function setStuRankPeriod(period){
   stuRankPeriod=period;
@@ -2357,7 +2385,8 @@ async function loadStuRankList(){
     byStu[a.student_id].min+=mins;
   });
   const displayName=r=>isRealname?(r.name||'?'):(r.nickname||'닉네임 미설정');
-  const ranked=Object.entries(byStu).map(([id,v])=>({id,...v})).sort((a,b)=>b.min-a.min);
+  const filtered=await filterByFocusRate(Object.entries(byStu).map(([id,v])=>({id,...v})),att,start,end);
+  const ranked=filtered.sort((a,b)=>b.min-a.min);
   const top5=ranked.slice(0,5);
   listEl.innerHTML=top5.map((r,i)=>`
     <div class="rank-row${r.id===S.id?' me':''}">
@@ -2471,6 +2500,21 @@ function focusSampleLoop(){
 // (pitch, 독서 자세)을 같은 기준으로 걸러내면 안 됩니다. yaw는 좁게,
 // pitch는 훨씬 넓게 잡아서 "책 보는 자세"가 산만으로 오판되지 않게 합니다.
 const FOCUS_YAW_LIMIT=35,FOCUS_PITCH_LIMIT=50;
+// 지정자석 뒤/옆에 다른 학생이 앉아 있으면, 그 학생의 얼굴이 카메라에
+// 같이 잡혀서 정작 자리 주인은 자리를 비웠는데도 "집중함"으로 오판될
+// 수 있습니다. 카메라에 가장 가까운(=화면에서 얼굴이 가장 크게 보이는)
+// 사람만 이 좌석의 학생으로 인정하기 위해, 얼굴이 화면 폭의 일정 비율
+// 이상을 채울 때만 유효한 얼굴로 취급합니다. 뒷자리 학생은 카메라에서
+// 더 멀리 있어 화면에 작게 잡히므로 이 기준에 걸러집니다.
+const FOCUS_MIN_FACE_SPAN=0.16;
+function faceBoundingSpan(landmarks){
+  let minX=1,maxX=0,minY=1,maxY=0;
+  for(const p of landmarks){
+    if(p.x<minX)minX=p.x;if(p.x>maxX)maxX=p.x;
+    if(p.y<minY)minY=p.y;if(p.y>maxY)maxY=p.y;
+  }
+  return Math.max(maxX-minX,maxY-minY);
+}
 function classifyFocus(result,ts){
   // 얼굴 랜드마크가 잡혔어도, 자세(회전) 정보(facialTransformationMatrixes)가
   // 같이 안 나오면 옆모습 일부나 화면 밖 다른 물체를 오인식한 낮은
@@ -2478,8 +2522,10 @@ function classifyFocus(result,ts){
   // 인정하지 않고, 얼굴이 아예 없을 때와 똑같이 취급합니다 — 카메라를
   // 얼굴에서 완전히 다른 곳으로 돌려놨는데도 "집중함"이 섞여 나오던
   // 원인이 이 경로였습니다.
-  const m=(result.faceLandmarks&&result.faceLandmarks.length)?result.facialTransformationMatrixes?.[0]?.data:null;
-  const detectedNow=!!(m&&m.length>=16);
+  const faceLm=result.faceLandmarks&&result.faceLandmarks[0];
+  const m=(faceLm&&faceLm.length)?result.facialTransformationMatrixes?.[0]?.data:null;
+  const faceCloseEnough=!!faceLm&&faceBoundingSpan(faceLm)>=FOCUS_MIN_FACE_SPAN;
+  const detectedNow=!!(m&&m.length>=16)&&faceCloseEnough;
   // 카메라를 얼굴에서 완전히 돌려놨는데도 아주 가끔(조명·각도 등으로)
   // 한 프레임만 잘못 얼굴로 잡히는 경우가 있습니다. 8초 간격으로 찍는
   // 딱 한 프레임의 우연한 오탐이 리포트에 그대로 반영되지 않도록,

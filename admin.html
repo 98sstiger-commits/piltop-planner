@@ -592,7 +592,10 @@ body{font-family:'Pretendard','Noto Sans KR',sans-serif;color:var(--ink);min-hei
         <button type="button" class="rank-tab" data-period="month" onclick="setRankPeriod('month')">월간</button>
       </div>
     </div>
-    <div class="card-bd"><div class="rank-list" id="rank-list"><div class="empty">데이터가 없어요</div></div></div>
+    <div class="card-bd">
+      <div class="rank-list" id="rank-list"><div class="empty">데이터가 없어요</div></div>
+      <div class="card-sub" style="margin-top:10px">집중도 분석을 켠 학생 중, 그 기간 집중도 평균이 50% 미만이면 순공시간과 무관하게 랭킹에서 빠져요</div>
+    </div>
   </div>
 
   <div class="card" style="margin-bottom:16px">
@@ -2352,6 +2355,34 @@ async function uploadFloorImage(file){
 }
 
 /* ══ 공부시간 랭킹 (주간/월간) ══ */
+// 순공시간(체크인/체크아웃 기준)만으로는 카메라를 피해서 딴짓하는 걸
+// 걸러낼 수 없습니다. 집중도 분석을 켠 학생에 한해, 그 기간 집중도
+// 평균이 너무 낮으면(완전히 산만하거나 조는 시간이 대부분이면) 순공
+// 시간이 아무리 길어도 랭킹에서 제외합니다. 집중도 분석을 안 쓰는
+// 학생/방(샘플이 거의 없는 경우 포함)은 판단할 근거가 없으니 그대로
+// 순공시간만으로 순위에 남겨둡니다.
+const RANK_MIN_FOCUS_RATE=50,RANK_MIN_FOCUS_SAMPLES=5;
+async function filterByFocusRate(statList,attRows,start,end){
+  const ids=attRows.map(a=>a.id);
+  if(!ids.length)return statList;
+  const attToStu={};attRows.forEach(a=>{attToStu[a.id]=a.student_id;});
+  let focusRows;
+  try{
+    focusRows=await sb(`focus_log?attendance_id=in.(${ids.join(',')})&select=attendance_id,focused&checked_at=gte.${start}&checked_at=lt.${end}`);
+  }catch(e){return statList;}
+  const focusByStu={};
+  (Array.isArray(focusRows)?focusRows:[]).forEach(f=>{
+    const sid=attToStu[f.attendance_id];if(!sid)return;
+    if(!focusByStu[sid])focusByStu[sid]={total:0,focused:0};
+    focusByStu[sid].total++;
+    if(f.focused)focusByStu[sid].focused++;
+  });
+  return statList.filter(r=>{
+    const fs=focusByStu[r.id];
+    if(!fs||fs.total<RANK_MIN_FOCUS_SAMPLES)return true;
+    return (fs.focused/fs.total*100)>=RANK_MIN_FOCUS_RATE;
+  });
+}
 let rankPeriod='week';
 function setRankPeriod(period){
   rankPeriod=period;
@@ -2386,10 +2417,10 @@ async function loadRankList(){
     const byStu={};
     rows.forEach(a=>{
       const mins=computeAttSegments(a,logsByAtt[a.id],new Date(start),new Date(end)).studying;
-      if(!byStu[a.student_id])byStu[a.student_id]={name:a.planner_students?.name||'?',nickname:a.planner_students?.nickname||'',min:0};
+      if(!byStu[a.student_id])byStu[a.student_id]={id:a.student_id,name:a.planner_students?.name||'?',nickname:a.planner_students?.nickname||'',min:0};
       byStu[a.student_id].min+=mins;
     });
-    const ranked=Object.values(byStu).sort((a,b)=>b.min-a.min).slice(0,10);
+    const ranked=(await filterByFocusRate(Object.values(byStu),rows,start,end)).sort((a,b)=>b.min-a.min).slice(0,10);
     document.getElementById('rank-list').innerHTML=ranked.length?ranked.map((r,i)=>`<div class="rank-row"><div class="rank-no ${i<3?'top':''}">${i+1}</div><div class="rank-name">${r.name}${r.nickname?` <span style="font-size:11px;font-weight:500;color:var(--ink2)">(${r.nickname})</span>`:''}</div><div class="rank-time">${fmtMinA(r.min)}</div></div>`).join(''):'<div class="empty">데이터가 없어요</div>';
   }catch(e){
     console.error('공부시간 랭킹을 불러오지 못했어요 — Supabase에 최신 schema.sql(attendance_status_log)을 실행했는지 확인해주세요:',e);
