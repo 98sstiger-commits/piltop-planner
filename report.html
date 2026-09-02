@@ -492,15 +492,23 @@ async function refreshStudent(){
     if(Array.isArray(rows)&&rows[0])STUDENT=rows[0];
   }catch(e){}
 }
+// 탭을 빠르게 여러 번 눌러서 이전 렌더링이 아직 진행 중일 때 새
+// 렌더링이 또 시작되면, 네트워크 응답이 도착하는 순서가 클릭 순서와
+// 다를 수 있어서 더 오래된 요청의 결과가 나중에 화면을 덮어써
+// 엉뚱한(오래된) 내용이 남는 경우가 있었습니다. 매 호출마다 번호를
+// 매겨서, 그 사이에 더 최신 호출이 시작됐으면 이 결과는 버립니다.
+let renderGen=0;
 async function render(){
+  const myGen=++renderGen;
   await refreshStudent();
-  if(STATE.type==='daily')renderDaily();
-  else if(STATE.type==='weekly')renderWeekly();
-  else renderMonthly();
+  if(myGen!==renderGen)return;
+  if(STATE.type==='daily')renderDaily(myGen);
+  else if(STATE.type==='weekly')renderWeekly(myGen);
+  else renderMonthly(myGen);
 }
 
 /* ══════════ 일간 ══════════ */
-async function renderDaily(){
+async function renderDaily(gen){
   const d=STATE.date,ds=dk(d);
   document.getElementById('dn-label').textContent=`${d.getMonth()+1}월 ${d.getDate()}일 (${DOW[d.getDay()]})`;
   const body=document.getElementById('report-body');
@@ -522,7 +530,7 @@ async function renderDaily(){
   // 퇴실하면 새 표본이 더 안 쌓이니 자연스럽게 그날의 최종 기록으로
   // 남습니다. 학생 플래니·관리자 화면과 동일한 계산식입니다.
   const focusInfo=await fetchFocusRate(att.map(a=>a.id),start,end);
-  if(focusInfo)LAST_FOCUS_INFO=focusInfo;
+  if(focusInfo&&gen===renderGen)LAST_FOCUS_INFO=focusInfo;
   const prevDay=addDays(d,-1);
   const prevFocusInfo=focusInfo?await fetchFocusRateForRange(`${dk(prevDay)}T00:00:00`,start):null;
 
@@ -553,6 +561,7 @@ async function renderDaily(){
     ${seg.away>=1?`<div class="att-sub-note">외출 시간 ${fmtMin(seg.away)}${seg.in_class>=1?` · 학원수업 ${fmtMin(seg.in_class)}`:''}</div>`:''}
     ${flagNote?`<div class="flag-note">⚠️ ${flagNote}</div>`:''}
   </div>`;
+  if(gen!==renderGen)return;
   body.innerHTML=html;
 }
 
@@ -575,7 +584,7 @@ function renderAttList(att){
 }
 
 /* ══════════ 주간 ══════════ */
-async function renderWeekly(){
+async function renderWeekly(gen){
   const mon=mondayOf(STATE.date),sun=addDays(mon,6);
   document.getElementById('dn-label').textContent=`${mon.getMonth()+1}/${mon.getDate()} ~ ${sun.getMonth()+1}/${sun.getDate()}`;
   const body=document.getElementById('report-body');
@@ -659,12 +668,13 @@ async function renderWeekly(){
     <div class="card-ttl">📝 다음 주 시험 일정</div>
     ${exams.length?exams.map(e=>{const ed=parseDk(e.date);return `<div class="exam-item"><span class="exam-badge">${e.type==='suneung'?'수능':'내신'}</span><span class="exam-date">${ed.getMonth()+1}/${ed.getDate()}</span><span class="exam-name">${e.name}</span></div>`;}).join(''):'<div class="empty-note">등록된 시험 일정이 없어요</div>'}
   </div>`;
+  if(gen!==renderGen)return;
   body.innerHTML=html;
   renderAiComment('weekly',stats);
 }
 
 /* ══════════ 월간 ══════════ */
-async function renderMonthly(){
+async function renderMonthly(gen){
   const d=STATE.date,y=d.getFullYear(),m=d.getMonth();
   document.getElementById('dn-label').textContent=`${y}년 ${m+1}월`;
   const body=document.getElementById('report-body');
@@ -728,6 +738,7 @@ async function renderMonthly(){
   </div>`:''}
 
   <div id="ai-card"></div>`;
+  if(gen!==renderGen)return;
   body.innerHTML=html;
   renderAiComment('monthly',stats);
 }
