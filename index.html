@@ -2365,7 +2365,7 @@ async function loadStuRankList(){
     rangeLabel=`${mon.getMonth()+1}/${mon.getDate()} ~ ${sun.getMonth()+1}/${sun.getDate()}`;
   }
   document.getElementById('rank-range').textContent=rangeLabel;
-  const attRes=await sb(`attendance?room_id=eq.${S.roomId}&checkin_at=lt.${end}&or=(checkout_at.is.null,checkout_at.gte.${start})&select=id,student_id,checkin_at,checkout_at,status,planner_students(name,nickname,school,grade)`);
+  const attRes=await sb(`attendance?room_id=eq.${S.roomId}&checkin_at=lt.${end}&or=(checkout_at.is.null,checkout_at.gte.${start})&select=id,student_id,checkin_at,checkout_at,status,planner_students(name,nickname,school_name,grade)`);
   const att=Array.isArray(attRes)?attRes:[];
   if(!att.length){listEl.innerHTML=`<div class="rank-empty">${stuRankPeriod==='month'?'이번 달':'이번 주'} 기록이 아직 없어요</div>`;return;}
   const ids=att.map(a=>a.id);
@@ -2379,7 +2379,7 @@ async function loadStuRankList(){
     if(!byStu[a.student_id])byStu[a.student_id]={
       name:a.planner_students?.name||'',
       nickname:a.planner_students?.nickname||'',
-      school:a.planner_students?.school||'',
+      school:a.planner_students?.school_name||'',
       grade:a.planner_students?.grade||'',
       min:0
     };
