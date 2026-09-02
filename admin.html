@@ -963,13 +963,23 @@ function copyLink(){navigator.clipboard.writeText(genLink).then(()=>showToast('�
 function shareKakao(){window.open(`kakaotalk://msg/send?text=${encodeURIComponent(genLink)}`);}
 
 /* 학생 목록 */
-let ALL_STUDENTS=[],STU_FILTER='all',STU_PAGE=1;
+let ALL_STUDENTS=[],STU_FILTER='all',STU_PAGE=1,ATTENDED_STUDENT_IDS=new Set();
+
 const STU_PAGE_SIZE=10;
 
 async function loadStudents(){
   const studentsRes=await sb('planner_students?select=*&order=created_at.desc');
   ALL_STUDENTS=Array.isArray(studentsRes)?studentsRes:[];
   document.getElementById('list-badge').textContent=ALL_STUDENTS.length+'명';
+  // "사용중" 배지는 원래 연간 플랜(진로 설정)을 생성했는지만 봤는데,
+  // 카메라 테스트나 출석만 하고 온보딩(연간 플랜 생성)은 안 거친
+  // 학생은 실제로 쓰고 있어도 계속 "링크 복사"로만 보이는 문제가
+  // 있었습니다. 출석 기록이 하나라도 있으면 그것도 "사용중"으로
+  // 인정합니다.
+  try{
+    const attRes=await sb('attendance?select=student_id');
+    ATTENDED_STUDENT_IDS=new Set((Array.isArray(attRes)?attRes:[]).map(a=>a.student_id));
+  }catch(e){ATTENDED_STUDENT_IDS=new Set();}
   renderStudentList();
 }
 
@@ -1002,7 +1012,7 @@ function renderStudentList(){
 
   list.innerHTML='';
   pageData.forEach(s=>{
-    const hasPlan=(s.yearly_plan&&Object.keys(s.yearly_plan||{}).length>0)||s.career||s.career_field;
+    const hasPlan=(s.yearly_plan&&Object.keys(s.yearly_plan||{}).length>0)||s.career||s.career_field||ATTENDED_STUDENT_IDS.has(s.id);
     const card=document.createElement('div');
     card.className='stu-card'+(s.is_paused?' paused':'');
     const sparams=new URLSearchParams({id:s.id,name:s.name||'',school:s.school_name||'',grade:s.grade||''});
