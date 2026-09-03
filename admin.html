@@ -1551,12 +1551,21 @@ async function loadLiveViewTab(forceRender){
 // 지금 뭘 하든 숫자가 거의 안 움직이기 때문입니다.
 const MIN_FOCUS_SAMPLES=5;
 const FOCUS_MAX_GAP_MS=5*60*1000,FOCUS_DEFAULT_GAP_MS=8000,FOCUS_HALFLIFE_MS=30*60*1000;
+// 반감기가 30분이라, 3시간(반감기 6번)만 지나도 그 이전 기록은 가중치가
+// 1.6% 밑으로 떨어져 결과에 사실상 영향이 없습니다. 그런데 "오늘 자정
+// 이후 전체"를 한 번에 조회하다 보니, 여러 학생을 합친 행 수가
+// Supabase 기본 조회 상한(1000행)을 넘기면 뒷부분(가장 최근 기록,
+// 정작 가중치가 제일 큰 부분)이 잘려나가 오히려 최신 상황이 반영 안
+// 되는 문제가 있었습니다. 최근 3시간만 조회해서 애초에 상한에 걸릴
+// 일을 없애고, 혹시 몰라 최신순으로 가져와 안전하게 처리합니다.
+const FOCUS_LOOKBACK_MS=3*60*60*1000;
 async function computeTodayFocusRates(attIds){
   if(!attIds.length)return{};
-  const todayStart=`${dk(new Date())}T00:00:00%2B09:00`;
+  const since=new Date(Date.now()-FOCUS_LOOKBACK_MS).toISOString();
   let rows;
   try{
-    rows=await sb(`focus_log?attendance_id=in.(${attIds.join(',')})&checked_at=gte.${todayStart}&select=attendance_id,focused,checked_at&order=checked_at.asc`);
+    rows=await sb(`focus_log?attendance_id=in.(${attIds.join(',')})&checked_at=gte.${since}&select=attendance_id,focused,checked_at&order=checked_at.desc&limit=5000`);
+    if(Array.isArray(rows))rows=rows.slice().reverse();
   }catch(e){return{};}
   const now=Date.now();
   const byAtt={};

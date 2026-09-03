@@ -325,14 +325,28 @@ function sumSeg(atts){
    "실시간"이라는 말이 무색해지기 때문입니다. 이미 지나간 날짜나
    주간/월간 합계는 그날의 최종 성적표이므로 감쇠 없이 그대로 평균냅니다. */
 const FOCUS_MAX_GAP_MS=5*60*1000,FOCUS_DEFAULT_GAP_MS=8000,FOCUS_HALFLIFE_MS=30*60*1000;
+// 반감기가 30분이라 3시간(반감기 6번)이 지난 기록은 결과에 사실상
+// 영향이 없습니다(가중치 1.6% 미만). 그런데 Supabase는 한 번에 최대
+// 1000행까지만 돌려주는데, 하루 전체를 오래된 순으로 가져오면 정작
+// 가중치가 제일 큰 최근 기록이 잘려나가는 문제가 있었습니다(관리자
+// 실시간 배지가 실제보다 높게 멈춰있던 원인). 오늘(진행 중) 화면은
+// 최근 3시간만, 그것도 최신순으로 가져와 안전하게 처리합니다.
+const FOCUS_LOOKBACK_MS=3*60*60*1000;
 async function fetchFocusRate(attIds,start,end,decayToNow){
   const ids=attIds.filter(Boolean);
   if(!ids.length)return null;
-  let q=`focus_log?attendance_id=in.(${ids.join(',')})&select=focused,reason,checked_at&order=checked_at.asc`;
-  if(start)q+=`&checked_at=gte.${start}`;
-  if(end)q+=`&checked_at=lt.${end}`;
-  const rows=await sb(q);
+  let q=`focus_log?attendance_id=in.(${ids.join(',')})&select=focused,reason,checked_at`;
+  if(decayToNow){
+    const since=new Date(Date.now()-FOCUS_LOOKBACK_MS).toISOString();
+    q+=`&checked_at=gte.${since}&order=checked_at.desc&limit=5000`;
+  }else{
+    if(start)q+=`&checked_at=gte.${start}`;
+    if(end)q+=`&checked_at=lt.${end}`;
+    q+=`&order=checked_at.desc&limit=5000`;
+  }
+  let rows=await sb(q);
   if(!Array.isArray(rows)||!rows.length)return null;
+  rows=rows.slice().reverse();
   // 표본 개수를 똑같은 비중으로 세면, 태블릿이 화면 꺼짐/백그라운드 등
   // 이유로 일시적으로 샘플링 간격이 벌어졌을 때(예: 자리를 오래 비운
   // 동안 오히려 샘플이 뜸하게 찍히는 경우) 그 시간대가 실제 경과
