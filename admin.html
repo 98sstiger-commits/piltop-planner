@@ -2635,10 +2635,20 @@ async function loadDateRecord(){
   // 하루 중 입/퇴실을 여러 번 했어도 그날 하루 누적 하나로 보여줍니다.
   const isToday=date===dk(new Date());
   const focusByName=new Map();
+  // 오늘 하루의 최종 %는 실시간 탭·리포트와 똑같이 학생 플래니가 저장해둔
+  // planner_students.focus_rate를 그대로 읽어서 씁니다 — 판정 내역(세부
+  // breakdown)만 여기서 focus_log로 따로 계산해서 참고용으로 보여줍니다.
+  // 그래야 어느 화면에서 봐도 오늘 집중도 %가 항상 똑같습니다.
+  const todayRatesByStudent=isToday?await computeTodayFocusRates(names.map(n=>({student_id:byStu.get(n)[0].student_id}))):{};
   await Promise.all(names.map(async name=>{
     const sessions=byStu.get(name);
     const ids=sessions.map(a=>a.id);
-    focusByName.set(name,await fetchDailyFocusInfo(ids,isToday,start,end));
+    const info=await fetchDailyFocusInfo(ids,isToday,start,end);
+    if(info&&isToday){
+      const sid=sessions[0].student_id;
+      if(todayRatesByStudent[sid]!=null)info.rate=todayRatesByStudent[sid];
+    }
+    focusByName.set(name,info);
   }));
 
   const STATUS_ICON_LABEL={studying:'공부중',in_class:'학원수업중',away:'외출중'};
