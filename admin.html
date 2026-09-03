@@ -1470,7 +1470,7 @@ async function refreshSeatData(){
   if(!curSeatRoomId)return;
   const [s,a]=await Promise.all([
     sb(`seats?room_id=eq.${curSeatRoomId}&select=*&order=seat_number.asc`),
-    sb(`attendance?room_id=eq.${curSeatRoomId}&checkout_at=is.null&select=id,seat_id,status,checkin_at,planner_students(name)`)
+    sb(`attendance?room_id=eq.${curSeatRoomId}&checkout_at=is.null&select=id,seat_id,status,checkin_at,planner_students(name)&order=checkin_at.asc`)
   ]);
   SEATS=Array.isArray(s)?s:[];ACTIVE_ATT=Array.isArray(a)?a:[];
   renderSeatMap();
@@ -1501,8 +1501,20 @@ async function loadLiveViewTab(forceRender){
     lvSeats=[];
     return;
   }
-  const rows=await sb(`attendance?room_id=eq.${curSeatRoomId}&checkout_at=is.null&status=eq.studying&select=id,student_id,status,seat_number,planner_students(name)&order=seat_number.asc`);
-  const newSeats=Array.isArray(rows)?rows:[];
+  // 테스트/이용 중 퇴실 처리를 안 하고 넘어간 예전 출석 기록이 계속
+  // "체크아웃 안 됨(checkout_at is null) + 공부중" 상태로 남아있으면,
+  // 이 학생의 진짜 최신 세션과 함께 검색에 걸려서 어떤 게 뜰지 보장이
+  // 안 됐습니다(그 예전 세션에 쌓인 옛날 집중도 기록까지 같이 섞여
+  // 보이는 문제로 이어짐). 최근 입실 순으로 정렬한 뒤, 학생당 가장
+  // 최근 세션 하나만 남깁니다.
+  const rows=await sb(`attendance?room_id=eq.${curSeatRoomId}&checkout_at=is.null&status=eq.studying&select=id,student_id,status,seat_number,checkin_at,planner_students(name)&order=checkin_at.desc`);
+  const rawSeats=Array.isArray(rows)?rows:[];
+  const seenStudents=new Set();
+  const newSeats=rawSeats.filter(a=>{
+    if(seenStudents.has(a.student_id))return false;
+    seenStudents.add(a.student_id);
+    return true;
+  }).sort((a,b)=>(a.seat_number||0)-(b.seat_number||0));
   // 이 화면은 30초마다, 그리고 (다른 방 포함) 출석 정보가 바뀔 때마다 자동으로
   // 새로고침되는데, 매번 연결을 다 끊고 새로 맺으면 WebRTC 연결이 끝날
   // 틈도 없이 "연결 중..."↔"연결 실패"만 반복하게 됩니다. 그래서 지금
