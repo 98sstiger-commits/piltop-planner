@@ -526,8 +526,9 @@ async function renderDaily(gen){
   let totalMin=0;
   items.forEach(it=>{if(it.st&&it.et){const[sh,sm]=it.st.split(':').map(Number),[eh,em]=it.et.split(':').map(Number);totalMin+=Math.max(0,(eh*60+em)-(sh*60+sm));}});
 
-  const start=`${ds}T00:00:00%2B09:00`,end=`${dk(addDays(d,1))}T00:00:00%2B09:00`;
-  const att=await fetchAttWithSegments(`attendance?student_id=eq.${STATE.id}&checkin_at=lt.${end}&or=(checkout_at.is.null,checkout_at.gte.${start})&select=id,checkin_at,checkout_at,status,seat_number,seats(seat_number,label)&order=checkin_at.asc`,new Date(start),new Date(end));
+  const dayStart=parseDk(ds),dayEnd=addDays(dayStart,1);
+  const start=`${ds}T00:00:00%2B09:00`,end=`${dk(dayEnd)}T00:00:00%2B09:00`;
+  const att=await fetchAttWithSegments(`attendance?student_id=eq.${STATE.id}&checkin_at=lt.${end}&or=(checkout_at.is.null,checkout_at.gte.${start})&select=id,checkin_at,checkout_at,status,seat_number,seats(seat_number,label)&order=checkin_at.asc`,dayStart,dayEnd);
   const seg=sumSeg(att);
   const flagNote=awayFlagNote(seg);
   // 입실 시점부터 지금까지 누적해서 시간 가중 평균을 냅니다. 아직
@@ -611,8 +612,9 @@ async function renderWeekly(gen){
     });
   });
 
-  const start=`${dayKeys[0]}T00:00:00%2B09:00`,end=`${dk(addDays(sun,1))}T00:00:00%2B09:00`;
-  const att=await fetchAttWithSegments(`attendance?student_id=eq.${STATE.id}&checkin_at=lt.${end}&or=(checkout_at.is.null,checkout_at.gte.${start})&select=id,checkin_at,checkout_at,status&order=checkin_at.asc`,new Date(start),new Date(end));
+  const weekEnd=addDays(sun,1);
+  const start=`${dk(mon)}T00:00:00%2B09:00`,end=`${dk(weekEnd)}T00:00:00%2B09:00`;
+  const att=await fetchAttWithSegments(`attendance?student_id=eq.${STATE.id}&checkin_at=lt.${end}&or=(checkout_at.is.null,checkout_at.gte.${start})&select=id,checkin_at,checkout_at,status&order=checkin_at.asc`,mon,weekEnd);
   const attDays=new Set(att.map(a=>dk(new Date(a.checkin_at))));
   const seg=sumSeg(att);
   const attMin=seg.studying;
@@ -690,8 +692,9 @@ async function renderMonthly(gen){
   body.innerHTML='<div class="empty-note">불러오는 중...</div>';
 
   const first=new Date(y,m,1),last=new Date(y,m+1,0);
-  const start=`${dk(first)}T00:00:00%2B09:00`,end=`${dk(addDays(last,1))}T00:00:00%2B09:00`;
-  const att=await fetchAttWithSegments(`attendance?student_id=eq.${STATE.id}&checkin_at=lt.${end}&or=(checkout_at.is.null,checkout_at.gte.${start})&select=id,checkin_at,checkout_at,status&order=checkin_at.asc`,new Date(start),new Date(end));
+  const monthEnd=addDays(last,1);
+  const start=`${dk(first)}T00:00:00%2B09:00`,end=`${dk(monthEnd)}T00:00:00%2B09:00`;
+  const att=await fetchAttWithSegments(`attendance?student_id=eq.${STATE.id}&checkin_at=lt.${end}&or=(checkout_at.is.null,checkout_at.gte.${start})&select=id,checkin_at,checkout_at,status&order=checkin_at.asc`,first,monthEnd);
   const attDays=new Set(att.map(a=>dk(new Date(a.checkin_at))));
   const seg=sumSeg(att);
   const totalMin=seg.studying;

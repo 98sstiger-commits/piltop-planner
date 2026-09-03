@@ -2432,18 +2432,21 @@ function navRankPeriod(delta){
 async function loadRankList(){
   const roomId=document.getElementById('att-room-select').value;
   const filter=roomId?`&room_id=eq.${roomId}`:'';
-  let start,end,rangeLabel;
+  let start,end,rangeLabel,rangeStartD,rangeEndD;
   if(rankPeriod==='month'){
     const now=new Date();
     const first=new Date(now.getFullYear(),now.getMonth()+rankOffset,1);
     const nextFirst=new Date(now.getFullYear(),now.getMonth()+rankOffset+1,1);
     const last=addDaysA(nextFirst,-1);
     start=`${dk(first)}T00:00:00%2B09:00`;end=`${dk(nextFirst)}T00:00:00%2B09:00`;
+    rangeStartD=first;rangeEndD=nextFirst;
     rangeLabel=`${first.getMonth()+1}/${first.getDate()} ~ ${last.getMonth()+1}/${last.getDate()}`;
   }else{
     const mon=mondayOfA(addDaysA(new Date(),rankOffset*7));
     const sun=addDaysA(mon,6);
-    start=`${dk(mon)}T00:00:00%2B09:00`;end=`${dk(addDaysA(mon,7))}T00:00:00%2B09:00`;
+    const weekEnd=addDaysA(mon,7);
+    start=`${dk(mon)}T00:00:00%2B09:00`;end=`${dk(weekEnd)}T00:00:00%2B09:00`;
+    rangeStartD=mon;rangeEndD=weekEnd;
     rangeLabel=`${mon.getMonth()+1}/${mon.getDate()} ~ ${sun.getMonth()+1}/${sun.getDate()}`;
   }
   document.getElementById('rank-range').textContent=rangeLabel;
@@ -2457,7 +2460,7 @@ async function loadRankList(){
     const logsByAtt=groupLogsByAttendance(logs);
     const byStu={};
     rows.forEach(a=>{
-      const mins=computeAttSegments(a,logsByAtt[a.id],new Date(start),new Date(end)).studying;
+      const mins=computeAttSegments(a,logsByAtt[a.id],rangeStartD,rangeEndD).studying;
       if(!byStu[a.student_id])byStu[a.student_id]={id:a.student_id,name:a.planner_students?.name||'?',nickname:a.planner_students?.nickname||'',min:0};
       byStu[a.student_id].min+=mins;
     });
@@ -2553,7 +2556,7 @@ async function loadDateRecord(){
   const assignedByStudent={};
   (Array.isArray(assignedRes)?assignedRes:[]).forEach(s=>{assignedByStudent[s.assigned_student_id]=s.seat_number;});
 
-  const dayStart=new Date(start),dayEnd=new Date(end);
+  const dayStart=parseDkA(date),dayEnd=addDaysA(parseDkA(date),1);
   const byStu=new Map();
   rows.forEach(a=>{
     const name=a.planner_students?.name||'?';

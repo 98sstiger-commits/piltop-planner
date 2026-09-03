@@ -2416,19 +2416,21 @@ async function loadStuRankList(){
   listEl.innerHTML='<div class="rank-empty">불러오는 중...</div>';
   myEl.innerHTML='';
   if(!S.roomId)return;
-  let start,end,rangeLabel;
+  let start,end,rangeLabel,rangeStartD,rangeEndD;
   if(stuRankPeriod==='month'){
     const now=new Date();
     const first=new Date(now.getFullYear(),now.getMonth(),1);
     const nextFirst=new Date(now.getFullYear(),now.getMonth()+1,1);
     const last=new Date(nextFirst.getTime()-86400000);
     start=`${dk(first)}T00:00:00%2B09:00`;end=`${dk(nextFirst)}T00:00:00%2B09:00`;
+    rangeStartD=first;rangeEndD=nextFirst;
     rangeLabel=`${first.getMonth()+1}/${first.getDate()} ~ ${last.getMonth()+1}/${last.getDate()}`;
   }else{
     const mon=getMonday(new Date());
     const sun7=new Date(mon.getTime()+7*86400000);
     const sun=new Date(sun7.getTime()-86400000);
     start=`${dk(mon)}T00:00:00%2B09:00`;end=`${dk(sun7)}T00:00:00%2B09:00`;
+    rangeStartD=mon;rangeEndD=sun7;
     rangeLabel=`${mon.getMonth()+1}/${mon.getDate()} ~ ${sun.getMonth()+1}/${sun.getDate()}`;
   }
   document.getElementById('rank-range').textContent=rangeLabel;
@@ -2442,7 +2444,7 @@ async function loadStuRankList(){
   logs.forEach(l=>{(logsByAtt[l.attendance_id]=logsByAtt[l.attendance_id]||[]).push(l);});
   const byStu={};
   att.forEach(a=>{
-    const mins=computeStudyMinutes(a,logsByAtt[a.id],new Date(start),new Date(end));
+    const mins=computeStudyMinutes(a,logsByAtt[a.id],rangeStartD,rangeEndD);
     if(!byStu[a.student_id])byStu[a.student_id]={
       name:a.planner_students?.name||'',
       nickname:a.planner_students?.nickname||'',
