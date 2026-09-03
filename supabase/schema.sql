@@ -335,3 +335,13 @@ begin
     check (reason in ('focused','no_face','head_turned','eyes_closed','dozing','app_away'));
 exception when others then null;
 end $$;
+
+-- ── 20. 오늘 집중도를 학생 플래니가 계산해서 저장 (단일 진실 공급원) ──
+-- 관리자 실시간 배지·학부모 리포트(오늘)·학생 플래니가 focus_log를
+-- 각자 따로 조회·계산하다 보니, 조회 범위(세션 하나 vs 오늘 전체)나
+-- 타이밍(폴링 주기)이 조금만 달라도 서로 다른 숫자가 나왔습니다.
+-- 실제 카메라 분석이 일어나는 학생 플래니가 "오늘 집중도"를 계산할
+-- 때마다 그 결과를 여기 저장해두고, 관리자·리포트는 재계산하지 않고
+-- 이 값을 그대로 읽기만 하도록 통일합니다.
+alter table planner_students add column if not exists focus_rate integer;
+alter table planner_students add column if not exists focus_rate_updated_at timestamptz;

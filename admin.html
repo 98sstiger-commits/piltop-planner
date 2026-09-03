@@ -1562,74 +1562,28 @@ async function loadLiveViewTab(forceRender){
 // 지금 뭘 하든 숫자가 거의 안 움직이기 때문입니다.
 const MIN_FOCUS_SAMPLES=5;
 const FOCUS_MAX_GAP_MS=5*60*1000,FOCUS_DEFAULT_GAP_MS=8000,FOCUS_HALFLIFE_MS=30*60*1000;
-// 반감기가 30분이라, 2시간(반감기 4번)만 지나도 그 이전 기록은 가중치가
-// 6% 밑으로 떨어져 결과에 거의 영향이 없습니다. 그런데 Supabase는
-// limit을 아무리 크게 줘도 서버 설정상 한 번에 최대 1000행까지만
-// 돌려줍니다(클라이언트가 못 늘림) — "최근 3시간, limit=5000"으로
-// 늘려봤지만 실제로는 계속 1000행에서 잘렸고, 학생을 다 합쳐서 한
-// 번에 조회하다 보니 이 1000행을 여러 학생이 나눠 쓰면서 정작 각
-// 학생의 최근 기록이 부족하게 반영되는 문제가 있었습니다(학생
-// 플래니·리포트는 한 명씩만 조회해서 이 문제를 안 겪었음). 조회를
-// 학생별로 나누고, 창을 2시간으로 좁혀서 한 학생 몫이 그 자체로
-// 1000행 밑에 들어오도록 합니다(2시간 X 8초 간격 = 최대 900행).
 const FOCUS_LOOKBACK_MS=2*60*60*1000;
-// "지금 열려있는 세션 하나"만 보면 안 되는 이유: 학생이 오늘 중간에
-// 퇴실했다가 다시 체크인했으면, 관리자는 방금 새로 열린 세션만 보게
-// 되고 그전 세션의 기록은 빠집니다. 학생 플래니·리포트는 "오늘 그
-// 학생의 모든 세션"을 합쳐서 계산하므로, 관리자도 학생별로 오늘의
-// 전체 출석 id를 먼저 모은 뒤 합산해야 세 화면이 같은 숫자를 봅니다.
+// 관리자·리포트가 focus_log를 각자 조회해서 다시 계산하다 보니
+// 조회 범위(세션 하나 vs 오늘 전체)나 타이밍이 조금만 달라도 서로
+// 다른 숫자가 나오는 문제가 반복됐습니다. 실제 카메라 분석이 일어나는
+// 학생 플래니가 표본을 기록할 때마다 "오늘 집중도"를 계산해서
+// planner_students.focus_rate에 저장해두므로, 관리자는 재계산하지
+// 않고 그 값을 그대로 읽기만 합니다 - 계산이 한 곳에서만 일어나니
+// 세 화면이 다른 숫자를 보여줄 수가 없습니다.
 async function computeTodayFocusRates(lvSeatsList){
   if(!lvSeatsList.length)return{};
-  const todayStart=`${dk(new Date())}T00:00:00%2B09:00`;
-  const since=new Date(Date.now()-FOCUS_LOOKBACK_MS).toISOString();
-  const now=Date.now();
   const studentIds=[...new Set(lvSeatsList.map(s=>s.student_id))];
-  const perStu=await Promise.all(studentIds.map(async studentId=>{
-    let attRows;
-    try{
-      attRows=await sb(`attendance?student_id=eq.${studentId}&checkin_at=gte.${todayStart}&select=id`);
-    }catch(e){return[studentId,null];}
-    const ids=(Array.isArray(attRows)?attRows:[]).map(a=>a.id);
-    if(!ids.length)return[studentId,null];
-    let rows;
-    try{
-      rows=await sb(`focus_log?attendance_id=in.(${ids.join(',')})&checked_at=gte.${since}&select=focused,checked_at&order=checked_at.asc`);
-    }catch(e){return[studentId,null];}
-    if(!Array.isArray(rows)||!rows.length)return[studentId,null];
-    let totalWeight=0,focusedWeight=0,prevTs=null,count=0;
-    rows.forEach(f=>{
-      const ts=new Date(f.checked_at).getTime();
-      const gap=prevTs!==null?Math.min(ts-prevTs,FOCUS_MAX_GAP_MS):FOCUS_DEFAULT_GAP_MS;
-      prevTs=ts;count++;
-      const w=gap*Math.pow(0.5,Math.max(0,now-ts)/FOCUS_HALFLIFE_MS);
-      totalWeight+=w;
-      if(f.focused)focusedWeight+=w;
-    });
-    return[studentId,{totalWeight,focusedWeight,count}];
-  }));
-  // 표본이 몇 개 안 될 때(막 켜서 자리 잡는 중일 때 등)는 그 중 하나만
-  // 잘못 잡혀도 비율이 크게 튀어서 신뢰할 수 없으므로, 최소 표본이
-  // 쌓이기 전에는 숫자 대신 'measuring'을 돌려줍니다.
-  const byStu={};
+  let rows;
+  try{
+    rows=await sb(`planner_students?id=in.(${studentIds.join(',')})&select=id,focus_rate,focus_rate_updated_at`);
+  }catch(e){return{};}
+  const todayKey=dk(new Date());
   const result={};
-  perStu.forEach(([studentId,st])=>{
-    if(!st)return;
-    byStu[studentId]=st;
-    result[studentId]=(st.count<MIN_FOCUS_SAMPLES||!st.totalWeight)?'measuring':Math.round(st.focusedWeight/st.totalWeight*100);
+  (Array.isArray(rows)?rows:[]).forEach(s=>{
+    if(s.focus_rate==null||!s.focus_rate_updated_at)return;
+    if(dk(new Date(s.focus_rate_updated_at))!==todayKey)return;
+    result[s.id]=s.focus_rate;
   });
-  // 임시 진단용 — 원인 확인되면 제거합니다.
-  let dbgEl=document.getElementById('focus-dbg-overlay');
-  if(!dbgEl){
-    dbgEl=document.createElement('div');
-    dbgEl.id='focus-dbg-overlay';
-    dbgEl.style.cssText='position:fixed;bottom:0;left:0;right:0;background:rgba(0,0,0,.9);color:#7BE6A8;font-size:10px;font-family:monospace;padding:6px 10px;z-index:99999;white-space:pre-wrap;max-height:150px;overflow-y:auto;line-height:1.5';
-    document.body.appendChild(dbgEl);
-  }
-  const dbgLines=Object.keys(byStu).map(studentId=>{
-    const st=byStu[studentId];
-    return `stu=${studentId.slice(0,8)} n=${st.count} totW=${Math.round(st.totalWeight/1000)}s focW=${Math.round(st.focusedWeight/1000)}s -> ${result[studentId]}%`;
-  });
-  dbgEl.textContent=`[관리자] now=${new Date(now).toLocaleTimeString('ko-KR')} (학생별, 오늘 전체 세션 합산)\n`+dbgLines.join('\n');
   return result;
 }
 const FOCUS_REASON_LABEL={

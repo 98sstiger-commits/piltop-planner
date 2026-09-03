@@ -1880,6 +1880,12 @@ async function loadTodayFocus(){
     if(rate==null){el.style.display='none';return;}
     document.getElementById('dy-focus-val').textContent=rate+'%';
     el.style.display='flex';
+    // 관리자 실시간 배지·학부모 리포트(오늘)는 이 값을 다시 계산하지
+    // 않고 여기서 저장한 값을 그대로 읽습니다 — 세 화면이 각자 조회
+    // 범위·타이밍이 조금만 달라도 서로 다른 숫자를 보여주던 문제를,
+    // 계산은 한 곳(실제 카메라 분석이 일어나는 여기)에서만 하고
+    // 나머지는 읽기만 하도록 해서 근본적으로 없앱니다.
+    sb(`planner_students?id=eq.${S.id}`,{method:'PATCH',body:JSON.stringify({focus_rate:rate,focus_rate_updated_at:new Date().toISOString()})}).catch(()=>{});
   }catch(e){el.style.display='none';}
 }
 
@@ -2605,7 +2611,13 @@ function focusFrameSignature(video){
 function recordFocusSample(reason){
   if(!focusAttId)return;
   sb('focus_log',{method:'POST',body:JSON.stringify({attendance_id:focusAttId,focused:reason==='focused',reason})})
-    .then(r=>{if(!Array.isArray(r))console.error('집중도 기록 저장 실패',r);});
+    .then(r=>{
+      if(!Array.isArray(r)){console.error('집중도 기록 저장 실패',r);return;}
+      // 새 표본이 기록된 직후 바로 "오늘 집중도"를 다시 계산해서
+      // 저장합니다 — 관리자·리포트가 읽는 값이 8초 표본 주기와 거의
+      // 같은 속도로 갱신되게 하기 위함입니다.
+      loadTodayFocus();
+    });
 }
 function focusSampleLoop(){
   if(!focusActive)return;
