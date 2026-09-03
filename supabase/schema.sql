@@ -345,3 +345,17 @@ end $$;
 -- 이 값을 그대로 읽기만 하도록 통일합니다.
 alter table planner_students add column if not exists focus_rate integer;
 alter table planner_students add column if not exists focus_rate_updated_at timestamptz;
+
+-- ── 21. 집중도 분석 사유에 "인강 시청 등 정당한 이탈" 추가 ──
+-- 인강 시청처럼 어쩔 수 없이 플래니를 벗어나야 할 때, 학생이 "인강
+-- 보기" 버튼을 누르고 나가면 그 시간을 'app_away'(이탈=산만)이 아니라
+-- 'lecture'로 남겨서 집중도 계산에서 완전히 제외합니다(손해도 이득도
+-- 안 되게). 다만 얼마나 썼는지는 관리자·학부모 화면에 그대로 보여서
+-- 투명하게 확인할 수 있습니다.
+do $$
+begin
+  alter table focus_log drop constraint if exists focus_log_reason_check;
+  alter table focus_log add constraint focus_log_reason_check
+    check (reason in ('focused','no_face','head_turned','eyes_closed','dozing','app_away','lecture'));
+exception when others then null;
+end $$;
