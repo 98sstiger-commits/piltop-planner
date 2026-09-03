@@ -6,7 +6,6 @@
   "display": "standalone",
   "background_color": "#F5F4F1",
   "theme_color": "#1A4731",
-  "orientation": "portrait-primary",
   "categories": ["education", "productivity"],
   "lang": "ko",
   "icons": [
