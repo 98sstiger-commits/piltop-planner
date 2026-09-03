@@ -374,6 +374,8 @@ body{font-family:'Pretendard','Noto Sans KR',sans-serif;color:var(--ink);min-hei
 .dr-focus-badge.measuring{background:var(--bg);color:var(--ink3);font-weight:600}
 .dr-focus-tip{display:none;position:absolute;top:calc(100% + 6px);right:0;z-index:50;width:210px;background:#18170F;color:#fff;border-radius:10px;padding:10px 12px;font-size:11px;line-height:1.7;box-shadow:0 8px 24px rgba(0,0,0,.25)}
 .dr-focus-wrap:hover .dr-focus-tip{display:block}
+/* 카드 맨 아래 학생은 팝업이 카드 하단 바깥으로 잘려 보여서, 위쪽으로 펼침 */
+.dr-focus-wrap.tip-up .dr-focus-tip{top:auto;bottom:calc(100% + 6px)}
 .dr-focus-tip-row{display:flex;justify-content:space-between;gap:8px}
 .dr-focus-tip-note{color:rgba(255,255,255,.55);font-size:10px;margin-top:4px;padding-top:4px;border-top:1px solid rgba(255,255,255,.15)}
 
@@ -2652,12 +2654,15 @@ async function loadDateRecord(){
   }));
 
   const STATUS_ICON_LABEL={studying:'공부중',in_class:'학원수업중',away:'외출중'};
-  body.innerHTML=names.map(name=>{
+  body.innerHTML=names.map((name,nameIdx)=>{
     const sessions=byStu.get(name);
     const focusInfo=focusByName.get(name);
     const focusReady=focusInfo&&focusInfo.total>=MIN_FOCUS_SAMPLES;
+    // 맨 아래 학생의 팝업은 카드 하단 바깥으로 나가 잘려 보이므로, 그
+    // 학생만 위쪽으로 펼쳐지게 합니다.
+    const isLastGroup=nameIdx===names.length-1;
     const focusBadge=!focusInfo?'':`
-      <div class="dr-focus-wrap">
+      <div class="dr-focus-wrap${isLastGroup?' tip-up':''}">
         <div class="dr-focus-badge${focusReady?'':' measuring'}">🧠 ${focusReady?`집중도 ${focusInfo.rate}%`:'측정 중…'}</div>
         ${focusReady?`<div class="dr-focus-tip">
           <div style="font-weight:700;margin-bottom:4px">집중도 판정 내역</div>
