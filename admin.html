@@ -1531,10 +1531,14 @@ async function loadLiveViewTab(forceRender){
 // 별개로 계속 돌아가는데, 관리자 입장에선 "진짜 지금도 기록되고
 // 있는지" 확인할 방법이 없었습니다. 각 학생의 최근 focus_log 기록
 // 시각을 가져와서, 화면 우측 상단에 작게 표시해줍니다.
-// 입실 시점부터 지금까지 누적해서 시간 가중 평균을 냅니다 — 학생
-// 플래니·학부모 리포트와 동일한 계산식으로 통일해서, 어느 화면에서
-// 봐도 같은 숫자가 실시간으로 반영되게 합니다.
+// 계산식은 학생 플래니·학부모 리포트와 완전히 동일하게 맞춥니다 — 어느
+// 화면에서 봐도 같은 숫자가 나와야 하기 때문입니다. 표본 개수가 아니라
+// 표본이 대표하는 시간으로 가중치를 주고(샘플링이 뜸해진 구간이 실제보다
+// 적게 반영되는 문제 방지), 거기에 더해 최근일수록 크게 반영합니다
+// (반감기 30분) — 하루를 단순 평균하면 오후엔 표본이 너무 많이 쌓여
+// 지금 뭘 하든 숫자가 거의 안 움직이기 때문입니다.
 const MIN_FOCUS_SAMPLES=5;
+const FOCUS_MAX_GAP_MS=5*60*1000,FOCUS_DEFAULT_GAP_MS=8000,FOCUS_HALFLIFE_MS=30*60*1000;
 async function computeTodayFocusRates(attIds){
   if(!attIds.length)return{};
   const todayStart=`${dk(new Date())}T00:00:00%2B09:00`;
@@ -1542,17 +1546,18 @@ async function computeTodayFocusRates(attIds){
   try{
     rows=await sb(`focus_log?attendance_id=in.(${attIds.join(',')})&checked_at=gte.${todayStart}&select=attendance_id,focused,checked_at&order=checked_at.asc`);
   }catch(e){return{};}
-  const MAX_GAP_MS=5*60*1000,DEFAULT_GAP_MS=8000;
+  const now=Date.now();
   const byAtt={};
   (Array.isArray(rows)?rows:[]).forEach(f=>{
     if(!byAtt[f.attendance_id])byAtt[f.attendance_id]={totalWeight:0,focusedWeight:0,prevTs:null,count:0};
     const st=byAtt[f.attendance_id];
     const ts=new Date(f.checked_at).getTime();
-    const gap=st.prevTs!==null?Math.min(ts-st.prevTs,MAX_GAP_MS):DEFAULT_GAP_MS;
+    const gap=st.prevTs!==null?Math.min(ts-st.prevTs,FOCUS_MAX_GAP_MS):FOCUS_DEFAULT_GAP_MS;
     st.prevTs=ts;
-    st.totalWeight+=gap;
+    const w=gap*Math.pow(0.5,Math.max(0,now-ts)/FOCUS_HALFLIFE_MS);
+    st.totalWeight+=w;
     st.count++;
-    if(f.focused)st.focusedWeight+=gap;
+    if(f.focused)st.focusedWeight+=w;
   });
   // 표본이 몇 개 안 될 때(막 켜서 자리 잡는 중일 때 등)는 그 중 하나만
   // 잘못 잡혀도 비율이 크게 튀어서 신뢰할 수 없으므로, 최소 표본이
@@ -1560,7 +1565,7 @@ async function computeTodayFocusRates(attIds){
   const result={};
   Object.keys(byAtt).forEach(attId=>{
     const st=byAtt[attId];
-    result[attId]=st.count<MIN_FOCUS_SAMPLES?'measuring':Math.round(st.focusedWeight/st.totalWeight*100);
+    result[attId]=(st.count<MIN_FOCUS_SAMPLES||!st.totalWeight)?'measuring':Math.round(st.focusedWeight/st.totalWeight*100);
   });
   return result;
 }

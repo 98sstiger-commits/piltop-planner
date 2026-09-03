@@ -322,3 +322,16 @@ create policy "public full access" on student_weekly_schedule for all using (tru
 alter table planner_students enable row level security;
 drop policy if exists "public full access" on planner_students;
 create policy "public full access" on planner_students for all using (true) with check (true);
+
+-- ── 19. 집중도 분석 사유에 "앱 이탈" 추가 ──
+-- 학생이 플래니를 벗어나면(다른 앱 전환·화면 꺼짐) 브라우저가 카메라
+-- 영상 갱신을 멈춥니다. 예전에는 그 시간을 그냥 건너뛰어서, 딴짓하러
+-- 앱을 나가버리면 집중도에 아무 영향이 없는 빈틈이 있었습니다. 이제
+-- 그 시간을 'app_away'로 남겨서 집중도에 정직하게 반영합니다.
+do $$
+begin
+  alter table focus_log drop constraint if exists focus_log_reason_check;
+  alter table focus_log add constraint focus_log_reason_check
+    check (reason in ('focused','no_face','head_turned','eyes_closed','dozing','app_away'));
+exception when others then null;
+end $$;
