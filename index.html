@@ -553,8 +553,9 @@ textarea{resize:none}
 <div class="app">
 
 <!-- 홈 화면에 저장한 앱은 브라우저 주소창이 없어 새로고침할 방법이
-     없어서, 화면에 작은 새로고침 버튼을 항상 떠있게 둡니다. -->
-<button onclick="location.reload()" title="새로고침" style="position:fixed;top:max(10px,env(safe-area-inset-top));right:10px;z-index:99999;width:34px;height:34px;border-radius:50%;border:none;background:rgba(0,0,0,.35);color:#fff;font-size:17px;line-height:1;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px)">↻</button>
+     없어서, 화면에 작은 새로고침 버튼을 항상 떠있게 둡니다. 상단은
+     탭 메뉴(연간/월간/주간/일간)와 겹쳐서 우측 하단에 둡니다. -->
+<button onclick="location.reload()" title="새로고침" style="position:fixed;bottom:calc(14px + env(safe-area-inset-bottom,0px));right:12px;z-index:60;width:34px;height:34px;border-radius:50%;border:none;background:rgba(0,0,0,.35);color:#fff;font-size:17px;line-height:1;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px)">↻</button>
 
 <!-- ═══ 온보딩 ═══ -->
 <div id="ob">
