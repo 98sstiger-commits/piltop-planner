@@ -485,8 +485,7 @@ async function boot(){
   // 링크를 열면 버튼 없이 리포트만 깔끔하게 보여요 — 인쇄 버튼도
   // 학부모에게는 딱히 쓸 일이 없어서(지저분하기만 함) 뺐습니다.
   if(isAdmin)document.getElementById('sharebar').style.display='flex';
-  switchType(STATE.type,true);
-  loadLiveStatus();
+  switchType(STATE.type,true); // render()가 loadLiveStatus()도 같이 호출함
   setInterval(loadLiveStatus,30000);
   // 학생 플래니 쪽 "오늘 집중도"는 30초마다 자동으로 갱신되는데,
   // 여기는 탭을 만지거나 새로고침해야만 다시 계산돼서 학생 화면과
@@ -542,6 +541,11 @@ async function refreshStudent(){
 let renderGen=0;
 async function render(){
   const myGen=++renderGen;
+  // "지금 공부중/퇴실" 표시는 원래 30초 타이머로만 갱신돼서, 방금
+  // 퇴실했는데 탭을 눌러봐도 그 자리에서는 안 바뀌고 다음 타이머가
+  // 돌거나 새로고침해야만 반영되는 문제가 있었습니다. 탭/날짜를
+  // 옮길 때도 같이 최신 상태로 갱신합니다.
+  loadLiveStatus();
   await refreshStudent();
   if(myGen!==renderGen)return;
   if(STATE.type==='daily')renderDaily(myGen);
