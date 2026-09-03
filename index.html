@@ -2562,7 +2562,10 @@ async function startFocusTracking(attendanceId){
   let stream;
   try{
     stream=await acquireCamera();
-  }catch(e){console.warn('카메라 권한이 없어 집중도 분석을 건너뜁니다',e);focusActive=false;return;}
+  }catch(e){
+    fdbgShow(`[집중도 진단] 카메라 획득 실패: ${e&&e.name} ${e&&e.message}`);
+    console.warn('카메라 권한이 없어 집중도 분석을 건너뜁니다',e);focusActive=false;return;
+  }
   try{
     if(!focusLandmarker){
       const vision=await import('https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/vision_bundle.mjs');
@@ -2584,7 +2587,10 @@ async function startFocusTracking(attendanceId){
         });
       }catch(e){console.warn('자세 감지 보조 모델 로드 실패 — 얼굴 안 보일 때는 자리 이탈로만 판정됩니다',e);}
     }
-  }catch(e){console.warn('집중도 분석 모델 로드 실패',e);stopFocusTracking();return;}
+  }catch(e){
+    fdbgShow(`[집중도 진단] 분석 모델 로드 실패: ${e&&e.message}`);
+    console.warn('집중도 분석 모델 로드 실패',e);stopFocusTracking();return;
+  }
   focusVideo=document.createElement('video');
   focusVideo.srcObject=stream;focusVideo.playsInline=true;focusVideo.muted=true;
   await focusVideo.play();
@@ -2596,6 +2602,18 @@ async function startFocusTracking(attendanceId){
 // 그것만으로는 멈춤을 잡아내지 못했습니다. 프레임을 아주 작게 축소해
 // 실제 픽셀을 비교하면 확실합니다 — 카메라는 항상 미세한 센서 노이즈가
 // 있어서, 픽셀이 직전과 완전히 똑같다면 그건 멈춘 화면입니다.
+// 임시 진단 표시 — 태블릿에 콘솔이 없어 카메라/집중도 판정 상태를 화면에
+// 바로 보여주는 용도입니다. 원인 확인 후 제거할 예정입니다.
+function fdbgShow(msg){
+  let d=document.getElementById('focus-dbg-overlay');
+  if(!d){
+    d=document.createElement('div');
+    d.id='focus-dbg-overlay';
+    d.style.cssText='position:fixed;bottom:0;left:0;right:0;z-index:99999;background:rgba(0,0,0,.92);color:#0f0;font-family:monospace;font-size:11px;line-height:1.5;padding:8px 10px;white-space:pre-wrap;pointer-events:none';
+    document.body.appendChild(d);
+  }
+  d.textContent=msg;
+}
 function focusFrameSignature(video){
   if(!focusFrameCanvas){
     focusFrameCanvas=document.createElement('canvas');
@@ -2622,15 +2640,17 @@ function recordFocusSample(reason){
 function focusSampleLoop(){
   if(!focusActive)return;
   try{
-    let reason;
-    if(document.visibilityState!=='visible'){
+    const vis=document.visibilityState;
+    let reason,sig=null,frozen=false;
+    if(vis!=='visible'){
       // 플래니를 벗어나 있는 동안(다른 앱/화면 꺼짐)은 카메라로 확인할
       // 방법이 없습니다. 예전엔 이 시간을 그냥 넘겼는데, 그러면 딴짓하러
       // 앱을 나가버리면 집중도에 아무 영향이 없는 빈틈이 됐습니다.
       reason='app_away';
     }else{
-      const sig=focusFrameSignature(focusVideo);
-      if(sig===focusLastFrameSig){
+      sig=focusFrameSignature(focusVideo);
+      frozen=(sig===focusLastFrameSig);
+      if(frozen){
         // 화면은 켜져 있는데 영상만 멈춘 경우(브라우저가 프레임 갱신을
         // 중단). 멈추기 직전 장면을 계속 다시 분석하면 자리에 아무도
         // 없는데 "집중함"이 계속 쌓이므로, 이탈로 처리합니다.
@@ -2642,8 +2662,15 @@ function focusSampleLoop(){
         reason=classifyFocus(result,ts);
       }
     }
+    fdbgShow(`[집중도 진단 ${new Date().toLocaleTimeString('ko-KR')}]\n`+
+      `visibility: ${vis}\n`+
+      (vis==='visible'?`영상 크기: ${focusVideo.videoWidth}x${focusVideo.videoHeight} / readyState=${focusVideo.readyState}\n프레임 멈춤: ${frozen?'예(직전과 동일)':'아니오'}\n`:'')+
+      `판정 결과: ${reason}`);
     recordFocusSample(reason);
-  }catch(e){console.warn('집중도 프레임 분석 실패',e);}
+  }catch(e){
+    fdbgShow(`[집중도 진단] 오류 발생: ${e&&e.message}`);
+    console.warn('집중도 프레임 분석 실패',e);
+  }
   focusLoopId=setTimeout(focusSampleLoop,8000);
 }
 // 앱을 벗어나 있는 동안에는 브라우저가 타이머를 거의 멈춰서 위 주기가
