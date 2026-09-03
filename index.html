@@ -2484,7 +2484,7 @@ async function loadStuRankList(){
    출석 상태가 '공부중'일 때만 카메라를 켜고, 몇 초 간격으로 프레임 하나만
    태블릿 안에서 즉시 분석·폐기합니다 — 영상 자체는 저장·전송하지 않고
    "그 순간 집중/산만" 판정 결과 한 줄만 focus_log에 남깁니다. */
-let focusPoller=null,focusLandmarker=null,focusPoseLandmarker=null,focusVideo=null,focusLoopId=null,focusActive=false,focusAttId=null,focusPrevReliableFace=false;
+let focusPoller=null,focusLandmarker=null,focusPoseLandmarker=null,focusVideo=null,focusLoopId=null,focusActive=false,focusAttId=null,focusPrevReliableFace=false,focusLastVideoTime=-1;
 
 /* 집중도 분석과 실시간 공부모습(라이브뷰) 둘 다 카메라가 필요할 수 있어서,
    실제 getUserMedia는 한 번만 열고 참조 카운트로 공유합니다.
@@ -2535,7 +2535,7 @@ async function checkFocusEligibility(){
   else if(!shouldRun&&focusActive)stopFocusTracking();
 }
 async function startFocusTracking(attendanceId){
-  focusActive=true;focusAttId=attendanceId;focusPrevReliableFace=false;
+  focusActive=true;focusAttId=attendanceId;focusPrevReliableFace=false;focusLastVideoTime=-1;
   let stream;
   try{
     stream=await acquireCamera();
@@ -2570,6 +2570,18 @@ async function startFocusTracking(attendanceId){
 function focusSampleLoop(){
   if(!focusActive)return;
   try{
+    // 화면이 꺼지거나 다른 앱으로 전환되면 브라우저가 배터리 절약을 위해
+    // 이 영상의 프레임 갱신을 멈춥니다. 그 상태에서 분석하면 "멈추기 직전
+    // 프레임"(대개 학생이 기기를 조작하던, 얼굴이 잘 보이던 장면)을 8초마다
+    // 계속 다시 분석하게 돼서, 실제로는 자리에 없는데도 "집중함"이 계속
+    // 쌓이는 문제가 있었습니다. 프레임 시각이 직전과 같으면 영상이 멈춘
+    // 것이므로 그 주기는 아예 기록하지 않고 건너뜁니다.
+    const videoTime=focusVideo.currentTime;
+    if(videoTime===focusLastVideoTime){
+      focusLoopId=setTimeout(focusSampleLoop,8000);
+      return;
+    }
+    focusLastVideoTime=videoTime;
     const ts=performance.now();
     const result=focusLandmarker.detectForVideo(focusVideo,ts);
     const reason=classifyFocus(result,ts);
@@ -2654,7 +2666,7 @@ function classifyFocus(result,ts){
 }
 function stopFocusTracking(){
   if(!focusActive)return;
-  focusActive=false;focusAttId=null;focusPrevReliableFace=false;
+  focusActive=false;focusAttId=null;focusPrevReliableFace=false;focusLastVideoTime=-1;
   if(focusLoopId)clearTimeout(focusLoopId);focusLoopId=null;
   releaseCamera();
   focusVideo=null;
