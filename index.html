@@ -1859,11 +1859,12 @@ async function loadTodayFocus(){
     const attRows=await sb(`attendance?student_id=eq.${S.id}&checkin_at=gte.${todayKey}T00:00:00%2B09:00&select=id`);
     const ids=(Array.isArray(attRows)?attRows:[]).map(a=>a.id);
     if(!ids.length){el.style.display='none';return;}
-    // 반감기가 30분이라 3시간 지난 기록은 결과에 사실상 영향이 없는데,
-    // Supabase는 한 번에 최대 1000행까지만 돌려줘서 하루 전체를 오래된
-    // 순으로 가져오면 정작 가중치가 제일 큰 최근 기록이 잘려나갈 수
-    // 있습니다. 최근 3시간만, 최신순으로 가져와 안전하게 처리합니다.
-    const since=new Date(Date.now()-3*60*60*1000).toISOString();
+    // 반감기가 30분이라 2시간 지난 기록은 결과에 거의 영향이 없는데,
+    // Supabase는 limit을 크게 줘도 서버 설정상 한 번에 최대 1000행까지만
+    // 돌려줘서(8초 간격 기준 약 2.2시간 분량), 하루 전체를 오래된 순으로
+    // 가져오면 정작 가중치가 제일 큰 최근 기록이 잘려나갈 수 있습니다.
+    // 최근 2시간만, 최신순으로 가져와 1000행 밑으로 안전하게 처리합니다.
+    const since=new Date(Date.now()-2*60*60*1000).toISOString();
     const logRows=await sb(`focus_log?attendance_id=in.(${ids.join(',')})&select=focused,checked_at&checked_at=gte.${since}&order=checked_at.desc&limit=5000`);
     const logs=Array.isArray(logRows)?logRows.slice().reverse():[];
     if(!logs.length){el.style.display='none';return;}
