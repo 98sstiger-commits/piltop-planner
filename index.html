@@ -2588,7 +2588,7 @@ async function startFocusTracking(attendanceId){
       }catch(e){console.warn('자세 감지 보조 모델 로드 실패 — 얼굴 안 보일 때는 자리 이탈로만 판정됩니다',e);}
     }
   }catch(e){
-    fdbgShow(`[집중도 진단] 분석 모델 로드 실패: ${e&&e.message}`);
+    fdbgShow(`[집중도 진단] 분석 모델 로드 실패: ${e&&e.message}\nUA: ${navigator.userAgent}`);
     console.warn('집중도 분석 모델 로드 실패',e);stopFocusTracking();return;
   }
   focusVideo=document.createElement('video');
