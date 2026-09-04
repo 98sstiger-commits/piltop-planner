@@ -2516,7 +2516,7 @@ async function loadStuRankList(){
    출석 상태가 '공부중'일 때만 카메라를 켜고, 몇 초 간격으로 프레임 하나만
    태블릿 안에서 즉시 분석·폐기합니다 — 영상 자체는 저장·전송하지 않고
    "그 순간 집중/산만" 판정 결과 한 줄만 focus_log에 남깁니다. */
-let focusPoller=null,focusLandmarker=null,focusPoseLandmarker=null,focusVideo=null,focusLoopId=null,focusActive=false,focusAttId=null,focusPrevReliableFace=false,focusPrevEyesClosed=false,focusLastFrameSig=null,focusFrameCanvas=null;
+let focusPoller=null,focusLandmarker=null,focusPoseLandmarker=null,focusVideo=null,focusLoopId=null,focusActive=false,focusAttId=null,focusPrevReliableFace=false,focusPrevEyesClosed=false,focusDozingStreak=0,focusLastFrameSig=null,focusFrameCanvas=null;
 
 /* 인강 시청 등으로 어쩔 수 없이 플래니를 벗어나야 할 때, 그 시간을
    "산만"으로 깎지 않고 집중도 계산에서 아예 빼주는 기능입니다. 버튼을
@@ -2591,7 +2591,7 @@ async function checkFocusEligibility(){
   else if(!shouldRun&&focusActive)stopFocusTracking();
 }
 async function startFocusTracking(attendanceId){
-  focusActive=true;focusAttId=attendanceId;focusPrevReliableFace=false;focusPrevEyesClosed=false;focusLastFrameSig=null;
+  focusActive=true;focusAttId=attendanceId;focusPrevReliableFace=false;focusPrevEyesClosed=false;focusDozingStreak=0;focusLastFrameSig=null;
   let stream;
   try{
     stream=await acquireCamera();
@@ -2691,7 +2691,7 @@ function focusSampleLoop(){
           `신뢰판정(2연속): ${dbg.hasReliableFace?'O':'X'}\n`+
           (dbg.yaw!=null?`yaw: ${dbg.yaw}° (한도 ${FOCUS_YAW_LIMIT}) / pitch: ${dbg.pitch}° (한도 ${FOCUS_PITCH_LIMIT})\n`:'')+
           (dbg.blink!=null?`눈감김 점수: ${dbg.blink}\n`:'')+
-          (dbg.shoulderVis!=null?`어깨 인식도: ${dbg.shoulderVis}\n`:''));
+          (dbg.shoulderVis!=null?`어깨 인식도: ${dbg.shoulderVis} / 얼굴 안 보임 지속: ${dbg.dozingStreak??0}/${FOCUS_DOZING_CONFIRM_CYCLES}\n`:''));
       }
     }
     recordFocusSample(reason);
@@ -2737,7 +2737,7 @@ document.addEventListener('visibilitychange',()=>{
 // 좌우로 고개를 돌리는 것(yaw, 딴짓/대화 추정)과 위아래로 숙이는 것
 // (pitch, 독서 자세)을 같은 기준으로 걸러내면 안 됩니다. yaw는 좁게,
 // pitch는 훨씬 넓게 잡아서 "책 보는 자세"가 산만으로 오판되지 않게 합니다.
-const FOCUS_YAW_LIMIT=35,FOCUS_PITCH_LIMIT=50,FOCUS_EYE_BLINK_LIMIT=0.7;
+const FOCUS_YAW_LIMIT=35,FOCUS_PITCH_LIMIT=50,FOCUS_EYE_BLINK_LIMIT=0.7,FOCUS_DOZING_CONFIRM_CYCLES=4;
 // 지정자석 뒤/옆에 다른 학생이 앉아 있으면, 그 학생의 얼굴이 카메라에
 // 같이 잡혀서 정작 자리 주인은 자리를 비웠는데도 "집중함"으로 오판될
 // 수 있습니다. 카메라에 가장 가까운(=화면에서 얼굴이 가장 크게 보이는)
@@ -2784,11 +2784,18 @@ function classifyFocus(result,ts,dbg){
   const hasReliableFace=detectedNow&&focusPrevReliableFace;
   focusPrevReliableFace=detectedNow;
   if(dbg)dbg.hasReliableFace=hasReliableFace;
+  if(hasReliableFace)focusDozingStreak=0;
   if(!hasReliableFace){
-    // 얼굴을 못 찾았다고 바로 "자리 이탈"로 보진 않습니다 — 고개를 푹
-    // 숙이면(엎드려 졸 때 등) 얼굴 인식은 실패해도 몸(어깨)은 보일 수
-    // 있어서, 그런 경우는 조는 것으로 구분합니다. 몸까지 안 보이면
-    // 그때 진짜 자리 이탈로 봅니다.
+    // 얼굴을 못 찾았다고 바로 "자리 이탈"이나 "졸음"으로 보진 않습니다.
+    // 책을 보려고 고개를 깊이 숙이면(카메라가 눈높이쯤이라 정수리
+    // 위주로만 보이는 각도가 됨) 실제로는 열심히 공부 중인데도 얼굴
+    // 인식이 아예 실패하는 게 실측으로 확인됐습니다. 이런 자세는
+    // 몇십 초에 한 번은 고개를 들거나 페이지를 넘기며 자세가 바뀌는
+    // 반면, 진짜 조는 건 훨씬 오래 그대로 유지되는 차이가 있어서,
+    // 어깨가 계속 보이는데 얼굴만 안 보이는 상태가 일정 시간(4번
+    // 연속, 약 32초) 이어질 때만 "졸음"으로 판정하고, 그 전까지는
+    // 독서 자세로 보고 "집중함"으로 처리합니다. 몸까지 안 보이면
+    // 그때 바로 진짜 자리 이탈로 봅니다.
     //
     // 주의: 자세 인식 모델은 사람이 전혀 없어도(천장 조명·몰딩처럼
     // 사람 형태와 비슷한 패턴이 있으면) 낮은 확신도로 어깨 위치를
@@ -2801,8 +2808,14 @@ function classifyFocus(result,ts,dbg){
       const lm=poseResult?.landmarks?.[0];
       const shoulderVis=lm?Math.max(lm[11]?.visibility||0,lm[12]?.visibility||0):0;
       if(dbg)dbg.shoulderVis=shoulderVis.toFixed(2);
-      if(shoulderVis>0.6)return 'dozing';
+      if(shoulderVis>0.6){
+        focusDozingStreak++;
+        if(dbg)dbg.dozingStreak=focusDozingStreak;
+        if(focusDozingStreak>=FOCUS_DOZING_CONFIRM_CYCLES)return 'dozing';
+        return 'focused'; // 아직 짧은 시간이라 독서 자세로 보고 집중으로 처리
+      }
     }catch(e){}
+    focusDozingStreak=0;
     return 'no_face';
   }
   const yaw=Math.atan2(-m[2],Math.sqrt(m[6]*m[6]+m[10]*m[10]))*180/Math.PI;
@@ -2829,7 +2842,7 @@ function classifyFocus(result,ts,dbg){
 }
 function stopFocusTracking(){
   if(!focusActive)return;
-  focusActive=false;focusAttId=null;focusPrevReliableFace=false;focusPrevEyesClosed=false;focusLastFrameSig=null;
+  focusActive=false;focusAttId=null;focusPrevReliableFace=false;focusPrevEyesClosed=false;focusDozingStreak=0;focusLastFrameSig=null;
   if(focusLoopId)clearTimeout(focusLoopId);focusLoopId=null;
   releaseCamera();
   focusVideo=null;
