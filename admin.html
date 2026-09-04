@@ -1588,6 +1588,24 @@ async function computeTodayFocusRates(lvSeatsList){
   });
   return result;
 }
+// 출석기록의 오늘자 "인강 시청 등으로 뺀 시간"도 focus_rate와 같은
+// 이유로 재계산 없이 읽기만 합니다 — 최근 2시간짜리 조회로는 그보다
+// 더 이전에 쓴 인강모드 시간을 놓칠 수 있어서, 학생 플래니가 저장해둔
+// 오늘 누적값을 그대로 씁니다.
+async function computeTodayLectureMinutes(studentIds){
+  if(!studentIds.length)return{};
+  let rows;
+  try{
+    rows=await sb(`planner_students?id=in.(${[...new Set(studentIds)].join(',')})&select=id,lecture_minutes_today,lecture_minutes_date`);
+  }catch(e){return{};}
+  const todayKey=dk(new Date());
+  const result={};
+  (Array.isArray(rows)?rows:[]).forEach(s=>{
+    if(s.lecture_minutes_date!==todayKey)return;
+    result[s.id]=s.lecture_minutes_today||0;
+  });
+  return result;
+}
 const FOCUS_REASON_LABEL={
   focused:'집중함',
   no_face:'화면에 안 보임 (자리 이탈 추정)',
@@ -2646,7 +2664,10 @@ async function loadDateRecord(){
   // planner_students.focus_rate를 그대로 읽어서 씁니다 — 판정 내역(세부
   // breakdown)만 여기서 focus_log로 따로 계산해서 참고용으로 보여줍니다.
   // 그래야 어느 화면에서 봐도 오늘 집중도 %가 항상 똑같습니다.
-  const todayRatesByStudent=isToday?await computeTodayFocusRates(names.map(n=>({student_id:byStu.get(n)[0].student_id}))):{};
+  const todayStudentIds=names.map(n=>byStu.get(n)[0].student_id);
+  const [todayRatesByStudent,todayLectureByStudent]=isToday
+    ?await Promise.all([computeTodayFocusRates(todayStudentIds.map(id=>({student_id:id}))),computeTodayLectureMinutes(todayStudentIds)])
+    :[{},{}];
   await Promise.all(names.map(async name=>{
     const sessions=byStu.get(name);
     const ids=sessions.map(a=>a.id);
@@ -2654,6 +2675,9 @@ async function loadDateRecord(){
     if(info&&isToday){
       const sid=sessions[0].student_id;
       if(todayRatesByStudent[sid]!=null)info.rate=todayRatesByStudent[sid];
+      // 인강 제외 시간도 최근 2시간짜리 조회로 놓친 분량이 있을 수 있어
+      // 학생 플래니가 저장해둔 오늘 누적값으로 덮어씁니다.
+      if(todayLectureByStudent[sid]!=null)info.excludedWeight=todayLectureByStudent[sid]*60000;
     }
     focusByName.set(name,info);
   }));

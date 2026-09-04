@@ -2541,6 +2541,22 @@ function toggleLectureMode(){
   }
 }
 window.toggleLectureMode=toggleLectureMode;
+// 관리자·리포트의 "오늘" 판정 내역은 Supabase 1000행 상한을 피하려고
+// focus_log를 최근 2시간치만 조회합니다. 집중도 %는 반감기 덕분에
+// 2시간 넘은 기록의 영향이 거의 없어 문제없지만, 인강 제외 시간은
+// 감쇠 없는 실제 총합이라 2시간보다 더 전에 쓴 인강모드가 그 조회
+// 범위 밖으로 빠져 통째로 안 잡히는 문제가 있었습니다. 집중도 %와
+// 똑같이, 인강모드가 끝날 때마다 오늘 누적 합계를 여기서 저장해두고
+// 관리자·리포트는 재계산 없이 그 값을 그대로 읽기만 하게 합니다.
+async function addLectureMinutes(minutes){
+  try{
+    const rows=await sb(`planner_students?id=eq.${S.id}&select=lecture_minutes_today,lecture_minutes_date`);
+    const s=Array.isArray(rows)&&rows[0];
+    const todayKey=dk(new Date());
+    const prevTotal=(s&&s.lecture_minutes_date===todayKey)?(s.lecture_minutes_today||0):0;
+    await sb(`planner_students?id=eq.${S.id}`,{method:'PATCH',body:JSON.stringify({lecture_minutes_today:prevTotal+minutes,lecture_minutes_date:todayKey})});
+  }catch(e){}
+}
 
 /* 집중도 분석과 실시간 공부모습(라이브뷰) 둘 다 카메라가 필요할 수 있어서,
    실제 getUserMedia는 한 번만 열고 참조 카운트로 공유합니다.
@@ -2699,6 +2715,7 @@ document.addEventListener('visibilitychange',()=>{
     // 아니라 "측정 제외"로 남깁니다. 다만 90분 넘게 안 돌아오면
     // 인강 시청으로 보기 어려우므로 평소처럼 이탈 처리합니다.
     const wasLecture=lectureMode&&lectureModeStarted&&(Date.now()-lectureModeStarted)<=LECTURE_MODE_MAX_MS;
+    if(wasLecture)addLectureMinutes((Date.now()-lectureModeStarted)/60000);
     if(lectureMode){
       lectureMode=false;lectureModeStarted=null;
       const btn=document.getElementById('lecture-mode-btn');

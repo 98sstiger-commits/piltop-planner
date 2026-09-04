@@ -359,3 +359,14 @@ begin
     check (reason in ('focused','no_face','head_turned','eyes_closed','dozing','app_away','lecture'));
 exception when others then null;
 end $$;
+
+-- ── 22. 오늘 인강 시청으로 뺀 시간도 학생 플래니가 누적 저장 (단일 진실 공급원) ──
+-- 관리자·리포트의 "오늘" 판정 내역은 Supabase 1000행 상한을 피하려고
+-- focus_log를 최근 2시간치만 조회합니다(집중도 %는 반감기 덕분에
+-- 2시간 넘은 기록의 영향이 거의 없어서 문제없지만), 인강 제외 시간은
+-- 감쇠 없이 그날 실제 총합을 보여줘야 하는 값이라 2시간보다 더
+-- 전에 쓴 인강모드가 통째로 안 잡히는 문제가 있었습니다. 집중도
+-- %와 똑같은 방식으로, 학생 플래니가 인강모드를 끝낼 때마다 오늘
+-- 누적 합계를 여기 저장해두고 관리자·리포트는 읽기만 합니다.
+alter table planner_students add column if not exists lecture_minutes_today numeric;
+alter table planner_students add column if not exists lecture_minutes_date date;
