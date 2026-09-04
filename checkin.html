@@ -133,10 +133,9 @@ button{cursor:pointer;border:none;background:none;font-family:inherit}
 .ss-card{background:#fff;border-radius:20px;padding:30px 26px;width:calc(100% - 48px);max-width:400px;text-align:center}
 .ss-name{font-size:20px;font-weight:800;margin-bottom:4px}
 .ss-sub{font-size:13px;color:var(--ink2);margin-bottom:22px}
-.ss-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:10px}
+.ss-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:10px}
 .ss-btn{padding:18px 6px;border-radius:14px;font-size:12px;font-weight:700;display:flex;flex-direction:column;align-items:center;gap:7px;border:2px solid transparent}
 .ss-btn .ico{font-size:24px}
-.ss-btn.studying{background:#E7F8EE;color:#1C9962;border-color:#BEEBD1}
 .ss-btn.in_class{background:#EAF1FF;color:#2B5FD9;border-color:#C7D9FF}
 .ss-btn.away{background:#F3EEFF;color:#7C4DE0;border-color:#DCCBFF}
 .ss-btn.current{box-shadow:0 0 0 2px currentColor inset}
@@ -223,7 +222,6 @@ button{cursor:pointer;border:none;background:none;font-family:inherit}
     <div class="ss-name" id="ss-name">학생</div>
     <div class="ss-sub" id="ss-sub"></div>
     <div class="ss-grid">
-      <button class="ss-btn studying" id="ss-btn-studying" onclick="setStudentStatus('studying')"><span class="ico">📚</span>공부중</button>
       <button class="ss-btn in_class" id="ss-btn-in_class" onclick="setStudentStatus('in_class')"><span class="ico">🏫</span>학원수업중</button>
       <button class="ss-btn away" id="ss-btn-away" onclick="setStudentStatus('away')"><span class="ico">🚶</span>외출중</button>
     </div>
@@ -487,7 +485,7 @@ function openStatusSelect(student,att){
   coStudent=student;coAtt=att;
   document.getElementById('ss-name').textContent=student.name+' 님';
   document.getElementById('ss-sub').textContent=`현재 상태: ${STATUS_LABEL[att.status]||'공부중'} · 상태를 선택해주세요`;
-  ['studying','in_class','away'].forEach(st=>{
+  ['in_class','away'].forEach(st=>{
     document.getElementById('ss-btn-'+st).classList.toggle('current',att.status===st);
   });
   show('status-select');
