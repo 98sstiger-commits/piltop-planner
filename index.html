@@ -2681,32 +2681,12 @@ function focusSampleLoop(){
         focusLastFrameSig=sig;
         const ts=performance.now();
         const result=focusLandmarker.detectForVideo(focusVideo,ts);
-        const dbg={};
-        reason=classifyFocus(result,ts,dbg);
-        // 임시 진단 표시 — 책 보는 자세(고개 숙임)에서 왜 퍼센트가
-        // 떨어지는지 정확한 원인(각도 계산 문제 vs 얼굴 인식 자체
-        // 실패)을 눈으로 보면서 조정하기 위함. 원인 확인 후 제거 예정.
-        fdbgShow(`[집중도 진단 ${new Date().toLocaleTimeString('ko-KR')}]\n판정: ${reason}\n`+
-          `얼굴랜드마크: ${dbg.faceLmFound?'O':'X'} / 크기: ${dbg.faceSpan??'-'} / 행렬: ${dbg.matrixOk?'O':'X'}\n`+
-          `신뢰판정(2연속): ${dbg.hasReliableFace?'O':'X'}\n`+
-          (dbg.yaw!=null?`yaw: ${dbg.yaw}° (한도 ${FOCUS_YAW_LIMIT}) / pitch: ${dbg.pitch}° (한도 ${FOCUS_PITCH_LIMIT})\n`:'')+
-          (dbg.blink!=null?`눈감김 점수: ${dbg.blink}\n`:'')+
-          (dbg.shoulderVis!=null?`어깨 인식도: ${dbg.shoulderVis} / 얼굴 안 보임 지속: ${dbg.dozingStreak??0}/${FOCUS_DOZING_CONFIRM_CYCLES}\n`:''));
+        reason=classifyFocus(result,ts);
       }
     }
     recordFocusSample(reason);
   }catch(e){console.warn('집중도 프레임 분석 실패',e);}
   focusLoopId=setTimeout(focusSampleLoop,8000);
-}
-function fdbgShow(msg){
-  let d=document.getElementById('focus-dbg-overlay');
-  if(!d){
-    d=document.createElement('div');
-    d.id='focus-dbg-overlay';
-    d.style.cssText='position:fixed;bottom:0;left:0;right:0;z-index:99999;background:rgba(0,0,0,.92);color:#0f0;font-family:monospace;font-size:11px;line-height:1.5;padding:8px 10px;white-space:pre-wrap;pointer-events:none';
-    document.body.appendChild(d);
-  }
-  d.textContent=msg;
 }
 // 앱을 벗어나 있는 동안에는 브라우저가 타이머를 거의 멈춰서 위 주기가
 // 안 돌아갑니다. 그래서 나가는 순간과 돌아오는 순간에 각각 한 줄씩
@@ -2758,7 +2738,7 @@ function faceBoundingSpan(landmarks){
   }
   return Math.max(maxX-minX,maxY-minY);
 }
-function classifyFocus(result,ts,dbg){
+function classifyFocus(result,ts){
   // 얼굴 랜드마크가 잡혔어도, 자세(회전) 정보(facialTransformationMatrixes)가
   // 같이 안 나오면 옆모습 일부나 화면 밖 다른 물체를 오인식한 낮은
   // 확신도의 결과일 수 있습니다. 이런 애매한 결과는 "집중함"으로 바로
@@ -2769,12 +2749,6 @@ function classifyFocus(result,ts,dbg){
   const m=(faceLm&&faceLm.length)?result.facialTransformationMatrixes?.[0]?.data:null;
   const faceCloseEnough=!!faceLm&&faceBoundingSpan(faceLm)>=FOCUS_MIN_FACE_SPAN;
   const detectedNow=!!(m&&m.length>=16)&&faceCloseEnough;
-  if(dbg){
-    dbg.faceLmFound=!!faceLm;
-    dbg.faceSpan=faceLm?faceBoundingSpan(faceLm).toFixed(3):null;
-    dbg.matrixOk=!!(m&&m.length>=16);
-    dbg.detectedNow=detectedNow;
-  }
   // 카메라를 얼굴에서 완전히 돌려놨는데도 아주 가끔(조명·각도 등으로)
   // 한 프레임만 잘못 얼굴로 잡히는 경우가 있습니다. 8초 간격으로 찍는
   // 딱 한 프레임의 우연한 오탐이 리포트에 그대로 반영되지 않도록,
@@ -2783,7 +2757,6 @@ function classifyFocus(result,ts,dbg){
   // 얼굴이 잡히니 실제 감지에는 지장이 없습니다.
   const hasReliableFace=detectedNow&&focusPrevReliableFace;
   focusPrevReliableFace=detectedNow;
-  if(dbg)dbg.hasReliableFace=hasReliableFace;
   if(hasReliableFace)focusDozingStreak=0;
   if(!hasReliableFace){
     // 얼굴을 못 찾았다고 바로 "자리 이탈"이나 "졸음"으로 보진 않습니다.
@@ -2807,10 +2780,8 @@ function classifyFocus(result,ts,dbg){
       const poseResult=focusPoseLandmarker&&focusPoseLandmarker.detectForVideo(focusVideo,ts);
       const lm=poseResult?.landmarks?.[0];
       const shoulderVis=lm?Math.max(lm[11]?.visibility||0,lm[12]?.visibility||0):0;
-      if(dbg)dbg.shoulderVis=shoulderVis.toFixed(2);
       if(shoulderVis>0.6){
         focusDozingStreak++;
-        if(dbg)dbg.dozingStreak=focusDozingStreak;
         if(focusDozingStreak>=FOCUS_DOZING_CONFIRM_CYCLES)return 'dozing';
         return 'focused'; // 아직 짧은 시간이라 독서 자세로 보고 집중으로 처리
       }
@@ -2820,7 +2791,6 @@ function classifyFocus(result,ts,dbg){
   }
   const yaw=Math.atan2(-m[2],Math.sqrt(m[6]*m[6]+m[10]*m[10]))*180/Math.PI;
   const pitch=Math.atan2(m[6],m[10])*180/Math.PI;
-  if(dbg){dbg.yaw=yaw.toFixed(1);dbg.pitch=pitch.toFixed(1);}
   if(Math.abs(yaw)>FOCUS_YAW_LIMIT||Math.abs(pitch)>FOCUS_PITCH_LIMIT){
     focusPrevEyesClosed=false;
     return 'head_turned'; // 고개를 많이 돌리거나 완전히 젖힘
@@ -2828,7 +2798,6 @@ function classifyFocus(result,ts,dbg){
   const cats=result.faceBlendshapes?.[0]?.categories||[];
   const score=n=>cats.find(c=>c.categoryName===n)?.score||0;
   const blink=(score('eyeBlinkLeft')+score('eyeBlinkRight'))/2;
-  if(dbg)dbg.blink=blink.toFixed(2);
   // 고개를 숙이면(독서 자세) 카메라 각도상 눈이 실제로 떠 있어도 감긴
   // 것처럼 보여서 점수가 슬쩍 올라가는 경우가 실측에서 확인됐습니다.
   // 8초 간격 샘플링에 실제 깜빡임(약 0.3초)이 우연히 잡힐 확률은
