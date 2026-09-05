@@ -1357,9 +1357,9 @@ function clearDept(k){
 ['d1','d2'].forEach(k=>{document.getElementById(`${k}-inp`).addEventListener('focus',()=>searchDept(k,''));});
 
 /* ── NEIS ── */
-async function fetchHolidays(){
+async function fetchHolidays(year){
   try{
-    const url=`https://apis.data.go.kr/B090041/openapi/service/SpcdeInfoService/getRestDeInfo?solYear=${YEAR}&numOfRows=50&_type=json&ServiceKey=Ew%2BHhz9bMxCm7oHMFqNd%2BHzNz%2BT2xGqPf8n4qGxqR7H6H%2BzMpFLFKsQ%2BQvs6%2FKBJhzXd3QpKYlBLX0eNtDhA%3D%3D`;
+    const url=`https://apis.data.go.kr/B090041/openapi/service/SpcdeInfoService/getRestDeInfo?solYear=${year}&numOfRows=50&_type=json&ServiceKey=Ew%2BHhz9bMxCm7oHMFqNd%2BHzNz%2BT2xGqPf8n4qGxqR7H6H%2BzMpFLFKsQ%2BQvs6%2FKBJhzXd3QpKYlBLX0eNtDhA%3D%3D`;
     const res=await fetch(url);const data=await res.json();
     const items=data?.response?.body?.items?.item||[];
     const arr=Array.isArray(items)?items:[items];
@@ -1370,24 +1370,30 @@ async function fetchHolidays(){
   }catch{return[];}
 }
 
-async function fetchNeis(){
-  const [schoolRows, holidays] = await Promise.all([
-    (async()=>{
-      if(!S.sc)return[];
-      try{
-        const url=`https://open.neis.go.kr/hub/SchoolSchedule?KEY=${NEIS}&Type=json&pIndex=1&pSize=200&ATPT_OFCDC_SC_CODE=${S.so}&SD_SCHUL_CODE=${S.sc}&AA_YMD=${YEAR}`;
-        const res=await fetch(url);const data=await res.json();
-        const rows=data?.SchoolSchedule?.[1]?.row||[];
-        return rows.map(r=>({date:`${r.AA_YMD.slice(0,4)}-${r.AA_YMD.slice(4,6)}-${r.AA_YMD.slice(6,8)}`,name:r.EVENT_NM,type:r.EVENT_NM.includes('시험')||r.EVENT_NM.includes('고사')?'school-exam':r.EVENT_NM.includes('방학')?'holiday':'school'}));
-      }catch{return[];}
-    })(),
-    fetchHolidays()
-  ]);
-  const combined=[...holidays,...schoolRows];
-  return combined.length>holidays.length?combined:([...fallback(),...holidays]);
+async function fetchSchoolScheduleYear(year){
+  if(!S.sc)return[];
+  try{
+    const url=`https://open.neis.go.kr/hub/SchoolSchedule?KEY=${NEIS}&Type=json&pIndex=1&pSize=200&ATPT_OFCDC_SC_CODE=${S.so}&SD_SCHUL_CODE=${S.sc}&AA_YMD=${year}`;
+    const res=await fetch(url);const data=await res.json();
+    const rows=data?.SchoolSchedule?.[1]?.row||[];
+    return rows.map(r=>({date:`${r.AA_YMD.slice(0,4)}-${r.AA_YMD.slice(4,6)}-${r.AA_YMD.slice(6,8)}`,name:r.EVENT_NM,type:r.EVENT_NM.includes('시험')||r.EVENT_NM.includes('고사')?'school-exam':r.EVENT_NM.includes('방학')?'holiday':'school'}));
+  }catch{return[];}
 }
-function fallback(){
-  const y=YEAR,h=S.school.includes('고');
+// 현재 연도뿐 아니라 다음 연도(예: 27년) 학사일정도 함께 가져와서,
+// 월간 달력을 다음 해로 넘겨도 최신 정보가 바로 보이게 합니다.
+async function fetchNeis(){
+  const years=[YEAR,YEAR+1];
+  const [schoolRowsByYear, holidaysByYear] = await Promise.all([
+    Promise.all(years.map(fetchSchoolScheduleYear)),
+    Promise.all(years.map(fetchHolidays))
+  ]);
+  const schoolRows=schoolRowsByYear.flat();
+  const holidays=holidaysByYear.flat();
+  const combined=[...holidays,...schoolRows];
+  return combined.length>holidays.length?combined:([...fallback(YEAR),...fallback(YEAR+1),...holidays]);
+}
+function fallback(y){
+  const h=S.school.includes('고');
   const base=[{date:`${y}-03-03`,name:'개학',type:'school'},{date:`${y}-07-21`,name:'여름방학',type:'holiday'},{date:`${y}-08-18`,name:'개학',type:'school'},{date:`${y}-12-24`,name:'겨울방학',type:'holiday'}];
   return h?[...base,{date:`${y}-04-02`,name:'1학기 중간고사',type:'school-exam'},{date:`${y}-06-25`,name:'1학기 기말고사',type:'school-exam'},{date:`${y}-10-08`,name:'2학기 중간고사',type:'school-exam'},{date:`${y}-12-03`,name:'2학기 기말고사',type:'school-exam'}]
          :[...base,{date:`${y}-04-09`,name:'1학기 중간고사',type:'school-exam'},{date:`${y}-07-02`,name:'1학기 기말고사',type:'school-exam'},{date:`${y}-10-15`,name:'2학기 중간고사',type:'school-exam'},{date:`${y}-12-10`,name:'2학기 기말고사',type:'school-exam'}];
@@ -1622,12 +1628,8 @@ async function deleteSched2(id){
 /* ── MONTHLY ── */
 function changeMonth(d){
   S.calMonth+=d;
-  if(S.calMonth>11){
-    if(S.calYear>=YEAR){{S.calMonth=11;return;}} // 현재년도 12월 이후 막기
-    S.calMonth=0;S.calYear++;
-  }
+  if(S.calMonth>11){S.calMonth=0;S.calYear++;}
   if(S.calMonth<0){S.calMonth=11;S.calYear--;}
-  if(S.calYear>YEAR){S.calYear=YEAR;S.calMonth=11;}
   renderMon();
 }
 
