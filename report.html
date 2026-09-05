@@ -797,8 +797,16 @@ async function renderDaily(gen){
       const stu=await sb(`planner_students?id=eq.${STATE.id}&select=focus_rate,focus_rate_updated_at,lecture_minutes_today,lecture_minutes_date`);
       const s=Array.isArray(stu)&&stu[0];
       if(s&&s.focus_rate!=null&&s.focus_rate_updated_at&&dk(new Date(s.focus_rate_updated_at))===ds){
-        if(!focusInfo)focusInfo={rate:s.focus_rate,total:MIN_FOCUS_SAMPLES,totalWeight:0,counts:{}};
-        else focusInfo.rate=s.focus_rate;
+        if(!focusInfo){
+          // 최근 2시간(감쇠 조회 범위) 안에는 표본이 없어도(카메라를 방금
+          // 껐거나 한참 전에 켰다 껐을 때) 사유별 판정 내역은 계속 정확히
+          // 보여줄 수 있게, 오늘 하루 전체 기록으로 감쇠 없이 다시 조회합니다.
+          // (숫자로 뜰 %는 여전히 학생 플래니가 저장해둔 값을 그대로 씀)
+          const dayInfo=await fetchFocusRate(att.map(a=>a.id),start,end,false);
+          focusInfo=dayInfo?{...dayInfo,rate:s.focus_rate}:{rate:s.focus_rate,total:0,totalWeight:0,counts:{}};
+        }else{
+          focusInfo.rate=s.focus_rate;
+        }
         focusReady=true;
       }
       // 인강 제외 시간도 최근 2시간짜리 조회로는 하루 중 더 이전에 쓴
