@@ -1167,6 +1167,13 @@ async function loadDB(){
   const d=await sb(`planner_students?id=eq.${S.id}&select=*`);
   if(!d||!d[0])return false;
   const r=d[0];
+  // 학교/학년은 링크(URL)에 박힌 예전 값 대신, 관리자가 admin.html에서
+  // 바꾼 최신 DB 값을 항상 우선 사용합니다 — 그래야 학생이 새 링크를
+  // 새로 받지 않아도 진학/학년 변경이 자동으로 반영됩니다.
+  if(r.school_name)S.school=r.school_name;
+  if(r.grade)S.grade=r.grade;
+  if(r.school_code)S.sc=r.school_code;
+  if(r.school_org)S.so=r.school_org;
   if(r.career)S.career=r.career;
   if(r.career_field)S.careerField=r.career_field;
   if(r.room_id)S.roomId=r.room_id;

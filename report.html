@@ -792,18 +792,18 @@ function renderAttList(att){
     const dur=fmtMin(((outT||new Date())-inT)/60000);
     const seatNum=a.seat_number??a.seats?.seat_number;
     const seat=seatNum?`${seatNum}번 자리`:'';
-    // 체크아웃 전이면 지금 상태가 공부중이라고 단정할 수 없어서(외출·
-    // 학원수업 중일 수도 있음), 진행중 뱃지로만 보여주고 실제 현재 상태는
-    // 아래 동선에서 정확히 보여줍니다.
-    const endLabel=outT?fmtHM(outT):'<span class="att-live">진행중</span>';
+    // 퇴실 처리할 때 남는 'checked_out' 로그는 아래에서 별도로 붙이는
+    // "퇴실" 칩과 중복이라 동선에서 제외합니다.
+    const moves=(a._log||[]).filter(l=>l.status!=='checked_out');
+    // 체크아웃 전(진행중)이면 attendance.status(실시간 현재 상태)를 그대로 보여줍니다.
+    const endLabel=outT?fmtHM(outT):`<span class="att-live" style="color:${ATT_MOVE_DOT[a.status]||'#1C9962'}">${ATT_MOVE_LABEL[a.status]||'공부중'}</span>`;
     // 외출·학원수업 등으로 상태가 바뀐 적이 있으면, 입실 시점부터 지금
     // (또는 퇴실)까지의 전체 동선을 화살표로 이어서 한눈에 보여줍니다.
-    const moves=a._log||[];
     const flow=moves.length>1?`<div class="att-flow">${moves.map((l,i)=>{
       const t=new Date(l.changed_at);
       const chip=`<span class="att-flow-chip" style="color:${ATT_MOVE_DOT[l.status]||'#666'}">${fmtHM(t)} ${ATT_MOVE_LABEL[l.status]||l.status}</span>`;
       return i?`<span class="att-flow-arrow">→</span>${chip}`:chip;
-    }).join('')}${outT?`<span class="att-flow-arrow">→</span><span class="att-flow-chip" style="color:var(--ink2)">${fmtHM(outT)} 퇴실</span>`:''}</div>`:'';
+    }).join('')}${outT?`<span class="att-flow-arrow">→</span><span class="att-flow-chip" style="color:#B91C1C">${fmtHM(outT)} 퇴실</span>`:''}</div>`:'';
     return `<div class="att-block">
       <div class="att-row"><div><div class="att-time">${String(inT.getHours()).padStart(2,'0')}:${String(inT.getMinutes()).padStart(2,'0')} → ${endLabel}</div><div style="font-size:11px;color:var(--ink3);margin-top:2px">${seat}</div></div><div class="att-dur">${dur}</div></div>
       ${flow}

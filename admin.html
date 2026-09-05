@@ -2708,6 +2708,11 @@ async function loadDateRecord(){
   const start=`${date}T00:00:00%2B09:00`,end=`${dk(addDaysA(parseDkA(date),1))}T00:00:00%2B09:00`;
   const body=document.getElementById('date-record-body');
   const absentBox=document.getElementById('date-absent-box');
+  // 아직 안 온 미래 날짜는 실제 출석 기록이 있을 수 없음. 그런데
+  // checkout_at이 null(진행중)인 세션은 위 or 조건에 "언제까지"라는
+  // 상한이 없어서, 미래 날짜를 골라도 그 세션이 걸려버리는 문제가
+  // 있어 미리 막습니다(리포트 화면에서 같은 문제를 고치며 발견).
+  if(parseDkA(date)>new Date()){body.innerHTML='<div class="empty">아직 오지 않은 날짜예요</div>';absentBox.innerHTML='';return;}
   // 전날 체크인해서 이 날짜까지 이어진(자정을 넘겨 아직 퇴실 안 한) 세션도 함께 보여줍니다.
   const rowsRes=await sb(`attendance?checkin_at=lt.${end}&or=(checkout_at.is.null,checkout_at.gte.${start})${filter}&select=*,planner_students(name),seats(seat_number)&order=checkin_at.asc`);
   if(!Array.isArray(rowsRes)){body.innerHTML='<div class="empty">기록을 불러오지 못했어요</div>';absentBox.innerHTML='';return;}
@@ -2817,16 +2822,19 @@ async function loadDateRecord(){
       const statusKey=outT?'out':a.status;
       const statusLabel=outT?'퇴실':(STATUS_ICON_LABEL[a.status]||'공부중');
       const inLabel=(spansFromPrevDay?'<span class="dr-prevday">전날</span>':'')+String(inT.getHours()).padStart(2,'0')+':'+String(inT.getMinutes()).padStart(2,'0');
-      const outLabel=outT?(String(outT.getHours()).padStart(2,'0')+':'+String(outT.getMinutes()).padStart(2,'0')):'<span class="dr-live">진행중</span>';
-      // 외출·학원수업 등으로 상태가 바뀐 적이 있으면, 입실부터 지금(또는
-      // 퇴실)까지의 전체 동선을 화살표로 이어서 한눈에 보여줍니다.
-      const moves=a._log||[];
       const dotColor={studying:'#1C9962',in_class:'#2B5FD9',away:'#7C4DE0'};
+      // 체크아웃 전(진행중)이면 attendance.status(실시간 현재 상태)를 그대로 보여줍니다.
+      const outLabel=outT?(String(outT.getHours()).padStart(2,'0')+':'+String(outT.getMinutes()).padStart(2,'0')):`<span class="dr-live" style="color:${dotColor[a.status]||'#1C9962'}">${STATUS_ICON_LABEL[a.status]||'공부중'}</span>`;
+      // 퇴실 처리할 때 남는 'checked_out' 로그는 아래에서 별도로 붙이는
+      // "퇴실" 칩과 중복이라 동선에서 제외합니다. 외출·학원수업 등으로
+      // 상태가 바뀐 적이 있으면, 입실부터 지금(또는 퇴실)까지의 전체
+      // 동선을 화살표로 이어서 한눈에 보여줍니다.
+      const moves=(a._log||[]).filter(l=>l.status!=='checked_out');
       const movesHtml=moves.length>1?`<div class="dr-moves">${moves.map((l,i)=>{
         const t=new Date(l.changed_at);
         const chip=`<span class="dr-move-chip" style="color:${dotColor[l.status]||'#666'}">${String(t.getHours()).padStart(2,'0')}:${String(t.getMinutes()).padStart(2,'0')} ${STATUS_ICON_LABEL[l.status]||l.status}</span>`;
         return i?`<span class="dr-move-arrow">→</span>${chip}`:chip;
-      }).join('')}${outT?`<span class="dr-move-arrow">→</span><span class="dr-move-chip" style="color:var(--ink2)">${String(outT.getHours()).padStart(2,'0')}:${String(outT.getMinutes()).padStart(2,'0')} 퇴실</span>`:''}</div>`:'';
+      }).join('')}${outT?`<span class="dr-move-arrow">→</span><span class="dr-move-chip" style="color:#B91C1C">${String(outT.getHours()).padStart(2,'0')}:${String(outT.getMinutes()).padStart(2,'0')} 퇴실</span>`:''}</div>`:'';
       return `<div class="dr-card">
         <div class="dr-card-top">
           <span class="dr-seat">${seatLabel}</span>
