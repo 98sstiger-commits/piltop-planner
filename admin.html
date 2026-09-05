@@ -93,11 +93,21 @@ body{font-family:'Pretendard','Noto Sans KR',sans-serif;color:var(--ink);min-hei
 .stu-page-btn:disabled{opacity:.35;cursor:default}
 
 .student-list{display:flex;flex-direction:column;gap:8px}
-.stu-card{background:var(--surf);border:1px solid var(--line);border-radius:10px;padding:14px 16px;display:flex;align-items:center;gap:12px;transition:all .15s;box-shadow:0 6px 18px rgba(0,0,0,.16)}
+.stu-card{background:var(--surf);border:1px solid var(--line);border-radius:10px;padding:14px 16px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;transition:all .15s;box-shadow:0 6px 18px rgba(0,0,0,.16)}
 .stu-avatar{width:38px;height:38px;border-radius:50%;background:var(--green);color:#fff;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:700;flex-shrink:0;letter-spacing:-.5px}
-.stu-info{flex:1;min-width:0}
+.stu-info{flex:1;min-width:200px}
 .stu-name{font-size:14px;font-weight:600;color:#18170F;letter-spacing:-.2px}
 .stu-sub{font-size:11px;color:var(--ink2);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.stu-phone-row{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
+.call-chip{display:inline-flex;align-items:center;gap:4px;padding:4px 9px;border-radius:20px;font-size:11px;font-weight:600;text-decoration:none;background:#EFF6EE;color:#1C6B4A;border:1px solid #D7EAD9;white-space:nowrap}
+.call-chip.parent{background:#FBF3E3;color:#8A5A12;border-color:#F0DFB8}
+@media(max-width:520px){
+  .stu-card{padding:12px}
+  .stu-info{min-width:0;flex-basis:100%;order:1}
+  .stu-avatar{order:0}
+  .stu-using,.stu-link-btn{order:2;margin-left:auto}
+  .stu-del{order:3}
+}
 .stu-status{font-size:10px;font-weight:600;padding:3px 9px;border-radius:10px;flex-shrink:0}
 .stu-status.done{background:var(--gs);color:var(--green)}
 .stu-status.wait{background:#FEF5E8;color:#7A4710}
@@ -1020,7 +1030,11 @@ function renderStudentList(){
       <div class="stu-avatar">${s.name[0]}</div>
       <div class="stu-info">
         <div class="stu-name">${s.name}${s.is_paused?'<span class="paused-badge">⏸ 중단중</span>':''}</div>
-        <div class="stu-sub">${s.school_name||'학교 미정'} · ${s.grade||'?'}학년${s.student_phone?' · 학생 '+s.student_phone:''}${s.parent_phone?' · 학부모 '+s.parent_phone:''}</div>
+        <div class="stu-sub">${s.school_name||'학교 미정'} · ${s.grade||'?'}학년</div>
+        ${(s.student_phone||s.parent_phone)?`<div class="stu-phone-row">
+          ${s.student_phone?`<a class="call-chip" href="tel:${s.student_phone}" onclick="event.stopPropagation()">📞 학생 ${s.student_phone}</a>`:''}
+          ${s.parent_phone?`<a class="call-chip parent" href="tel:${s.parent_phone}" onclick="event.stopPropagation()">📞 학부모 ${s.parent_phone}</a>`:''}
+        </div>`:''}
         <div class="stu-extra-row" onclick="event.stopPropagation()">
           <span class="pin-badge ${s.student_pin?'':'muted'}">${s.student_pin?'PIN '+s.student_pin:'PIN 없음'}</span>
           <button class="mini-btn" style="padding:3px 8px;font-size:10px" onclick="openPhonePop(event,'${s.id}')">📱 번호수정</button>
