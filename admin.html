@@ -2808,13 +2808,22 @@ async function loadDateRecord(){
   await Promise.all(names.map(async name=>{
     const sessions=byStu.get(name);
     const ids=sessions.map(a=>a.id);
-    const info=await fetchDailyFocusInfo(ids,isToday,start,end);
-    if(info&&isToday){
+    let info=await fetchDailyFocusInfo(ids,isToday,start,end);
+    if(isToday){
       const sid=sessions[0].student_id;
-      if(todayRatesByStudent[sid]!=null)info.rate=todayRatesByStudent[sid];
-      // 인강 제외 시간도 최근 2시간짜리 조회로 놓친 분량이 있을 수 있어
-      // 학생 플래니가 저장해둔 오늘 누적값으로 덮어씁니다.
-      if(todayLectureByStudent[sid]!=null)info.excludedWeight=todayLectureByStudent[sid]*60000;
+      if(todayRatesByStudent[sid]!=null){
+        // 최근 2시간(감쇠 조회 범위) 안엔 표본이 없어도(카메라를 방금
+        // 껐거나 한참 전에 켰다 껐을 때) 뱃지 자체가 안 뜨던 문제가
+        // 있었음 — 그럴 땐 오늘 하루 전체 기록을 감쇠 없이 다시 조회해서
+        // 사유별 내역만은 계속 보여주고, %는 그대로 학생 플래니가
+        // 저장해둔 값을 씁니다.
+        if(!info)info=await fetchDailyFocusInfo(ids,false,start,end);
+        if(info)info.rate=todayRatesByStudent[sid];
+        else info={rate:todayRatesByStudent[sid],total:0,totalWeight:0,counts:{}};
+        // 인강 제외 시간도 최근 2시간짜리 조회로 놓친 분량이 있을 수 있어
+        // 학생 플래니가 저장해둔 오늘 누적값으로 덮어씁니다.
+        if(todayLectureByStudent[sid]!=null)info.excludedWeight=todayLectureByStudent[sid]*60000;
+      }
     }
     focusByName.set(name,info);
   }));
