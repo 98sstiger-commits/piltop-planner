@@ -566,9 +566,11 @@ async function notifyParent(student,type,seatNumber){
    끝나서, 실패해도 체크인/퇴실 흐름에는 전혀 영향이 없습니다. ── */
 async function sendPushNotify(student,type,seatNumber){
   try{
+    const now=new Date();
+    const hm=`${String(now.getHours()).padStart(2,'0')}시 ${String(now.getMinutes()).padStart(2,'0')}분`;
     const title=type==='checkin'
-      ? `${student.name} 학생이 입실했어요`
-      : `${student.name} 학생이 퇴실했어요`;
+      ? `${student.name} 학생 ${hm}에 입실했습니다`
+      : `${student.name} 학생 ${hm}에 퇴실했습니다`;
     const body=type==='checkin'
       ? `${ROOM.name}${seatNumber?' · 좌석 '+seatNumber+'번':''}`
       : `${ROOM.name}에서 퇴실 처리됐어요`;
