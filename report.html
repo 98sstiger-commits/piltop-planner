@@ -541,7 +541,7 @@ async function boot(){
   // 숫자가 안 맞아 보이는 문제가 있었습니다. 오늘 날짜의 일간 화면을
   // 보고 있을 때는 여기도 똑같이 30초마다 자동으로 다시 불러옵니다.
   setInterval(()=>{
-    if(STATE.type==='daily'&&dk(STATE.date)===dk(new Date()))render();
+    if(STATE.type==='daily'&&dk(STATE.date)===dk(new Date()))render(true);
   },30000);
   initPushFeature();
 }
@@ -744,7 +744,12 @@ async function refreshStudent(){
 // 엉뚱한(오래된) 내용이 남는 경우가 있었습니다. 매 호출마다 번호를
 // 매겨서, 그 사이에 더 최신 호출이 시작됐으면 이 결과는 버립니다.
 let renderGen=0;
-async function render(){
+// silent=true는 30초마다 도는 백그라운드 자동 새로고침용입니다. 매번
+// 화면을 "불러오는 중..."으로 싹 지웠다가 다시 채우면 이미 보고 있던
+// 내용이 주기적으로 깜박여서 거슬리므로, 그때는 로딩 문구를 건너뛰고
+// 데이터가 오면 바로 내용만 바꿔치기합니다. 탭 전환/날짜 이동처럼
+// 사용자가 직접 움직인 경우는 새 화면이니 그대로 로딩 문구를 보여줍니다.
+async function render(silent){
   const myGen=++renderGen;
   // "지금 공부중/퇴실" 표시는 원래 30초 타이머로만 갱신돼서, 방금
   // 퇴실했는데 탭을 눌러봐도 그 자리에서는 안 바뀌고 다음 타이머가
@@ -753,18 +758,18 @@ async function render(){
   loadLiveStatus();
   await refreshStudent();
   if(myGen!==renderGen)return;
-  if(STATE.type==='daily')renderDaily(myGen);
-  else if(STATE.type==='weekly')renderWeekly(myGen);
-  else renderMonthly(myGen);
+  if(STATE.type==='daily')renderDaily(myGen,silent);
+  else if(STATE.type==='weekly')renderWeekly(myGen,silent);
+  else renderMonthly(myGen,silent);
 }
 
 /* ══════════ 일간 ══════════ */
 const MIN_FOCUS_SAMPLES=5;
-async function renderDaily(gen){
+async function renderDaily(gen,silent){
   const d=STATE.date,ds=dk(d);
   document.getElementById('dn-label').textContent=`${d.getMonth()+1}월 ${d.getDate()}일 (${DOW[d.getDay()]})`;
   const body=document.getElementById('report-body');
-  body.innerHTML='<div class="empty-note">불러오는 중...</div>';
+  if(!silent)body.innerHTML='<div class="empty-note">불러오는 중...</div>';
 
   const items=(STUDENT.day_tl&&STUDENT.day_tl[ds])||[];
   const checks=(STUDENT.day_checks&&STUDENT.day_checks[ds])||[];
@@ -892,11 +897,11 @@ function renderAttList(att){
 }
 
 /* ══════════ 주간 ══════════ */
-async function renderWeekly(gen){
+async function renderWeekly(gen,silent){
   const mon=mondayOf(STATE.date),sun=addDays(mon,6);
   document.getElementById('dn-label').textContent=`${mon.getMonth()+1}/${mon.getDate()} ~ ${sun.getMonth()+1}/${sun.getDate()}`;
   const body=document.getElementById('report-body');
-  body.innerHTML='<div class="empty-note">불러오는 중...</div>';
+  if(!silent)body.innerHTML='<div class="empty-note">불러오는 중...</div>';
 
   const dayKeys=[...Array(7)].map((_,i)=>dk(addDays(mon,i)));
   const subjMin={};let itemCnt=0,doneCnt=0;
@@ -983,11 +988,11 @@ async function renderWeekly(gen){
 }
 
 /* ══════════ 월간 ══════════ */
-async function renderMonthly(gen){
+async function renderMonthly(gen,silent){
   const d=STATE.date,y=d.getFullYear(),m=d.getMonth();
   document.getElementById('dn-label').textContent=`${y}년 ${m+1}월`;
   const body=document.getElementById('report-body');
-  body.innerHTML='<div class="empty-note">불러오는 중...</div>';
+  if(!silent)body.innerHTML='<div class="empty-note">불러오는 중...</div>';
 
   const first=new Date(y,m,1),last=new Date(y,m+1,0);
   const monthEnd=addDays(last,1);
