@@ -7,6 +7,13 @@
 <meta property="og:title" content="플래니 학습 리포트">
 <meta property="og:description" content="플래니에서 학습 리포트를 확인해보세요">
 <meta property="og:type" content="website">
+<!-- 홈 화면에 앱으로 설치했을 때 아이콘 이름이 "OOO 학생 학습리포트"로
+     뜨도록, 학생 정보를 안 뒤(boot()) href를 채워 넣습니다. -->
+<link rel="manifest" id="dyn-manifest">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" id="apple-title" content="학습 리포트">
+<link rel="apple-touch-icon" href="/icon.svg">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&family=Playfair+Display:ital,wght@0,700;1,400&display=swap" rel="stylesheet">
 <style>
@@ -51,6 +58,12 @@ button{cursor:pointer;border:none;background:none;font-family:inherit}
 .live-status.out{background:var(--bg);color:var(--ink3)}
 .live-status.out .live-dot{background:var(--ink3)}
 @keyframes live-pulse{0%{box-shadow:0 0 0 0 rgba(34,181,115,.45)}70%{box-shadow:0 0 0 7px rgba(34,181,115,0)}100%{box-shadow:0 0 0 0 rgba(34,181,115,0)}}
+.push-banner{background:var(--gs);border-radius:14px;padding:13px 15px;margin-bottom:14px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.push-banner-text{flex:1;min-width:180px}
+.push-banner-text b{font-size:13px}
+.push-banner-sub{font-size:11.5px;color:var(--ink2);margin-top:4px;line-height:1.6}
+.push-banner-btn{padding:9px 15px;border-radius:20px;background:var(--g);color:#fff;font-size:12px;font-weight:700;white-space:nowrap;flex-shrink:0}
+.push-banner-ok{font-size:12px;font-weight:700;color:var(--g)}
 
 /* ── 탭 ── */
 .tabs{display:flex;background:var(--surf);border:1px solid var(--line);border-radius:12px;padding:4px;margin-bottom:14px;gap:4px}
@@ -198,6 +211,14 @@ button{cursor:pointer;border:none;background:none;font-family:inherit}
       <span id="live-status-text">-</span>
     </div>
 
+    <div class="push-banner" id="push-banner" style="display:none">
+      <div class="push-banner-text">
+        <b id="push-banner-title">📲 앱처럼 저장하고 알림 받기</b>
+        <div class="push-banner-sub" id="push-banner-sub"></div>
+      </div>
+      <button class="push-banner-btn" id="push-banner-btn" style="display:none" onclick="enablePushNotif()">알림 켜기</button>
+    </div>
+
     <div class="tabs">
       <button class="tab" data-type="daily" onclick="switchType('daily')">일간</button>
       <button class="tab" data-type="weekly" onclick="switchType('weekly')">주간</button>
@@ -227,9 +248,13 @@ button{cursor:pointer;border:none;background:none;font-family:inherit}
 // 예전 서비스워커가 fetch를 가로채다 실패해서 이 페이지를 포함한
 // 사이트 전체가 옛날 버전에 붙잡혀 있던 문제가 있었습니다. 이 페이지가
 // 뜨면 바로 등록을 지워서 더 이상 아무 요청도 가로채지 못하게 합니다.
+// 단, 알림 전용으로 새로 등록하는 sw-push.js(캐싱은 전혀 안 하고
+// 푸시만 처리함)는 지우지 않고 그대로 둡니다.
 if('serviceWorker' in navigator){
   navigator.serviceWorker.getRegistrations().then(regs=>{
-    regs.forEach(reg=>reg.unregister());
+    regs.forEach(reg=>{
+      if(!reg.active||!reg.active.scriptURL.endsWith('/sw-push.js'))reg.unregister();
+    });
   }).catch(()=>{});
 }
 const SB="https://zmtldohklivkzpfdyflc.supabase.co";
@@ -485,6 +510,11 @@ async function boot(){
   document.getElementById('stu-avatar').textContent=(STUDENT.name||'?')[0];
   document.getElementById('stu-name').textContent=STUDENT.name+' 학생';
   if(STUDENT.name)document.title=`${STUDENT.name} 학생 학습리포트`;
+  // 홈 화면에 앱으로 설치할 때 아이콘 이름이 이 학생 이름으로 뜨도록
+  // 매니페스트/애플 타이틀을 채워 넣습니다.
+  document.getElementById('dyn-manifest').setAttribute('href',`/api/report-manifest?id=${STATE.id}`);
+  const appleTitleEl=document.getElementById('apple-title');
+  if(appleTitleEl&&STUDENT.name)appleTitleEl.setAttribute('content',`${STUDENT.name} 학생 학습리포트`);
   document.getElementById('stu-sub').textContent=`${STUDENT.school_name||'학교 미정'} · ${STUDENT.grade||'?'}학년`;
   document.getElementById('loading').style.display='none';
   document.getElementById('app').style.display='block';
@@ -503,6 +533,7 @@ async function boot(){
   setInterval(()=>{
     if(STATE.type==='daily'&&dk(STATE.date)===dk(new Date()))render();
   },30000);
+  initPushFeature();
 }
 // 학부모가 이 링크를 열 때마다(또는 켜둔 채로 기다리는 동안) 그 순간의
 // 진짜 상태를 보여줍니다 — 일간/주간/월간 통계는 지나간 기록이라,
@@ -517,6 +548,94 @@ async function loadLiveStatus(){
   document.getElementById('live-status-text').textContent=status?LIVE_STATUS_LABEL[status]:'지금 독서실에 있지 않아요';
   el.style.display='flex';
 }
+
+/* ── 입실·퇴실 푸시 알림 (홈 화면에 앱으로 저장했을 때만 가능) ──
+   문자·카카오톡과 완전히 별개의 무료 채널입니다. 아이폰은 iOS 16.4
+   이상에서, "홈 화면에 추가"로 설치한 경우에만 알림을 받을 수 있고
+   일반 사파리 탭에서는 안 됩니다 — 그래서 설치 여부에 따라 안내
+   문구를 다르게 보여줍니다. */
+const VAPID_PUBLIC_KEY='BCGfPyP79ACYK3rkwqOxVtYGkHOPcOGDB8JMXmLGwnzUKHC02Il1gR77o-Tw45bnsEhVCXe9Vz3LU9iuNy9R_Po';
+function isStandaloneApp(){
+  return window.matchMedia('(display-mode: standalone)').matches||window.navigator.standalone===true;
+}
+function urlBase64ToUint8Array(base64String){
+  const padding='='.repeat((4-base64String.length%4)%4);
+  const base64=(base64String+padding).replace(/-/g,'+').replace(/_/g,'/');
+  const raw=atob(base64);
+  return Uint8Array.from([...raw].map(c=>c.charCodeAt(0)));
+}
+async function initPushFeature(){
+  const banner=document.getElementById('push-banner');
+  const title=document.getElementById('push-banner-title');
+  const sub=document.getElementById('push-banner-sub');
+  const btn=document.getElementById('push-banner-btn');
+  if(!('serviceWorker' in navigator)||!('PushManager' in window)){
+    // 지원 안 하는 아주 오래된 브라우저 — 조용히 숨김
+    return;
+  }
+  if(!isStandaloneApp()){
+    // 아직 홈 화면에 저장 안 함 — 저장 방법을 안내만 합니다.
+    banner.style.display='flex';
+    title.textContent='📲 앱처럼 저장하고 입실·퇴실 알림 받기';
+    sub.textContent='아이폰: 하단 공유 버튼 → "홈 화면에 추가"  ·  안드로이드: 메뉴(⋮) → "홈 화면에 추가"';
+    btn.style.display='none';
+    return;
+  }
+  // 여기부터는 홈 화면에 저장된 앱으로 열린 상태
+  try{
+    const reg=await navigator.serviceWorker.register('/sw-push.js');
+    // 리포트를 열었으니 그동안 쌓인 알림·뱃지는 지웁니다.
+    if(reg.active)reg.active.postMessage('clear-badge');
+    else navigator.serviceWorker.ready.then(r=>r.active&&r.active.postMessage('clear-badge'));
+
+    if(Notification.permission==='granted'){
+      // 이미 구독돼 있어도 매번 다시 구독해둡니다 — 브라우저는 같은
+      // 구독을 그대로 돌려주므로 비용이 없고, 혹시 이전에 서버 저장이
+      // 실패했던 경우까지 조용히 복구됩니다.
+      await subscribePush(reg);
+      banner.style.display='none';
+      return;
+    }
+    if(Notification.permission==='denied'){
+      banner.style.display='flex';
+      title.textContent='🔕 알림이 꺼져있어요';
+      sub.textContent='기기 설정 앱에서 이 사이트의 알림을 허용해주시면 입실·퇴실 알림을 받을 수 있어요.';
+      btn.style.display='none';
+      return;
+    }
+    banner.style.display='flex';
+    title.textContent='🔔 입실·퇴실 알림 받기';
+    sub.textContent='버튼을 누르면 아이가 입실·퇴실할 때 바로 알림이 와요.';
+    btn.style.display='inline-block';
+  }catch(e){console.warn('push init skip',e);}
+}
+async function enablePushNotif(){
+  try{
+    const perm=await Notification.requestPermission();
+    if(perm!=='granted'){toast('알림 권한이 필요해요');return;}
+    const reg=await navigator.serviceWorker.ready;
+    await subscribePush(reg);
+    document.getElementById('push-banner').style.display='none';
+    toast('🔔 알림이 켜졌어요');
+  }catch(e){console.warn('push enable 실패',e);toast('알림 설정에 실패했어요');}
+}
+async function subscribePush(reg){
+  const sub=await reg.pushManager.subscribe({
+    userVisibleOnly:true,
+    applicationServerKey:urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
+  });
+  await fetch('/api/push-subscribe',{
+    method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({studentId:STATE.id,subscription:sub.toJSON()}),
+  }).catch(()=>{});
+}
+// 앱을 계속 켜둔 채로 알림이 온 뒤, 다시 앱으로 돌아왔을 때도 뱃지를 지웁니다.
+document.addEventListener('visibilitychange',()=>{
+  if(document.visibilityState!=='visible'||!('serviceWorker' in navigator))return;
+  navigator.serviceWorker.getRegistration('/sw-push.js').then(reg=>{
+    if(reg&&reg.active)reg.active.postMessage('clear-badge');
+  }).catch(()=>{});
+});
 
 function switchType(type,initial){
   STATE.type=type;

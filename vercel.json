@@ -8,6 +8,9 @@
     "api/send-notify.js": { "memory": 512, "maxDuration": 60 },
     "api/turn-credential.js": { "memory": 512, "maxDuration": 60 },
     "api/weekly-report-cron.js": { "memory": 512, "maxDuration": 60 },
+    "api/report-manifest.js": { "memory": 512, "maxDuration": 60 },
+    "api/push-subscribe.js": { "memory": 512, "maxDuration": 60 },
+    "api/send-push.js": { "memory": 512, "maxDuration": 60 },
     "api/report.js": {
       "memory": 512,
       "maxDuration": 60,
@@ -74,6 +77,12 @@
     },
     {
       "source": "/sw.js",
+      "headers": [
+        { "key": "Cache-Control", "value": "no-cache, no-store, must-revalidate" }
+      ]
+    },
+    {
+      "source": "/sw-push.js",
       "headers": [
         { "key": "Cache-Control", "value": "no-cache, no-store, must-revalidate" }
       ]

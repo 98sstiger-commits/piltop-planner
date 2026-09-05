@@ -370,3 +370,21 @@ end $$;
 -- 누적 합계를 여기 저장해두고 관리자·리포트는 읽기만 합니다.
 alter table planner_students add column if not exists lecture_minutes_today numeric;
 alter table planner_students add column if not exists lecture_minutes_date date;
+
+-- ── 23. 학부모 리포트 앱(홈 화면 설치) 푸시 알림 구독 정보 ──
+-- 학부모가 리포트 링크를 홈 화면에 앱으로 설치하고 알림을 켜면,
+-- 브라우저가 발급하는 구독 정보(endpoint/키)를 여기 저장해둡니다.
+-- 학생이 입실/퇴실할 때 이 정보로 푸시 알림을 보냅니다. 같은 학생을
+-- 여러 기기(엄마·아빠 폰 등)에서 구독할 수 있어 학생당 여러 행이
+-- 생길 수 있고, endpoint는 기기+브라우저별로 고유합니다.
+create table if not exists push_subscriptions (
+  id uuid primary key default gen_random_uuid(),
+  student_id uuid references planner_students(id) on delete cascade,
+  endpoint text not null unique,
+  p256dh text not null,
+  auth text not null,
+  created_at timestamptz default now()
+);
+alter table push_subscriptions enable row level security;
+drop policy if exists "public full access" on push_subscriptions;
+create policy "public full access" on push_subscriptions for all using (true) with check (true);

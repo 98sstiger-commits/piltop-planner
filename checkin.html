@@ -461,6 +461,7 @@ async function doCheckin(seat){
   }
   sb('attendance_status_log',{method:'POST',body:JSON.stringify({attendance_id:att.id,status:'studying',changed_at:now})});
   notifyParent(curStudent,'checkin',seat.seat_number);
+  sendPushNotify(curStudent,'checkin',seat.seat_number);
   showResult('in','👋',curStudent.name+' 님 반가워요!','입실이 완료됐어요','좌석 '+seat.seat_number+'번');
 }
 
@@ -524,6 +525,7 @@ async function doCheckout(){
   }
   sb('attendance_status_log',{method:'POST',body:JSON.stringify({attendance_id:coAtt.id,status:'checked_out',changed_at:now})});
   notifyParent(coStudent,'checkout');
+  sendPushNotify(coStudent,'checkout');
   const mins=Math.max(0,Math.round((Date.now()-new Date(coAtt.checkin_at).getTime())/60000));
   const h=Math.floor(mins/60),m=mins%60;
   showResult('out','🙌',coStudent.name+' 님 수고했어요!','퇴실이 완료됐어요',`오늘 공부시간 ${h?h+'시간 ':''}${m}분`);
@@ -557,6 +559,24 @@ async function notifyParent(student,type,seatNumber){
       })
     });
   }catch(e){console.warn('notify skip',e);}
+}
+/* ── 학부모 리포트 앱(홈 화면 설치) 푸시 알림 — 문자·카톡과 완전히
+   별개의 무료 채널이라 ROOM.notify_enabled 설정과 무관하게 항상
+   시도합니다. 구독한 기기가 없으면 서버가 조용히 아무 것도 안 보내고
+   끝나서, 실패해도 체크인/퇴실 흐름에는 전혀 영향이 없습니다. ── */
+async function sendPushNotify(student,type,seatNumber){
+  try{
+    const title=type==='checkin'
+      ? `${student.name} 학생이 입실했어요`
+      : `${student.name} 학생이 퇴실했어요`;
+    const body=type==='checkin'
+      ? `${ROOM.name}${seatNumber?' · 좌석 '+seatNumber+'번':''}`
+      : `${ROOM.name}에서 퇴실 처리됐어요`;
+    await fetch('/api/send-push',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({studentId:student.id,title,body})
+    });
+  }catch(e){console.warn('push notify skip',e);}
 }
 
 /* ── 백스페이스로 화면을 벗어나지 못하게 잠금 (태블릿 상시 운영용) ──
