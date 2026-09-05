@@ -571,9 +571,7 @@ async function sendPushNotify(student,type,seatNumber){
     const title=type==='checkin'
       ? `${student.name} 학생 ${hm}에 입실했습니다`
       : `${student.name} 학생 ${hm}에 퇴실했습니다`;
-    const body=type==='checkin'
-      ? `${ROOM.name}${seatNumber?' · 좌석 '+seatNumber+'번':''}`
-      : `${ROOM.name}에서 퇴실 처리됐어요`;
+    const body=type==='checkin'&&seatNumber?`좌석 ${seatNumber}번`:'';
     await fetch('/api/push',{
       method:'POST',headers:{'Content-Type':'application/json'},
       body:JSON.stringify({action:'send',studentId:student.id,title,body})
