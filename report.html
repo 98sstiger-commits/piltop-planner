@@ -783,16 +783,15 @@ async function renderDaily(gen,silent){
   const att=await fetchAttWithSegments(`attendance?student_id=eq.${STATE.id}&checkin_at=lt.${end}&or=(checkout_at.is.null,checkout_at.gte.${start})&select=id,checkin_at,checkout_at,status,seat_number,seats(seat_number,label)&order=checkin_at.asc`,dayStart,dayEnd);
   const seg=sumSeg(att);
   const flagNote=awayFlagNote(seg);
-  // 오늘(진행 중)이면 최근 기록에 더 무게를 둬서 실시간으로 반응하게
-  // 하고, 이미 지나간 날짜면 그날의 최종 성적표이므로 그대로 평균냅니다.
-  // 학생 플래니·관리자 화면과 동일한 계산식입니다.
+  // 일간·주간·월간 다 누적 기준으로 통일 — 사유별 내역은 감쇠 없이
+  // 하루 전체(start~end) 기록으로 계산합니다.
   const isToday=ds===dk(new Date());
-  let focusInfo=await fetchFocusRate(att.map(a=>a.id),start,end,isToday);
+  let focusInfo=await fetchFocusRate(att.map(a=>a.id),start,end,false);
   // 표본이 몇 개 안 될 때(막 켜서 자리 잡는 중일 때 등)는 그 중 하나만
   // 잘못 잡혀도 비율이 크게 튀어서 신뢰할 수 없으므로, 최소 표본이
   // 쌓이기 전에는 %를 보여주지 않고 "측정 중"으로 대신 표시합니다.
   let focusReady=focusInfo&&focusInfo.total>=MIN_FOCUS_SAMPLES;
-  // 오늘이면 여기서 다시 계산한 값 대신, 실제 카메라 분석이 일어나는
+  // 오늘이면 %는 여기서 다시 계산한 값 대신, 실제 카메라 분석이 일어나는
   // 학생 플래니가 계산해서 저장해둔 값을 그대로 보여줍니다 — 관리자
   // 실시간 배지도 같은 값을 읽으므로, 이 화면이 따로 계산하다가 조회
   // 타이밍 차이로 숫자가 어긋나는 일이 없어집니다(사유별 판정 내역은
@@ -803,12 +802,7 @@ async function renderDaily(gen,silent){
       const s=Array.isArray(stu)&&stu[0];
       if(s&&s.focus_rate!=null&&s.focus_rate_updated_at&&dk(new Date(s.focus_rate_updated_at))===ds){
         if(!focusInfo){
-          // 최근 2시간(감쇠 조회 범위) 안에는 표본이 없어도(카메라를 방금
-          // 껐거나 한참 전에 켰다 껐을 때) 사유별 판정 내역은 계속 정확히
-          // 보여줄 수 있게, 오늘 하루 전체 기록으로 감쇠 없이 다시 조회합니다.
-          // (숫자로 뜰 %는 여전히 학생 플래니가 저장해둔 값을 그대로 씀)
-          const dayInfo=await fetchFocusRate(att.map(a=>a.id),start,end,false);
-          focusInfo=dayInfo?{...dayInfo,rate:s.focus_rate}:{rate:s.focus_rate,total:0,totalWeight:0,counts:{}};
+          focusInfo={rate:s.focus_rate,total:0,totalWeight:0,counts:{}};
         }else{
           focusInfo.rate=s.focus_rate;
         }

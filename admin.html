@@ -2808,20 +2808,16 @@ async function loadDateRecord(){
   await Promise.all(names.map(async name=>{
     const sessions=byStu.get(name);
     const ids=sessions.map(a=>a.id);
-    let info=await fetchDailyFocusInfo(ids,isToday,start,end);
+    // 일간·주간·월간 다 누적 기준으로 통일 — 사유별 내역은 감쇠 없이
+    // 하루 전체(start~end) 기록으로 계산합니다.
+    let info=await fetchDailyFocusInfo(ids,false,start,end);
     if(isToday){
       const sid=sessions[0].student_id;
       if(todayRatesByStudent[sid]!=null){
-        // 최근 2시간(감쇠 조회 범위) 안엔 표본이 없어도(카메라를 방금
-        // 껐거나 한참 전에 켰다 껐을 때) 뱃지 자체가 안 뜨던 문제가
-        // 있었음 — 그럴 땐 오늘 하루 전체 기록을 감쇠 없이 다시 조회해서
-        // 사유별 내역만은 계속 보여주고, %는 그대로 학생 플래니가
-        // 저장해둔 값을 씁니다.
-        if(!info)info=await fetchDailyFocusInfo(ids,false,start,end);
+        // %는 학생 플래니가 실시간으로 계산해서 저장해둔 값을 그대로 씁니다.
         if(info)info.rate=todayRatesByStudent[sid];
         else info={rate:todayRatesByStudent[sid],total:0,totalWeight:0,counts:{}};
-        // 인강 제외 시간도 최근 2시간짜리 조회로 놓친 분량이 있을 수 있어
-        // 학생 플래니가 저장해둔 오늘 누적값으로 덮어씁니다.
+        // 인강 제외 시간도 학생 플래니가 저장해둔 오늘 누적값으로 덮어씁니다.
         if(todayLectureByStudent[sid]!=null)info.excludedWeight=todayLectureByStudent[sid]*60000;
       }
     }
@@ -2844,7 +2840,7 @@ async function loadDateRecord(){
           <div style="opacity:.7;margin-bottom:6px">8초마다 찍은 ${focusInfo.total}번의 샘플</div>
           ${Object.keys(FOCUS_REASON_LABEL).map(k=>focusInfo.counts[k]?{k,pct:Math.round(focusInfo.counts[k]/focusInfo.totalWeight*100)}:null).filter(Boolean).sort((a,b)=>b.pct-a.pct).map(r=>`<div class="dr-focus-tip-row"><span>${FOCUS_REASON_LABEL[r.k]}</span><b>${r.pct}%</b></div>`).join('')}
           ${focusInfo.excludedWeight?`<div class="dr-focus-tip-note">🎥 인강 시청 등으로 뺀 시간: 약 ${Math.round(focusInfo.excludedWeight/60000)}분 (위 집중도 계산에는 포함 안 됨)</div>`:''}
-          <div class="dr-focus-tip-note">${isToday?'최근 3시간 위주로 실시간 반영':'하루 전체 누적 평균'}</div>
+          <div class="dr-focus-tip-note">하루 전체 누적 평균</div>
         </div>`:''}
       </div>`;
     const hd=`<div class="dr-group-hd"><span class="dr-name">${name}</span>${sessions.length>1?`<span class="dr-count">${sessions.length}회 입/퇴실</span>`:''}${focusBadge}</div>`;
