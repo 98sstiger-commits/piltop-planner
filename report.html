@@ -63,7 +63,10 @@ button{cursor:pointer;border:none;background:none;font-family:inherit}
 .push-banner-text b{font-size:13px}
 .push-banner-sub{font-size:11.5px;color:var(--ink2);margin-top:4px;line-height:1.6}
 .push-banner-btn{padding:9px 15px;border-radius:20px;background:var(--g);color:#fff;font-size:12px;font-weight:700;white-space:nowrap;flex-shrink:0}
+.push-banner-btn.off{background:transparent;color:var(--ink2);border:1px solid var(--line2)}
 .push-banner-ok{font-size:12px;font-weight:700;color:var(--g)}
+.push-banner-links{margin-top:5px}
+.push-banner-links span{font-size:11px;color:var(--g);text-decoration:underline;cursor:pointer}
 
 /* ── 탭 ── */
 .tabs{display:flex;background:var(--surf);border:1px solid var(--line);border-radius:12px;padding:4px;margin-bottom:14px;gap:4px}
@@ -215,6 +218,7 @@ button{cursor:pointer;border:none;background:none;font-family:inherit}
       <div class="push-banner-text">
         <b id="push-banner-title">📲 앱처럼 저장하고 알림 받기</b>
         <div class="push-banner-sub" id="push-banner-sub"></div>
+        <div class="push-banner-links" id="push-banner-links" style="display:none"><span onclick="sendTestPush()">테스트 알림 보내보기</span></div>
       </div>
       <button class="push-banner-btn" id="push-banner-btn" style="display:none" onclick="enablePushNotif()">알림 켜기</button>
     </div>
@@ -570,21 +574,49 @@ function urlBase64ToUint8Array(base64String){
   const raw=atob(base64);
   return Uint8Array.from([...raw].map(c=>c.charCodeAt(0)));
 }
-async function initPushFeature(){
+function setPushBannerState(state){
   const banner=document.getElementById('push-banner');
   const title=document.getElementById('push-banner-title');
   const sub=document.getElementById('push-banner-sub');
   const btn=document.getElementById('push-banner-btn');
+  const links=document.getElementById('push-banner-links');
+  banner.style.display='flex';
+  links.style.display='none';
+  btn.classList.remove('off');
+  if(state==='install'){
+    title.textContent='📲 앱처럼 저장하고 입실·퇴실 알림 받기';
+    sub.textContent='아이폰: 하단 공유 버튼 → "홈 화면에 추가"  ·  안드로이드: 메뉴(⋮) → "홈 화면에 추가"';
+    btn.style.display='none';
+  }else if(state==='denied'){
+    title.textContent='🔕 알림이 꺼져있어요';
+    sub.textContent='기기 설정 앱에서 이 사이트의 알림을 허용해주시면 입실·퇴실 알림을 받을 수 있어요.';
+    btn.style.display='none';
+  }else if(state==='off'){
+    title.textContent='🔔 입실·퇴실 알림 받기';
+    sub.textContent='버튼을 누르면 아이가 입실·퇴실할 때 바로 알림이 와요.';
+    btn.textContent='알림 켜기';
+    btn.onclick=enablePushNotif;
+    btn.style.display='inline-block';
+  }else if(state==='on'){
+    title.textContent='🔔 알림이 켜져 있어요';
+    sub.textContent='아이가 입실·퇴실하면 이 기기로 알림이 와요. 원치 않으시면 꺼주세요.';
+    btn.textContent='끄기';
+    btn.classList.add('off');
+    btn.onclick=disablePushNotif;
+    btn.style.display='inline-block';
+    links.style.display='block';
+  }else if(state==='hidden'){
+    banner.style.display='none';
+  }
+}
+async function initPushFeature(){
   if(!('serviceWorker' in navigator)||!('PushManager' in window)){
     // 지원 안 하는 아주 오래된 브라우저 — 조용히 숨김
     return;
   }
   if(!isStandaloneApp()){
     // 아직 홈 화면에 저장 안 함 — 저장 방법을 안내만 합니다.
-    banner.style.display='flex';
-    title.textContent='📲 앱처럼 저장하고 입실·퇴실 알림 받기';
-    sub.textContent='아이폰: 하단 공유 버튼 → "홈 화면에 추가"  ·  안드로이드: 메뉴(⋮) → "홈 화면에 추가"';
-    btn.style.display='none';
+    setPushBannerState('install');
     return;
   }
   // 여기부터는 홈 화면에 저장된 앱으로 열린 상태
@@ -595,24 +627,24 @@ async function initPushFeature(){
     else navigator.serviceWorker.ready.then(r=>r.active&&r.active.postMessage('clear-badge'));
 
     if(Notification.permission==='granted'){
-      // 이미 구독돼 있어도 매번 다시 구독해둡니다 — 브라우저는 같은
-      // 구독을 그대로 돌려주므로 비용이 없고, 혹시 이전에 서버 저장이
-      // 실패했던 경우까지 조용히 복구됩니다.
-      await subscribePush(reg);
-      banner.style.display='none';
+      // 이전에 껐다가 다시 켠 경우를 구분하려고, 실제 구독이 남아있는지
+      // 먼저 확인합니다 — 있으면 켜진 상태, 없으면(예전에 껐음) 꺼진 상태로 보여줍니다.
+      const existing=await reg.pushManager.getSubscription();
+      if(existing){
+        // 서버 저장이 예전에 실패했을 수 있으니 매번 다시 저장해둡니다
+        // (같은 구독을 그대로 보내는 거라 비용은 없어요).
+        try{await savePushSubscription(existing);}catch(e){console.warn('push 재등록 실패',e);}
+        setPushBannerState('on');
+      }else{
+        setPushBannerState('off');
+      }
       return;
     }
     if(Notification.permission==='denied'){
-      banner.style.display='flex';
-      title.textContent='🔕 알림이 꺼져있어요';
-      sub.textContent='기기 설정 앱에서 이 사이트의 알림을 허용해주시면 입실·퇴실 알림을 받을 수 있어요.';
-      btn.style.display='none';
+      setPushBannerState('denied');
       return;
     }
-    banner.style.display='flex';
-    title.textContent='🔔 입실·퇴실 알림 받기';
-    sub.textContent='버튼을 누르면 아이가 입실·퇴실할 때 바로 알림이 와요.';
-    btn.style.display='inline-block';
+    setPushBannerState('off');
   }catch(e){console.warn('push init skip',e);}
 }
 async function enablePushNotif(){
@@ -620,20 +652,56 @@ async function enablePushNotif(){
     const perm=await Notification.requestPermission();
     if(perm!=='granted'){toast('알림 권한이 필요해요');return;}
     const reg=await navigator.serviceWorker.ready;
-    await subscribePush(reg);
-    document.getElementById('push-banner').style.display='none';
+    const sub=await reg.pushManager.subscribe({
+      userVisibleOnly:true,
+      applicationServerKey:urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
+    });
+    await savePushSubscription(sub);
+    setPushBannerState('on');
     toast('🔔 알림이 켜졌어요');
   }catch(e){console.warn('push enable 실패',e);toast('알림 설정에 실패했어요');}
 }
-async function subscribePush(reg){
-  const sub=await reg.pushManager.subscribe({
-    userVisibleOnly:true,
-    applicationServerKey:urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
-  });
-  await fetch('/api/push',{
+async function disablePushNotif(){
+  try{
+    const reg=await navigator.serviceWorker.ready;
+    const sub=await reg.pushManager.getSubscription();
+    if(sub){
+      await fetch('/api/push',{
+        method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({action:'subscribe',unsubscribe:true,subscription:sub.toJSON()}),
+      }).catch(()=>{});
+      await sub.unsubscribe();
+    }
+    setPushBannerState('off');
+    toast('알림을 껐어요');
+  }catch(e){console.warn('push disable 실패',e);toast('알림 끄기에 실패했어요');}
+}
+// 구독 정보를 서버에 저장 — 실패하면(네트워크 오류, VAPID 미설정 등)
+// 호출한 쪽에서 알아채고 "켜졌어요"라고 잘못 안내하지 않도록 그대로 던집니다.
+async function savePushSubscription(sub){
+  const res=await fetch('/api/push',{
     method:'POST',headers:{'Content-Type':'application/json'},
     body:JSON.stringify({action:'subscribe',studentId:STATE.id,subscription:sub.toJSON()}),
-  }).catch(()=>{});
+  });
+  if(!res.ok)throw new Error('구독 저장 실패: '+res.status);
+}
+// 관리자가 "정말 알림이 오는지" 바로 확인해볼 수 있는 테스트 발송.
+// 서버가 왜 못 보냈는지(구독 없음/VAPID 키 미설정 등)까지 그대로 보여줘서
+// 원인을 바로 알 수 있게 합니다 — 평소 입실·퇴실 알림은 이 사유를 볼 곳이
+// 없어서 조용히 무시됐었습니다.
+async function sendTestPush(){
+  toast('테스트 알림 보내는 중...');
+  try{
+    const res=await fetch('/api/push',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({action:'send',studentId:STATE.id,title:'🔔 테스트 알림',body:'이 알림이 보이면 정상적으로 연결된 거예요.'}),
+    });
+    const data=await res.json().catch(()=>({}));
+    if(data.skipped)toast('발송 설정이 안 돼있어요(관리자 문의)');
+    else if(data.sent>0)toast(`✅ ${data.sent}개 기기로 보냈어요`);
+    else if(data.sent===0)toast('구독된 기기가 없어요');
+    else toast('알림 발송에 실패했어요');
+  }catch(e){toast('테스트 알림 요청에 실패했어요');}
 }
 // 앱을 계속 켜둔 채로 알림이 온 뒤, 다시 앱으로 돌아왔을 때도 뱃지를 지웁니다.
 document.addEventListener('visibilitychange',()=>{
