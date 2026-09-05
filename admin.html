@@ -392,6 +392,7 @@ body{font-family:'Pretendard','Noto Sans KR',sans-serif;color:var(--ink);min-hei
 .dr-focus-badge.measuring{background:var(--bg);color:var(--ink3);font-weight:600}
 .dr-focus-tip{display:none;position:absolute;top:calc(100% + 6px);right:0;z-index:50;width:210px;background:#18170F;color:#fff;border-radius:10px;padding:10px 12px;font-size:11px;line-height:1.7;box-shadow:0 8px 24px rgba(0,0,0,.25)}
 .dr-focus-wrap:hover .dr-focus-tip{display:block}
+.dr-focus-wrap.open .dr-focus-tip{display:block}
 /* 카드 맨 아래 학생은 팝업이 카드 하단 바깥으로 잘려 보여서, 위쪽으로 펼침 */
 .dr-focus-wrap.tip-up .dr-focus-tip{top:auto;bottom:calc(100% + 6px)}
 .dr-focus-tip-row{display:flex;justify-content:space-between;gap:8px}
@@ -1018,6 +1019,14 @@ function dismissGradeBanner(key){
   try{localStorage.setItem(key,'1');}catch(e){}
   document.getElementById('grade-banner').style.display='none';
 }
+
+// 집중도 뱃지의 사유별 내역은 원래 마우스 hover로만 열려서(노트북
+// 전용), 터치스크린인 핸드폰에서는 hover가 안 먹혀 아예 볼 방법이
+// 없었습니다. 뱃지 자체에 탭하면 열리게 해뒀는데(.open 클래스), 다른
+// 곳을 탭하면 열려있던 걸 자동으로 닫아주는 처리입니다.
+document.addEventListener('click',()=>{
+  document.querySelectorAll('.dr-focus-wrap.open').forEach(w=>w.classList.remove('open'));
+});
 
 function setStudentFilter(f){
   STU_FILTER=f;STU_PAGE=1;
@@ -2819,8 +2828,8 @@ async function loadDateRecord(){
     // 학생만 위쪽으로 펼쳐지게 합니다.
     const isLastGroup=nameIdx===names.length-1;
     const focusBadge=!focusInfo?'':`
-      <div class="dr-focus-wrap${isLastGroup?' tip-up':''}">
-        <div class="dr-focus-badge${focusReady?'':' measuring'}">🧠 ${focusReady?`집중도 ${focusInfo.rate}%`:'측정 중…'}</div>
+      <div class="dr-focus-wrap${isLastGroup?' tip-up':''}"${focusReady?' onclick="event.stopPropagation();this.classList.toggle(\'open\')"':''}>
+        <div class="dr-focus-badge${focusReady?'':' measuring'}" style="${focusReady?'cursor:pointer':''}">🧠 ${focusReady?`집중도 ${focusInfo.rate}%`:'측정 중…'}</div>
         ${focusReady?`<div class="dr-focus-tip">
           <div style="font-weight:700;margin-bottom:4px">집중도 판정 내역</div>
           <div style="opacity:.7;margin-bottom:6px">8초마다 찍은 ${focusInfo.total}번의 샘플</div>
