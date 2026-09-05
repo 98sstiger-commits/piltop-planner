@@ -133,6 +133,7 @@ body{font-family:'Pretendard','Noto Sans KR',sans-serif;color:var(--ink);min-hei
 .sheet-bg.open{opacity:1;pointer-events:all}
 .sheet{background:var(--surf);border-radius:20px 20px 0 0;width:100%;max-width:560px;max-height:85vh;overflow-y:auto;transform:translateY(20px);transition:transform .25s;padding-bottom:32px}
 .sheet-bg.open .sheet{transform:translateY(0)}
+@media(min-width:900px){#sched-bg .sheet{max-width:860px}}
 .sheet-grip{width:36px;height:4px;border-radius:2px;background:var(--line2);margin:12px auto 0}
 .sheet-hd{padding:18px 20px 14px;border-bottom:1px solid var(--line);position:sticky;top:0;background:var(--surf);z-index:1}
 .sheet-name{font-size:17px;font-weight:700;letter-spacing:-.4px}
@@ -168,7 +169,7 @@ body{font-family:'Pretendard','Noto Sans KR',sans-serif;color:var(--ink);min-hei
 .tt-hr{position:absolute;left:0;right:0;font-size:9px;color:var(--ink3);border-top:1px dashed var(--line);padding-left:3px;box-sizing:border-box}
 .tt-day .tt-hr{border-top:1px dashed #EEECE6;color:transparent}
 .tt-block{position:absolute;left:2px;right:2px;background:var(--gs);border-left:3px solid var(--green);border-radius:4px;padding:2px 4px;overflow:hidden;font-size:9.5px;line-height:1.25;cursor:pointer}
-.tt-block-time{font-weight:700;color:var(--green);white-space:nowrap}
+.tt-block-time{font-weight:700;color:var(--tt-accent,var(--green));white-space:nowrap}
 .tt-block-label{color:#18170F;white-space:nowrap;text-overflow:ellipsis;overflow:hidden}
 
 /* toast */
@@ -1199,6 +1200,19 @@ async function loadScheduleList(){
 // 분 단위로 그려서, 각 일정을 그 시간 위치에 맞춰 절대 배치합니다.
 // 관리자용/학생용 화면 둘 다 이 함수를 그대로 씁니다.
 const TT_START_MIN=7*60,TT_END_MIN=23*60,TT_PXMIN=0.75;
+// 같은 이름(학교/학원)은 항상 같은 파스텔 색으로 보이게, 이름 문자열을
+// 해시해서 고정된 팔레트 중 하나를 고릅니다.
+const TT_PALETTE=[
+  {bg:'#E8F0FD',line:'#5B8DEF'},{bg:'#FDEBEF',line:'#E0678A'},
+  {bg:'#FFF6E0',line:'#D9A83A'},{bg:'#E9F7EF',line:'#3FAE6B'},
+  {bg:'#F1EBFB',line:'#8A6FD1'},{bg:'#E4F7F7',line:'#3AACAC'},
+  {bg:'#FDF0E6',line:'#D98A4B'},{bg:'#F3EFE6',line:'#9C8B6B'},
+];
+function colorForLabel(label){
+  let h=0;
+  for(let i=0;i<label.length;i++)h=(h*31+label.charCodeAt(i))>>>0;
+  return TT_PALETTE[h%TT_PALETTE.length];
+}
 function renderScheduleGrid(grid,items,deleteFnName){
   const totalH=(TT_END_MIN-TT_START_MIN)*TT_PXMIN;
   const DOWF=['일','월','화','수','목','금','토'];
@@ -1215,7 +1229,8 @@ function renderScheduleGrid(grid,items,deleteFnName){
       if(e<=s)return '';
       const top=(s-TT_START_MIN)*TT_PXMIN;
       const height=Math.max(15,(e-s)*TT_PXMIN);
-      return `<div class="tt-block" style="top:${top}px;height:${height}px" onclick="${deleteFnName}('${it.id}')" title="탭해서 삭제: ${escapeHtml(it.label)}">
+      const c=colorForLabel(it.label);
+      return `<div class="tt-block" style="top:${top}px;height:${height}px;background:${c.bg};border-left-color:${c.line};--tt-accent:${c.line}" onclick="${deleteFnName}('${it.id}')" title="탭해서 삭제: ${escapeHtml(it.label)}">
         <div class="tt-block-time">${fmtHM(it.start_min)}</div>
         <div class="tt-block-label">${escapeHtml(it.label)}</div>
       </div>`;
