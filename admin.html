@@ -2826,11 +2826,15 @@ async function loadDateRecord(){
       // 체크아웃 전(진행중)이면 attendance.status(실시간 현재 상태)를 그대로 보여줍니다.
       const outLabel=outT?(String(outT.getHours()).padStart(2,'0')+':'+String(outT.getMinutes()).padStart(2,'0')):`<span class="dr-live" style="color:${dotColor[a.status]||'#1C9962'}">${STATUS_ICON_LABEL[a.status]||'공부중'}</span>`;
       // 퇴실 처리할 때 남는 'checked_out' 로그는 아래에서 별도로 붙이는
-      // "퇴실" 칩과 중복이라 동선에서 제외합니다. 외출·학원수업 등으로
-      // 상태가 바뀐 적이 있으면, 입실부터 지금(또는 퇴실)까지의 전체
-      // 동선을 화살표로 이어서 한눈에 보여줍니다.
-      const moves=(a._log||[]).filter(l=>l.status!=='checked_out');
-      const movesHtml=moves.length>1?`<div class="dr-moves">${moves.map((l,i)=>{
+      // "퇴실" 칩과 중복이라 동선에서 제외합니다. 상태 변화가 한 번도
+      // 없었던 세션은 로그가 입실 때 한 건만 있거나 아예 없을 수 있어서,
+      // 그런 경우엔 입실 시점 공부중을 채워서 항상 "입실 → (변화) → 퇴실"
+      // 형태로 일관되게 보이게 합니다.
+      const rawMoves=(a._log||[]).filter(l=>l.status!=='checked_out');
+      const moves=rawMoves.length?rawMoves:[{status:'studying',changed_at:a.checkin_at}];
+      // 완료된(퇴실한) 세션은 항상, 진행중인 세션은 상태가 바뀐 적이 있을
+      // 때만 입실부터 지금(또는 퇴실)까지의 동선을 화살표로 이어서 보여줍니다.
+      const movesHtml=(outT||moves.length>1)?`<div class="dr-moves">${moves.map((l,i)=>{
         const t=new Date(l.changed_at);
         const chip=`<span class="dr-move-chip" style="color:${dotColor[l.status]||'#666'}">${String(t.getHours()).padStart(2,'0')}:${String(t.getMinutes()).padStart(2,'0')} ${STATUS_ICON_LABEL[l.status]||l.status}</span>`;
         return i?`<span class="dr-move-arrow">→</span>${chip}`:chip;
