@@ -110,10 +110,16 @@ button{cursor:pointer;border:none;background:none;font-family:inherit}
 .subj-fill{height:100%;border-radius:4px}
 
 /* attendance session */
-.att-row{display:flex;align-items:center;justify-content:space-between;padding:11px 0;border-bottom:1px solid var(--line)}
-.att-row:last-child{border-bottom:none}
+.att-block{padding:11px 0;border-bottom:1px solid var(--line)}
+.att-block:last-child{border-bottom:none}
+.att-row{display:flex;align-items:center;justify-content:space-between}
 .att-time{font-size:13px;font-weight:600}
 .att-dur{font-size:12px;color:var(--ink2);background:var(--gs);padding:3px 10px;border-radius:10px;font-weight:600}
+.att-live{color:var(--green)}
+.att-moves{margin-top:8px;padding-left:2px}
+.att-move{display:flex;align-items:center;gap:7px;font-size:11.5px;color:var(--ink2);padding:2px 0}
+.att-move-time{font-weight:600;color:var(--ink);flex-shrink:0}
+.att-move-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
 .att-empty{text-align:center;padding:20px 0;color:var(--ink3);font-size:12px}
 .att-sub-note{font-size:11.5px;color:var(--ink2);padding-top:10px;margin-top:2px;border-top:1px solid var(--line)}
 .flag-note{font-size:12px;color:#92400E;background:#FEF3C7;border-radius:9px;padding:9px 12px;margin-top:10px;line-height:1.5;word-break:keep-all}
@@ -301,7 +307,12 @@ async function fetchAttWithSegments(query,rangeStart,rangeEnd){
   const logsRes=ids.length?await sb(`attendance_status_log?attendance_id=in.(${ids.join(',')})&select=attendance_id,status,changed_at`):[];
   const logs=Array.isArray(logsRes)?logsRes:[];
   const logsByAtt=groupLogsByAttendance(logs);
-  att.forEach(a=>{a._seg=computeAttSegments(a,logsByAtt[a.id],rangeStart,rangeEnd);});
+  att.forEach(a=>{
+    a._seg=computeAttSegments(a,logsByAtt[a.id],rangeStart,rangeEnd);
+    // 외출/학원수업 등으로 상태가 몇 번 바뀌었는지(동선)를 그대로 보여주기
+    // 위해, 정렬된 원본 로그도 같이 붙여둡니다.
+    a._log=(logsByAtt[a.id]||[]).slice().sort((x,y)=>new Date(x.changed_at)-new Date(y.changed_at));
+  });
   return att;
 }
 /* 외출 비중이 상대적으로 길 때 상담 참고용 안내 문구 (학원수업 시간은 제외) */
@@ -644,6 +655,9 @@ function renderTlList(items){
     return `<div class="tl-item"><div class="tl-dot" style="background:${cat.c}"></div><div class="tl-time">${it.st||''}${it.et?'~'+it.et:''}</div><div class="tl-ttl ${it.done?'done':''}">${it.ttl||cat.l}</div><div class="tl-badge" style="background:${cat.c}22;color:${cat.c}">${cat.l}</div></div>`;
   }).join('') + `</div>`;
 }
+const ATT_MOVE_LABEL={studying:'공부중',in_class:'학원수업중',away:'외출중'};
+const ATT_MOVE_DOT={studying:'#1C9962',in_class:'#2B5FD9',away:'#7C4DE0'};
+function fmtHM(d){return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');}
 function renderAttList(att){
   if(!att.length)return '<div class="att-empty">출석 기록이 없어요</div>';
   return att.map(a=>{
@@ -652,7 +666,23 @@ function renderAttList(att){
     const dur=fmtMin(((outT||new Date())-inT)/60000);
     const seatNum=a.seat_number??a.seats?.seat_number;
     const seat=seatNum?`${seatNum}번 자리`:'';
-    return `<div class="att-row"><div><div class="att-time">${String(inT.getHours()).padStart(2,'0')}:${String(inT.getMinutes()).padStart(2,'0')} → ${outT?String(outT.getHours()).padStart(2,'0')+':'+String(outT.getMinutes()).padStart(2,'0'):'공부중'}</div><div style="font-size:11px;color:var(--ink3);margin-top:2px">${seat}</div></div><div class="att-dur">${dur}</div></div>`;
+    // 체크아웃 전이면 지금 상태가 공부중이라고 단정할 수 없어서(외출·
+    // 학원수업 중일 수도 있음), 진행중 뱃지로만 보여주고 실제 현재 상태는
+    // 아래 동선 목록의 마지막 항목에서 정확히 보여줍니다.
+    const endLabel=outT?fmtHM(outT):'<span class="att-live">진행중</span>';
+    // 세션 중 외출·학원수업 등으로 상태가 바뀐 적이 있으면, 입실부터
+    // 퇴실(또는 지금)까지의 전체 동선을 순서대로 보여줍니다. 처음
+    // 입실했을 때의 '공부중 시작'은 굳이 안 보여주고, 그 이후에 실제로
+    // 바뀐 지점들만 보여줘서 목록이 불필요하게 길어지지 않게 합니다.
+    const moves=(a._log||[]).slice(1);
+    const moveRows=moves.map(l=>{
+      const t=new Date(l.changed_at);
+      return `<div class="att-move"><div class="att-move-dot" style="background:${ATT_MOVE_DOT[l.status]||'#999'}"></div><div class="att-move-time">${fmtHM(t)}</div><div>${ATT_MOVE_LABEL[l.status]||l.status}</div></div>`;
+    }).join('');
+    return `<div class="att-block">
+      <div class="att-row"><div><div class="att-time">${String(inT.getHours()).padStart(2,'0')}:${String(inT.getMinutes()).padStart(2,'0')} → ${endLabel}</div><div style="font-size:11px;color:var(--ink3);margin-top:2px">${seat}</div></div><div class="att-dur">${dur}</div></div>
+      ${moves.length?`<div class="att-moves">${moveRows}</div>`:''}
+    </div>`;
   }).join('');
 }
 

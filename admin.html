@@ -374,6 +374,10 @@ body{font-family:'Pretendard','Noto Sans KR',sans-serif;color:var(--ink);min-hei
 .dr-card-bottom{display:flex;align-items:center;gap:5px;font-size:12px;color:var(--ink2)}
 .dr-arrow{color:var(--ink3)}
 .dr-live{color:#1C9962;font-weight:700}
+.dr-moves{display:flex;flex-direction:column;gap:3px;padding-top:5px;margin-top:2px;border-top:1px dashed var(--line)}
+.dr-move{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--ink2)}
+.dr-move-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.dr-move-time{font-weight:700;color:var(--ink);flex-shrink:0}
 .dr-prevday{font-size:9px;font-weight:800;color:#B45309;background:#FEF3D8;border-radius:5px;padding:1.5px 5px;margin-right:1px;letter-spacing:.2px}
 /* 출석기록 — 학생별 그날 집중도(누적) 배지 + 커서를 올리면 뜨는 판정
    내역. 클릭이 아니라 호버로 즉시 보이게 해서(관리자는 PC에서 볼
@@ -2635,6 +2639,13 @@ async function loadDateRecord(){
   const rowsRes=await sb(`attendance?checkin_at=lt.${end}&or=(checkout_at.is.null,checkout_at.gte.${start})${filter}&select=*,planner_students(name),seats(seat_number)&order=checkin_at.asc`);
   if(!Array.isArray(rowsRes)){body.innerHTML='<div class="empty">기록을 불러오지 못했어요</div>';absentBox.innerHTML='';return;}
   const rows=rowsRes;
+  // 외출·학원수업 등으로 상태가 바뀐 동선을 그대로 보여주기 위해, 각
+  // 출석 세션의 상태 변경 로그를 한 번에 가져와 붙여둡니다.
+  const attIdsForLog=rows.map(a=>a.id);
+  const attLogsRes=attIdsForLog.length?await sb(`attendance_status_log?attendance_id=in.(${attIdsForLog.join(',')})&select=attendance_id,status,changed_at&order=changed_at.asc`):[];
+  const attLogsByAtt={};
+  (Array.isArray(attLogsRes)?attLogsRes:[]).forEach(l=>{(attLogsByAtt[l.attendance_id]=attLogsByAtt[l.attendance_id]||[]).push(l);});
+  rows.forEach(a=>{a._log=attLogsByAtt[a.id]||[];});
 
   // 등록 학생 중 그 날 아예 출석하지 않은 학생을 따로 보여줍니다 — 특정
   // 독서실을 선택했을 때만(전체 독서실은 "등록 명단" 기준이 불분명해서
@@ -2734,6 +2745,13 @@ async function loadDateRecord(){
       const statusLabel=outT?'퇴실':(STATUS_ICON_LABEL[a.status]||'공부중');
       const inLabel=(spansFromPrevDay?'<span class="dr-prevday">전날</span>':'')+String(inT.getHours()).padStart(2,'0')+':'+String(inT.getMinutes()).padStart(2,'0');
       const outLabel=outT?(String(outT.getHours()).padStart(2,'0')+':'+String(outT.getMinutes()).padStart(2,'0')):'<span class="dr-live">진행중</span>';
+      // 첫 로그(입실=공부중 시작)는 위 카드 상단에 이미 나오니 생략하고,
+      // 그 뒤로 실제 바뀐 지점들(외출·학원수업·복귀 등)만 동선으로 보여줍니다.
+      const moves=(a._log||[]).slice(1);
+      const movesHtml=moves.length?`<div class="dr-moves">${moves.map(l=>{
+        const t=new Date(l.changed_at);
+        return `<div class="dr-move"><span class="dr-move-dot" style="background:${{studying:'#1C9962',in_class:'#2B5FD9',away:'#7C4DE0'}[l.status]||'#999'}"></span><span class="dr-move-time">${String(t.getHours()).padStart(2,'0')}:${String(t.getMinutes()).padStart(2,'0')}</span><span>${STATUS_ICON_LABEL[l.status]||l.status}</span></div>`;
+      }).join('')}</div>`:'';
       return `<div class="dr-card">
         <div class="dr-card-top">
           <span class="dr-seat">${seatLabel}</span>
@@ -2741,6 +2759,7 @@ async function loadDateRecord(){
           <span class="dr-dur">${dur}</span>
         </div>
         <div class="dr-card-bottom">${inLabel} <span class="dr-arrow">→</span> ${outLabel}</div>
+        ${movesHtml}
       </div>`;
     }).join('');
     return `${hd}<div class="dr-sessions">${cards}</div>`;
