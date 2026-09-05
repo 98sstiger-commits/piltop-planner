@@ -324,6 +324,12 @@ function groupLogsByAttendance(logs){
   return m;
 }
 async function fetchAttWithSegments(query,rangeStart,rangeEnd){
+  // 아직 시작도 안 한(완전히 미래인) 구간은 실제로 출석 데이터가 있을 수 없음.
+  // 그런데 checkout_at이 null인(진행 중인) 세션은 위 쿼리의 or 조건 특성상
+  // "언제까지"라는 상한이 없어서, 미래의 어떤 주/달을 봐도 지금 진행 중인
+  // 세션 1건이 걸려 출석일수가 항상 1로 잘못 나오는 문제가 있었음 — 그래서
+  // 구간 시작이 아직 오지 않았으면 쿼리 자체를 보내지 않고 바로 빈 배열 반환.
+  if(rangeStart&&rangeStart>new Date())return[];
   const attRes=await sb(query);
   const att=Array.isArray(attRes)?attRes:[];
   const ids=att.map(a=>a.id);
@@ -644,9 +650,12 @@ function switchType(type,initial){
   render();
 }
 function navDate(dir){
-  if(STATE.type==='daily')STATE.date=addDays(STATE.date,dir);
-  else if(STATE.type==='weekly')STATE.date=addDays(STATE.date,dir*7);
-  else{const d=new Date(STATE.date);d.setMonth(d.getMonth()+dir);STATE.date=d;}
+  let next;
+  if(STATE.type==='daily')next=addDays(STATE.date,dir);
+  else if(STATE.type==='weekly')next=addDays(STATE.date,dir*7);
+  else{next=new Date(STATE.date);next.setMonth(next.getMonth()+dir);}
+  if(dir>0&&next.getFullYear()>new Date().getFullYear()+5)return; // 의미 없는 먼 미래까지 무한정 넘어가지 않게 제한
+  STATE.date=next;
   syncUrl();
   render();
 }

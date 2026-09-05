@@ -1060,12 +1060,13 @@ textarea{resize:none}
 <script src="quotes.js"></script>
 <script>
 /* ── 상수 ── */
-const APP_BUILD='2026-09-02-rank3'; // 태블릿이 최신 코드를 받았는지 확인용(정보 수정 시트 하단에 표시)
+const APP_BUILD='2026-09-05-yearroll'; // 태블릿이 최신 코드를 받았는지 확인용(정보 수정 시트 하단에 표시)
 const SB="https://zmtldohklivkzpfdyflc.supabase.co";
 const SK="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InptdGxkb2hrbGl2a3pwZmR5ZmxjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI5NjgxMDQsImV4cCI6MjA4ODU0NDEwNH0.cv1WrvDzNedVZABWyRCS9ARRxf4Si9qgeUqEvhpHWlo";
 const NEIS="6544e426d2dc47f58a653ff11abbe91a";
 const TODAY=new Date();
 const YEAR = TODAY.getFullYear();
+const MAX_YEAR = YEAR + 5; // 일간/주간/월간/연간 모두 이 해까지만 미래로 넘어갈 수 있음
 const MON=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 const DOW=['일','월','화','수','목','금','토'];
 const DOWE=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
@@ -1243,6 +1244,13 @@ async function submitNicknameGate(){
 
 /* ── 유틸 ── */
 function dk(d){return`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;}
+// yearlyPlan은 이번 해 1~12월 키를 쓰고, 다음 해 1·2월(겨울방학~새 학기 준비)은
+// 13/14 키로 이어서 저장합니다(이번 해 1·2월 키와 겹치지 않게 하기 위함).
+function planKeyForDate(y,m){
+  if(y===YEAR)return m+1;
+  if(y===YEAR+1&&m<=1)return m+13;
+  return null;
+}
 function getMonday(d){const dt=new Date(d);const day=dt.getDay();dt.setDate(dt.getDate()-(day===0?6:day-1));return dt;}
 function toast(m,dur=2400){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),dur);}
 function tick(ms){return new Promise(r=>setTimeout(r,ms));}
@@ -1429,6 +1437,12 @@ async function startGen(){
 function fallbackPlan(){
   const sm=TODAY.getMonth()+1,r={};
   for(let m=sm;m<=12;m++)r[m]={month:m,keyword:'학습 계획을 세워보세요',note:'매일 꾸준히',tags:[{type:'study',label:'자기주도'}],weeklyHint:'',careerTip:'',subjectGuide:[],extracurricular:''};
+  // 고3(수험생)은 12월 이후 이어질 학년이 없어 여기서 끝. 그 외 학년은
+  // 겨울방학~새 학기 준비까지 이어지도록 다음 해 1·2월(키 13/14)도 채워둠.
+  if(!(S.school.includes('고')&&S.grade==='3')){
+    r[13]={month:13,keyword:'겨울방학 마무리',note:'부족한 과목 복습하기',tags:[{type:'study',label:'복습'}],weeklyHint:'',careerTip:'',subjectGuide:[],extracurricular:''};
+    r[14]={month:14,keyword:'새 학년 준비',note:'새 학기 목표 세우기',tags:[{type:'prep',label:'새학기'}],weeklyHint:'',careerTip:'',subjectGuide:[],extracurricular:''};
+  }
   return r;
 }
 
@@ -1460,10 +1474,14 @@ async function startPlanner(){
   requestWakeLock();
   ensureNickname();
 
-  // yearly_plan 없거나, fallback 플랜인데 career 정보가 있으면 백그라운드 재생성
+  // yearly_plan 없거나, fallback 플랜인데 career 정보가 있으면 백그라운드 재생성.
+  // 졸업(고3)이 아닌데 다음 해 1·2월(겨울방학~새학기, 키 13/14) 내용이 아직
+  // 없는 예전 플랜도 같이 보강 — 그래야 12월 다음달로 넘어갔을 때 빈 화면이 안 뜸.
   const isFallback=!Object.keys(S.yearlyPlan).length||Object.values(S.yearlyPlan).some(p=>p.keyword==='학습 계획을 세워보세요');
+  const isSenior=S.school.includes('고')&&S.grade==='3';
+  const needsWinterPlan=!isSenior&&!(S.yearlyPlan[13]&&S.yearlyPlan[14]);
   const hasCareer=!!(S.career||S.careerField||S.u1||S.d1);
-  if(isFallback&&hasCareer){
+  if((isFallback||needsWinterPlan)&&hasCareer){
     try{
       S.yearlyPlan=await genPlan();
       await saveDB();
@@ -1630,13 +1648,14 @@ function changeMonth(d){
   S.calMonth+=d;
   if(S.calMonth>11){S.calMonth=0;S.calYear++;}
   if(S.calMonth<0){S.calMonth=11;S.calYear--;}
+  if(S.calYear>MAX_YEAR){S.calYear=MAX_YEAR;S.calMonth=11;}
   renderMon();
 }
 
 function renderMon(){
   const mn=['1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월'];
   document.getElementById('mon-title').textContent=`${S.calYear}년 ${mn[S.calMonth]}`;
-  const plan=S.yearlyPlan[S.calMonth+1];
+  const plan=S.yearlyPlan[planKeyForDate(S.calYear,S.calMonth)];
   const sw=document.getElementById('ai-strip-wrap');
   if(plan&&plan.keyword){
     let guideHtml='';
@@ -1694,7 +1713,7 @@ function renderMon(){
 function changeWeek(d){
   const next=new Date(S.weekStart);
   next.setDate(next.getDate()+d*7);
-  if(next.getFullYear()>YEAR)return; // 현재 연도 초과 막기
+  if(next.getFullYear()>MAX_YEAR)return;
   S.weekStart=next;renderWk();
 }
 function renderWk(){
@@ -1710,7 +1729,7 @@ function renderWk(){
     el.innerHTML=`<div class="wkd-d">${DOW[dow]}</div><div class="wkd-n">${date.getDate()}</div><div class="wkd-dot${hasEv?' on':''}"></div>`;
     el.onclick=()=>{S.curDay=new Date(date);goView(3);};dRow.appendChild(el);
   }
-  const plan=S.yearlyPlan[ws.getMonth()+1];
+  const plan=S.yearlyPlan[planKeyForDate(ws.getFullYear(),ws.getMonth())];
   const aiW=document.getElementById('wk-ai-wrap');
   if(plan?.weeklyHint){
     aiW.innerHTML=`<div class="wk-ai"><div class="wk-ai-lbl">이번 주 포인트</div><div class="wk-ai-txt">${plan.weeklyHint}${plan.careerTip?'  ·  진로: '+plan.careerTip:''}</div></div>`;
@@ -1793,7 +1812,7 @@ function deleteWkGoal(i){
 function changeDay(d){
   const next=new Date(S.curDay);
   next.setDate(next.getDate()+d);
-  if(next.getFullYear()>YEAR)return; // 현재 연도 초과 막기
+  if(next.getFullYear()>MAX_YEAR)return;
   S.curDay=next;renderDy();
 }
 function renderDy(){
@@ -1812,7 +1831,7 @@ function renderDy(){
   }
 
   // 맞춤 플래너 한마디
-  const plan=S.yearlyPlan[d.getMonth()+1];
+  const plan=S.yearlyPlan[planKeyForDate(d.getFullYear(),d.getMonth())];
   const aiEl=document.getElementById('dy-ai');
   if(plan&&plan.keyword){
     document.getElementById('dy-ai-txt').textContent=plan.careerTip?`${plan.keyword}  ·  ${plan.careerTip}`:plan.keyword;

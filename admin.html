@@ -81,6 +81,11 @@ body{font-family:'Pretendard','Noto Sans KR',sans-serif;color:var(--ink);min-hei
 .list-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
 .list-hd h2{font-size:15px;font-weight:700;letter-spacing:-.2px;color:var(--cream)}
 .list-badge{font-size:11px;font-weight:700;color:var(--gold);background:rgba(227,190,109,.14);border:1px solid rgba(227,190,109,.35);border-radius:10px;padding:3px 10px}
+.grade-transition-banner{display:none;align-items:center;justify-content:space-between;gap:14px;background:rgba(227,190,109,.1);border:1px solid rgba(227,190,109,.35);color:var(--cream);padding:12px 16px;border-radius:10px;margin-bottom:14px;font-size:12.5px;line-height:1.55}
+.gtb-grads{margin-top:5px;color:var(--gold)}
+.gtb-close{flex-shrink:0;background:none;border:1px solid rgba(227,190,109,.4);color:var(--cream);border-radius:7px;padding:6px 12px;font-size:12px;font-weight:600;cursor:pointer}
+.gtb-close:hover{border-color:var(--gold);color:var(--gold)}
+@media(max-width:520px){.grade-transition-banner{flex-direction:column;align-items:stretch}.gtb-close{align-self:flex-end}}
 .stu-filter-row{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px;flex-wrap:wrap}
 .stu-filter-tabs{display:flex;gap:6px}
 .stu-filter-tab{padding:6px 12px;border-radius:8px;font-size:12px;font-weight:600;color:rgba(255,255,255,.72);background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.14)}
@@ -488,6 +493,7 @@ body{font-family:'Pretendard','Noto Sans KR',sans-serif;color:var(--ink);min-hei
   </div>
 
   <!-- 학생 목록 -->
+  <div class="grade-transition-banner" id="grade-banner"></div>
   <div class="list-hd">
     <h2>전체 학생</h2>
     <span class="list-badge" id="list-badge">0명</span>
@@ -981,6 +987,35 @@ async function loadStudents(){
     ATTENDED_STUDENT_IDS=new Set((Array.isArray(attRes)?attRes:[]).map(a=>a.student_id));
   }catch(e){ATTENDED_STUDENT_IDS=new Set();}
   renderStudentList();
+  checkGradeTransition();
+}
+
+// 새 학년(3월) 시작 시기(2~3월)에 학년 정보 업데이트를 깜빡하기 쉬워서
+// 알려주는 배너. 특히 중3은 고등학교로 학교 자체가 바뀌니 놓치기 쉬움.
+// 관리자가 닫으면 그 학년도(연도)엔 다시 안 뜨게 localStorage에 기억.
+function checkGradeTransition(){
+  const banner=document.getElementById('grade-banner');
+  if(!banner)return;
+  const now=new Date();
+  const inWindow=now.getMonth()===1||now.getMonth()===2; // 2월·3월
+  const dismissKey=`grade-banner-dismissed-${now.getFullYear()}`;
+  if(!inWindow||!ALL_STUDENTS.length||localStorage.getItem(dismissKey)){
+    banner.style.display='none';
+    return;
+  }
+  const grads=ALL_STUDENTS.filter(s=>!s.is_paused&&s.grade==='3'&&s.school_name&&!s.school_name.includes('고'));
+  banner.style.display='flex';
+  banner.innerHTML=`
+    <div class="gtb-txt">
+      <b>새 학년이 시작되는 시기예요.</b> 학생별 학년 정보를 확인해서 업데이트해주세요 (중1→중2, 고2→고3 등).
+      ${grads.length?`<div class="gtb-grads">특히 중3이었던 <b>${grads.map(s=>s.name).join(', ')}</b> 학생은 고등학교 진학 여부를 확인해서 학교·학년 정보를 함께 바꿔주세요.</div>`:''}
+    </div>
+    <button class="gtb-close" onclick="dismissGradeBanner('${dismissKey}')">닫기</button>
+  `;
+}
+function dismissGradeBanner(key){
+  try{localStorage.setItem(key,'1');}catch(e){}
+  document.getElementById('grade-banner').style.display='none';
 }
 
 function setStudentFilter(f){
@@ -1040,6 +1075,7 @@ function renderStudentList(){
         <div class="stu-extra-row" onclick="event.stopPropagation()">
           <span class="pin-badge ${s.student_pin?'':'muted'}">${s.student_pin?'PIN '+s.student_pin:'PIN 없음'}</span>
           <button class="mini-btn" style="padding:3px 8px;font-size:10px" onclick="openPhonePop(event,'${s.id}')">📱 번호수정</button>
+          <button class="mini-btn" style="padding:3px 8px;font-size:10px" onclick="openGradePop(event,'${s.id}')">🎓 학교·학년수정</button>
           <button class="mini-btn" style="padding:3px 8px;font-size:10px" onclick="regenPin('${s.id}','${s.name}')">재발급</button>
           <select class="f-select" onchange="assignRoom('${s.id}',this.value)">${roomOpts}</select>
           <button class="mini-btn" style="padding:3px 8px;font-size:10px" onclick="window.open('${BASE}/report.html?id=${s.id}&type=weekly&admin=1','_blank')">📊 리포트</button>
@@ -1477,6 +1513,45 @@ function openPhonePop(e,id){
     loadStudents();
   };
   setTimeout(()=>document.addEventListener('click',closePhonePop,{once:true}),0);
+}
+
+/* ── 학교·학년 수정 (새 학년/진학 시) ── */
+function closeGradePop(){document.querySelectorAll('.grade-pop').forEach(p=>p.remove());}
+function openGradePop(e,id){
+  closeGradePop();
+  const s=ALL_STUDENTS.find(x=>x.id===id);
+  if(!s)return;
+  const pop=document.createElement('div');
+  pop.className='subj-pop grade-pop';
+  const cx=e.clientX||window.innerWidth/2,cy=e.clientY||window.innerHeight/2;
+  pop.style.left=Math.min(cx,window.innerWidth-260)+'px';
+  pop.style.top=Math.min(cy,window.innerHeight-260)+'px';
+  pop.innerHTML=`<div class="subj-pop-ttl">${s.name} 학생 학교·학년</div>
+    <div class="field" style="margin-bottom:10px">
+      <label class="field-label">학교</label>
+      <div class="seat-pop-field"><input type="text" id="grade-pop-school" value="${(s.school_name||'').replace(/"/g,'&quot;')}"></div>
+    </div>
+    <div class="field" style="margin-bottom:6px">
+      <label class="field-label">학년</label>
+      <select class="f-select" id="grade-pop-grade" style="width:100%">
+        <option value="1" ${s.grade==='1'?'selected':''}>1학년</option>
+        <option value="2" ${s.grade==='2'?'selected':''}>2학년</option>
+        <option value="3" ${s.grade==='3'?'selected':''}>3학년</option>
+      </select>
+    </div>
+    <div style="font-size:11px;color:var(--ink3);line-height:1.5;margin-bottom:10px">학교 자체가 바뀌면(중3→고1 등) 학사일정 조회용 학교코드는 안 바뀌니, 저장 후 이 학생용 링크를 다시 복사해서 새로 전달해주세요.</div>
+    <button class="subj-pop-save">저장</button>`;
+  document.body.appendChild(pop);
+  pop.addEventListener('click',ev=>ev.stopPropagation());
+  pop.querySelector('.subj-pop-save').onclick=async()=>{
+    const school_name=document.getElementById('grade-pop-school').value.trim();
+    const grade=document.getElementById('grade-pop-grade').value;
+    await sb(`planner_students?id=eq.${id}`,{method:'PATCH',body:JSON.stringify({school_name:school_name||null,grade})});
+    closeGradePop();
+    showToast('학교·학년이 저장됐어요. 학생에게 새 링크를 복사해서 전달해주세요.');
+    loadStudents();
+  };
+  setTimeout(()=>document.addEventListener('click',closeGradePop,{once:true}),0);
 }
 
 /* ══ 좌석현황 탭 ══ */
