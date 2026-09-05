@@ -1574,7 +1574,7 @@ async function refreshSeatData(){
   if(!curSeatRoomId)return;
   const [s,a]=await Promise.all([
     sb(`seats?room_id=eq.${curSeatRoomId}&select=*&order=seat_number.asc`),
-    sb(`attendance?room_id=eq.${curSeatRoomId}&checkout_at=is.null&select=id,seat_id,status,checkin_at,planner_students(name)&order=checkin_at.asc`)
+    sb(`attendance?room_id=eq.${curSeatRoomId}&checkout_at=is.null&select=id,student_id,seat_id,status,checkin_at,planner_students(name)&order=checkin_at.asc`)
   ]);
   SEATS=Array.isArray(s)?s:[];ACTIVE_ATT=Array.isArray(a)?a:[];
   renderSeatMap();
@@ -2152,7 +2152,7 @@ function openSeatPop(e,seat){
   if(!isBlock&&occAtt){
     pop.querySelector('.seat-pop-checkout-btn').onclick=()=>{
       closeSeatPop();
-      forceCheckout(occAtt.id,occAtt.planner_students?.name||'학생');
+      forceCheckout(occAtt.id,occAtt.student_id,occAtt.planner_students?.name||'학생');
     };
   }
   pop.querySelector('[data-act="delete"]').onclick=()=>{closeSeatPop();deleteSeat(seat.id);};
@@ -2171,11 +2171,21 @@ async function assignSeatStudent(seatId,studentId){
   showToast(studentId?'좌석을 배정했어요':'배정을 해제했어요');
   refreshSeatData();
 }
-async function forceCheckout(attId,name){
+async function forceCheckout(attId,studentId,name){
   if(!confirm(name+' 학생을 퇴실 처리할까요?'))return;
   const now=new Date().toISOString();
   await sb(`attendance?id=eq.${attId}`,{method:'PATCH',body:JSON.stringify({checkout_at:now,status:'checked_out'})});
   sb('attendance_status_log',{method:'POST',body:JSON.stringify({attendance_id:attId,status:'checked_out',changed_at:now})});
+  // 체크인 화면(키오스크)에서 퇴실할 때처럼, 관리자가 여기서 강제
+  // 퇴실시킨 경우에도 학부모 리포트 앱 알림을 똑같이 보냅니다.
+  if(studentId){
+    const nowD=new Date();
+    const hm=`${String(nowD.getHours()).padStart(2,'0')}시 ${String(nowD.getMinutes()).padStart(2,'0')}분`;
+    fetch('/api/push',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({action:'send',studentId,title:`${name} 학생 ${hm}에 퇴실했습니다`,body:'퇴실 처리됐어요'})
+    }).catch(()=>{});
+  }
   showToast(name+' 학생을 퇴실 처리했어요');
   refreshSeatData();
 }
