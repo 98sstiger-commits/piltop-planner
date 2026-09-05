@@ -512,7 +512,7 @@ async function boot(){
   if(STUDENT.name)document.title=`${STUDENT.name} 학생 학습리포트`;
   // 홈 화면에 앱으로 설치할 때 아이콘 이름이 이 학생 이름으로 뜨도록
   // 매니페스트/애플 타이틀을 채워 넣습니다.
-  document.getElementById('dyn-manifest').setAttribute('href',`/api/report-manifest?id=${STATE.id}`);
+  document.getElementById('dyn-manifest').setAttribute('href',`/api/push?id=${STATE.id}`);
   const appleTitleEl=document.getElementById('apple-title');
   if(appleTitleEl&&STUDENT.name)appleTitleEl.setAttribute('content',`${STUDENT.name} 학생 학습리포트`);
   document.getElementById('stu-sub').textContent=`${STUDENT.school_name||'학교 미정'} · ${STUDENT.grade||'?'}학년`;
@@ -624,9 +624,9 @@ async function subscribePush(reg){
     userVisibleOnly:true,
     applicationServerKey:urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
   });
-  await fetch('/api/push-subscribe',{
+  await fetch('/api/push',{
     method:'POST',headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({studentId:STATE.id,subscription:sub.toJSON()}),
+    body:JSON.stringify({action:'subscribe',studentId:STATE.id,subscription:sub.toJSON()}),
   }).catch(()=>{});
 }
 // 앱을 계속 켜둔 채로 알림이 온 뒤, 다시 앱으로 돌아왔을 때도 뱃지를 지웁니다.
